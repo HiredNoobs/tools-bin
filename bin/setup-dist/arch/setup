@@ -22,7 +22,8 @@ function configure_hyprland {
   yay -S hyprlock hypridle grimblast otf-codenewroman-nerd pywal
 
   # Application launcher
-  yay -S walker elephant-websearch elephant-calc elephant-files elephant-files
+  yay -S walker elephant-websearch elephant-calc elephant-files elephant-files \
+    elephant-menus elephant-todo
 
   log_info "Dependencies installed. Starting configuration."
 

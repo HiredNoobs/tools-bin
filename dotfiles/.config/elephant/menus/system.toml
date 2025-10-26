@@ -1,0 +1,24 @@
+name = "system"
+name_pretty = "System"
+fixed_order = true
+icon = ""
+
+[[entries]]
+icon = ""
+text = "Lock"
+actions = { "lock" = "hyprlock" }
+
+[[entries]]
+icon = "󰤄"
+text = "Suspend"
+actions = { "suspend" = "systemctl suspend" }
+
+[[entries]]
+icon = "󰜉"
+text = "Restart"
+actions = { "restart" = "reboot" }
+
+[[entries]]
+icon = "󰐥"
+text = "Shutdown"
+actions = { "shutdown" = "shutdown now" }
