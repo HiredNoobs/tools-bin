@@ -1,12 +1,12 @@
-force_keyboard_focus = false
-close_when_open = true
-click_to_close = true
-selection_wrap = false
-global_argument_delimiter = "#"
-exact_search_prefix = "'"
-theme = "default"
-disable_mouse = false
-additional_theme_location = "~/.config/walker/themes/"
+force_keyboard_focus = false    # forces keyboard forcus to stay in Walker
+close_when_open = true          # close walker when invoking while already opened
+click_to_close = true           # closes walker if clicking outside of the main content area
+selection_wrap = false          # wrap list if at bottom or top
+global_argument_delimiter = "#" # query: firefox#https://benz.dev => part after delimiter will be ignored when querying. this should be the same as in the elephant config
+exact_search_prefix = "'"       # disable fuzzy searching
+theme = "default"               # theme to use
+disable_mouse = false           # disable mouse (on input and list only)
+debug = false                   # enables debug printing for some stuff, f.e. keybinds
 
 [shell]
 anchor_top = true
@@ -31,14 +31,28 @@ default = [
   "desktopapplications"
 ]
 empty = ["desktopapplications"]
+previews = [
+  "files",
+  "clipboard",
+  "menus",
+]
+max_results = 50 
 
 [[providers.prefixes]]
 prefix = ";"
 provider = "providerlist"
 
 [[providers.prefixes]]
+prefix = ">"
+provider = "runner"
+
+[[providers.prefixes]]
 prefix = "/"
 provider = "files"
+
+[[providers.prefixes]]
+prefix = "."
+provider = "symbols"
 
 [[providers.prefixes]]
 prefix = "!"
@@ -48,10 +62,22 @@ provider = "todo"
 prefix = "="
 provider = "calc"
 
+[[providers.prefixes]]
+prefix = "@"
+provider = "websearch"
+
+[[providers.prefixes]]
+prefix = ":"
+provider = "clipboard"
+
+[[providers.prefixes]]
+prefix = "$"
+provider = "windows"
+
 [providers.actions]
 dmenu = [
- { action = "select", default = true, bind = "Return" },
- { action = "provider:menus:menu", bind = "ctrl x", global = true, after = "ClearReload" },
+  { action = "select", default = true, bind = "Return" },
+  { action = "provider:menus:menu", bind = "ctrl x", global = true, after = "ClearReload" },
 ]
 
 providerlist = [
@@ -85,8 +111,15 @@ todo = [
 
 "menus:system" = [
   { action = "lock", bind = "Return" },
-  { action = "suspend", bind = "Return" },
+  { action = "sleep", bind = "Return" },
   { action = "relaunch", bind = "Return" },
   { action = "restart", bind = "Return" },
   { action = "shutdown", bind = "Return" },
+]
+
+"menus:screenshots" = [
+  { action = "fullscreen_instant", bind = "Return" },
+  { action = "fullscreen_delay", bind = "Return" },
+  { action = "area_instant", bind = "Return" },
+  { action = "area_delay", bind = "Return" },
 ]

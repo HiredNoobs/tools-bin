@@ -10,15 +10,15 @@ actions = { "lock" = "hyprlock" }
 
 [[entries]]
 icon = "󰤄"
-text = "Suspend"
-actions = { "suspend" = "systemctl suspend" }
+text = "Sleep"
+actions = { "sleep" = "systemctl suspend" }
 
 [[entries]]
-icon = "󰜉"
+icon = ""
 text = "Restart"
 actions = { "restart" = "reboot" }
 
 [[entries]]
-icon = "󰐥"
+icon = ""
 text = "Shutdown"
 actions = { "shutdown" = "shutdown now" }

@@ -1,0 +1,24 @@
+name = "screenshots"
+name_pretty = "Screenshots"
+fixed_order = true
+icon = ""
+
+[[entries]]
+text = "Fullscreen (instant)"
+icon = ""
+actions = { "fullscreen_instant" = "bash -c 'grimblast --notify copysave screen output ~/Downloads/$(date +%Y%m%d-%H%M%S).png'" }
+
+[[entries]]
+text = "Fullscreen (2s delay)"
+icon = ""
+actions = { "fullscreen_delay" = "bash -c 'sleep 2; grimblast --notify copysave screen output ~/Downloads/$(date +%Y%m%d-%H%M%S).png'" }
+
+[[entries]]
+text = "Select Area (instant)"
+icon = ""
+actions = { "area_instant" = "bash -c 'grimblast --freeze --notify copysave area ~/Downloads/$(date +%Y%m%d-%H%M%S).png'" }
+
+[[entries]]
+text = "Select Area (2s delay)"
+icon = ""
+actions = { "area_delay" = "bash -c 'sleep 2; grimblast --freeze --notify copysave area ~/Downloads/$(date +%Y%m%d-%H%M%S).png'" }
