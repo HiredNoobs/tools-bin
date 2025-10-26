@@ -45,6 +45,7 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/dotfiles/.config/swaync/" "$XDG_CONFIG_HOME/swaync/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/" "$XDG_CONFIG_HOME/kitty/"
   rsync -av --delete "$ROOT/dotfiles/.config/fish/" "$XDG_CONFIG_HOME/fish/"
+  rsync -av --delete "$ROOT/dotfiles/.config/elephant/" "$XDG_CONFIG_HOME/elephant/"
   rsync -av --delete "$ROOT/dotfiles/.config/walker/" "$XDG_CONFIG_HOME/walker/"
 }
 
