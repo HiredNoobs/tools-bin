@@ -5,6 +5,16 @@
 # -----------------------------------------------------
 # Prompt
 # -----------------------------------------------------
+function color_environment {
+  if [[ "$1" =~ production ]]; then
+    echo "\[\e[31m\]$1\[\e[0m\]"
+  elif [[ "$1" =~ test ]]; then
+    echo "\[\e[33m\]$1\[\e[0m\]"
+  else
+    echo "\[\e[32m\]$1\[\e[0m\]"
+  fi
+}
+
 function parse_git_branch {
   local ref
   ref=$(git symbolic-ref --quiet HEAD 2>/dev/null) || return
@@ -14,12 +24,76 @@ function parse_git_branch {
 function update_git_segment {
   local b
   b=$(parse_git_branch)
-  if [[ -n $b ]]; then
+  if [ -n $b ]; then
     GIT_SEGMENT=" ${b} "
   else
     GIT_SEGMENT=" "
   fi
 }
 
-PROMPT_COMMAND=update_git_segment
-PS1='\u@\h:\w${GIT_SEGMENT}\$ '
+function prompt_setter {
+  local context
+  context="$(color_environment $DOCKER_CONTEXT)"
+  if [ -n "$DEPLOYMENT" ]; then
+    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${DEPLOYMENT}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574\W$(update_git_segment) \$ '
+  else
+    PS1=$"[$context \W$(update_git_segment)] \$ "
+  fi
+}
+
+PROMPT_COMMAND=prompt_setter
+
+# -----------------------------------------------------
+# Extra commands
+# -----------------------------------------------------
+
+# `dc` command for viewing and switching docker context
+function dc {
+  local contexts
+  contexts=$(docker context ls --format '{{ .Name }}')
+  if [[ -z "$1" ]]; then
+    echo "Current context: $DOCKER_CONTEXT"
+    echo
+    echo "$contexts"
+  else
+    if echo "$contexts" | grep -q "^$1$"; then
+      DOCKER_CONTEXT="$1"
+    else
+      echo "Context $1 does not exist in this environment."
+    fi
+  fi
+}
+
+_dc_completions() {
+  if [[ "${#COMP_WORDS[@]}" != "2" ]]; then
+    return
+  fi
+
+  COMPREPLY=($(compgen -W "$(docker context ls --format '{{ .Name }}')" -- "${COMP_WORDS[1]}"))
+}
+
+complete -F _dc_completions dc
+
+# -----------------------------------------------------
+# Allow `deployment` to complete available commands
+# and where command is `tools` it will suggest tools.
+
+_deployment_completions() {
+  local cur prev file_list script_commands
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+  if [[ $prev == "tools" ]]; then
+    if [[ -d "$PWD/tools" ]]; then
+      file_list=$(find $PWD/tools -maxdepth 1 -type f -executable)
+      COMPREPLY=($(compgen -W "$file_list" -- "$cur"))
+    else
+      COMPREPLY=()
+    fi
+  else
+    script_commands=$(deployment help | grep '^* ' | sed 's/^* //' | tr '\' ' ')
+    COMPREPLY=($(compgen -W "$script_commands" -- "$cur"))
+  fi
+}
+
+complete -F _deployment_completions deployment

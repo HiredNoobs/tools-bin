@@ -63,7 +63,8 @@ fi
 if [[ "$AUDIO_ONLY" == true ]]; then
   for URL in "$@"; do
     yt-dlp --extract-audio --audio-format m4a --embed-metadata --embed-thumbnail \
-      --sponsorblock-remove all --sponsorblock-mark all --cookies-from-browser "$BROWSER" -P "~/Downloads" "$URL"
+      --sponsorblock-remove all --sponsorblock-mark all --cookies-from-browser \
+      "$BROWSER" -P "~/Downloads" "$URL"
   done
 else
   for URL in "$@"; do

@@ -1,12 +1,16 @@
 # bin
 
+Repo contains my dotfiles and various scripts that are added to the path.
+
+This is both for my servers and daily drivers, though some scripts will be for one or the other.
+
 ## Move in
 
 **This script only supports debian!** It's main use is setting up debian LXCs for other use cases just clone the repo.
 
 ``movein.sh`` is for the initial setup - it sets up a new user with sudo access and clones this repo to it's home directory.
 
-``movein.sh`` is intended to be run as root on the first login to a new host/VM/LXC. It is intended to be run as ``root``.
+``movein.sh`` is intended to be run as ``root`` on the first login to a new host/VM/LXC.
 
 ``movein.sh`` usage:
 
@@ -71,3 +75,9 @@ Application shortcuts:
 - `Super` + `T` = Terminal
 
 </details>
+
+## deployment
+
+Tooling for deploying stacks to docker swarms. This tooling is not generic and will only work with my stacks unless setup in the same way.
+
+``secret-pack``, ``secret-unpack``, and ``secret-diff`` are python based helper scripts for deployment for reading and writing vault secrets.

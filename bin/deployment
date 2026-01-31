@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source $HERE/lib/logging.sh
+
+# -----------------------------------------------------
+# Helper functions
+# -----------------------------------------------------
+
+# Ensures the environment is setup correctly
+function check_env {
+  if [[ -z "$DEPLOYMENT" ]]; then
+    log_error "DEPLOYMENT is unset - source a stack.env file"
+    exit 1
+  fi
+
+  local stack_repo=$(basename $PWD)
+  if [[ $DEPLOYMENT != "$stack_repo"* ]]; then
+    log_error "DEPLOYMENT ($DEPLOYMENT) doesn't match current repo ($stack_repo)"
+    exit 1
+  fi
+
+  local contexts=$(docker context ls --format '{{ .Name }}' | grep -v 'default')
+  if ! printf '%s\n' "$contexts" | grep -Fxq -- "$CONTEXT"; then
+    log_error "Context, $CONTEXT, not in locally defined contexts."
+    exit 1
+  fi
+}
+
+function locate {
+  export STACK_BASE="$PWD"
+  export STACK=$(echo $DEPLOYMENT | sed 's/^stack\-//; s/\-/_/g')
+  export CONFIGS="${ENVIRONMENT_BASE}/configs"
+  export SECRETS="${ENVIRONMENT_BASE}/secrets"
+}
+
+function discover {
+  locate
+  export DOCKER_CONTEXT="$CONTEXT"
+  if [ -f "${SECRETS}/secrets.env" ]; then
+    source "${SECRETS}/secrets.env"
+  fi
+  eval "$(docker node ls -q | xargs docker node inspect | export-roles $STACK)"
+  stack_discover
+}
+
+# -----------------------------------------------------
+# Run functions
+# -----------------------------------------------------
+
+function run_help {
+  if [ -f "$HERE/deployment_help"]; then
+    source "$HERE/deployment_help"
+  fi
+
+  if [ -f "$STACK_BASE/stack_help" ]; then
+    source "$STACK_BASE/stack_help"
+  fi
+
+  local deployment_commands=$(declare -F | awk '/ command_/ && (!_help$/ || /command_help$/) { gsub("command_", "", $3); print $3 }')
+
+  log_info "Deployment commands:"
+  local term_width=$(tput cols)
+
+  for func in $deployment_commands; do
+    log_info "* $func"
+    local help_func="command_${func}_help"
+    if declare -F "$help_func" > /dev/nulll then
+      local help_output=$("$help_func")
+      local combined_output=$(echo "$help_output" | awk 'BEGIN {ORS=" "} {if (NF == 0} {print "\n"} else {print}}' | sed 's/$ //' | fold -s -w $term_width)
+      log_info "$combined_output" | sed 's/^/    /'
+    fi
+  done
+}
+
+function run_pull_secrets {
+  local vault_env="$1"
+  local vault_secret="$2"
+  mkdir -p "$SECRETS"
+  vault read "${vault_env}/${vault_secret}" -format=json | jq .data | secret-unpack "$SECRETS"
+}
+
+function run_push_secrets {
+  local vault_env="$1"
+  local vault_secret="$2"
+  if [ "$(ls -A $SECRETS)" ]; then
+    secret-pack ${SECRETS}/* | vault write "${vault_env}/${vault_secret}" -
+  else
+    log_info "There are no local secrets to push."
+    log_info "If you intended to delete the $vault_secret secret please use the UI."
+  fi
+}
+
+function run_diff_secrets {
+  local vault_env="$1"
+  local vault_secret="$2"
+  vault read "${vault_env}/${vault_secret}" -format=json | jq .data | secret-diff "${SECRETS}"
+}
+
+function run_env {
+  discover
+  echo "DEPLOYMENT  = $DEPLOYMENT"
+  echo "STACK       = $STACK"
+  echo "ENVIRONMENT = $ENVIRONMENT"
+  echo "CONTEXT     = $CONTEXT"
+  echo "CONFIGS     = $CONFIGS"
+  echo "SECRETS     = $SECRETS"
+  stack_env
+}
+
+function run_deploy {
+  stack_deploy
+}
+
+function run_clean {
+  docker stack rm $STACK
+}
+
+# -----------------------------------------------------
+# Commands
+# -----------------------------------------------------
+
+function command_help {
+  locate
+  run_help
+}
+
+# Discovers and prints out the env.
+#
+# If another command is passed as an arg rather than
+# printing the env it will run that command.
+# The main purpose of this is for running `env env`
+# to see the "discovered" environment variables.
+function command_env {
+  discover
+  if [ -z "$1" ]; then
+    run_env
+  else
+    $@
+    local error=$?
+    exit $error
+  fi
+}
+
+function command_pull_secrets {
+  locate
+  if [[ -n "$1" && -n "$2" ]]; then
+    run_pull_secrets "$1" "$2"
+  else
+    run_pull_secrets "$ENVIRONMENT" "$DEPLOYMENT"
+  fi
+}
+
+function command_push_secrets {
+  locate
+  if [[ -n "$1" && -n "$2" ]]; then
+    run_pull_secrets "$1" "$2"
+  else
+    run_push_secrets "$ENVIRONMENT" "$DEPLOYMENT"
+  fi
+}
+
+function command_diff_secrets {
+  locate
+  if [[ -n "$1" && -n "$2" ]]; then
+    run_pull_secrets "$1" "$2"
+  else
+    run_diff_secrets "$ENVIRONMENT" "$DEPLOYMENT"
+  fi
+}
+
+function command_deploy {
+  discover
+  run_deploy
+}
+
+# -----------------------------------------------------
+# Main
+# -----------------------------------------------------
+
+check_env
+
+source "./stack"
+
+ARG=${1:-help}
+CMD="command_$ARG"
+shift
+
+if declare -F $CMD >/dev/null; then
+  $CMD "$@"
+else
+  log_error "$ARG is not a valid command."
+fi

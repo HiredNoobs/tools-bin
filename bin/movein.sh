@@ -19,7 +19,7 @@
 # 2) Clones this repo into the users home directory.
 #
 # Usage:
-# curl -L https://bit.ly/HiredMove | bash -s [username]
+# movein.sh [username]
 
 set -euo pipefail
 

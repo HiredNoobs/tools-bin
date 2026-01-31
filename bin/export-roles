@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+#
+# Reads a docker construct from stdin, this should be the output
+# of `docker node inspect`, and writes export commands to stdout
+# for each role in the stack arg.
+#
+# A role is considered to be "in" a stack if it is prefixed
+# with the stack arg value. E.g. if this script is called
+# with `export-roles KAFKA_CORE` it would export the hostnames
+# with labels such as KAFKA_CORE_CONTROLLER and KAFKA_CORE_BROKER.
+# Output looks like `export CONTROLLER_NODES="hostname1 hostname2"`
+# and `export BROKER_NODES="hostname3 hostname4"`.
+#
+# Usage:
+# export-roles <STACK>
+
+import argparse
+import collections
+import json
+import shlex
+import sys
+from typing import Dict, List
+
+
+def export_roles(stack: str, docker_construct: Dict) -> None:
+    roles: Dict[str, List] = collections.defaultdict(list)
+    nodes = {
+        node["Description"]["Hostname"]: node["Spec"]["Labels"].keys()
+        for node in docker_construct
+    }
+
+    for node, labels in nodes.items():
+        for label in labels:
+            roles[label].append(node)
+
+    for role, hostnames in roles.items():
+        if role.startswith(stack):
+            role = role[len(stack) + 1 :]
+            hosts = " ".join(hostnames)
+            print(f"export {role.upper()}_NODES={shlex.quote(hosts)}")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Prints out export commands based on docker labels."
+    )
+    parser.add_argument("stack", type=str, help="Stack name to filter labels.")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    # For reference: https://docs.docker.com/reference/cli/docker/inspect/
+    docker_construct = json.load(sys.stdin)
+
+    export_roles(args.stack, docker_construct)
+
+
+if __name__ == "__main__":
+    main()
