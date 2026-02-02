@@ -27,8 +27,8 @@ function configure_docker_contexts {
   clean_docker_contexts
   echo "Creating contexts:"
   create_context "development.core"    "altas"
-  create_context "production.core"     "rsyslog001"
-  create_context "production.services" "vault001"
+  create_context "production.core"     "prod-rsyslog001"
+  create_context "production.services" "prod-vault001"
 }
 
 function install_vault_client {
