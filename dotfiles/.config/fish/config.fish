@@ -6,7 +6,7 @@ if status is-interactive
     starship init fish | source
 
     # Update PATH
-    fish_add_path ~/bin/bin
+    fish_add_path ~/tools-bin/bin
 
     # Env vars (-x = export)
     set -x SHELL $(which fish)  # For tmux

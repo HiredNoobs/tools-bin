@@ -31,7 +31,7 @@ function configure_hyprland {
   # just generates shades of blue with very little contrast...
   # Maybe there's some settings for wal that would help?
   # Or maybe I just need a wallpaper with more colors...
-  # wal -i ~/bin/images/wallpapers/nord_scenary.png
+  # wal -i ~/tools-bin/images/wallpapers/nord_scenary.png
   wal --theme base16-gruvbox-medium
 
   # Bluetooth will start in non-discoverable mode

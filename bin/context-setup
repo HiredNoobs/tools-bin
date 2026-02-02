@@ -34,8 +34,8 @@ function configure_docker_contexts {
 function install_vault_client {
   curl https://releases.hashicorp.com/vault/1.21.0/vault_1.21.0_linux_386.zip -o /tmp/vault.zip
   unzip /tmp/vault.zip -d /tmp/vault
-  mv /tmp/vault/vault ~/bin/bin/vault
-  chmod +x ~/bin/bin/vault
+  mv /tmp/vault/vault ~/tools-bin/bin/vault
+  chmod +x ~/tools-bin/bin/vault
 }
 
 # -----------------------------------------------------
