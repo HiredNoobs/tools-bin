@@ -1,0 +1,20 @@
+function command_env_help {
+  echo "Prints out useful deployment/stack env vars."
+  echo "Run 'env env' to get a full print out of all discovered envs vars."
+}
+
+function command_pull_secrets_help {
+  echo "Pulls secrets for the stack from Vault"
+}
+
+function command_push_secrets_help {
+  echo "Pushes secrets for the stack into Vault."
+}
+
+function command_diff_secrets_help {
+  echo "Prints out a diff of local secrets compared to upstream Vault secrets."
+}
+
+function command_deployment_help {
+  echo "Deploys the stack."
+}
