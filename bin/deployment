@@ -29,15 +29,14 @@ function check_env {
   fi
 }
 
-function locate {
+function init_stack_context {
   export STACK_BASE="$PWD"
   export STACK=$(echo $DEPLOYMENT | sed 's/^stack\-//; s/\-/_/g')
   export CONFIGS="${ENVIRONMENT_BASE}/configs"
   export SECRETS="${ENVIRONMENT_BASE}/secrets"
 }
 
-function discover {
-  locate
+function discover_stack_context {
   export DOCKER_CONTEXT="$CONTEXT"
   if [ -f "${SECRETS}/secrets.env" ]; then
     source "${SECRETS}/secrets.env"
@@ -100,7 +99,8 @@ function run_diff_secrets {
 }
 
 function run_env {
-  discover
+  init_stack_context
+  discover_stack_context
   echo "DEPLOYMENT  = $DEPLOYMENT"
   echo "STACK       = $STACK"
   echo "ENVIRONMENT = $ENVIRONMENT"
@@ -123,7 +123,7 @@ function run_clean {
 # -----------------------------------------------------
 
 function command_help {
-  locate
+  init_stack_context
   run_help
 }
 
@@ -134,7 +134,8 @@ function command_help {
 # The main purpose of this is for running `env env`
 # to see the "discovered" environment variables.
 function command_env {
-  discover
+  init_stack_context
+  discover_stack_context
   if [ -z "$1" ]; then
     run_env
   else
@@ -145,7 +146,7 @@ function command_env {
 }
 
 function command_pull_secrets {
-  locate
+  init_stack_context
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
@@ -154,7 +155,7 @@ function command_pull_secrets {
 }
 
 function command_push_secrets {
-  locate
+  init_stack_context
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
@@ -163,7 +164,7 @@ function command_push_secrets {
 }
 
 function command_diff_secrets {
-  locate
+  init_stack_context
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
@@ -172,7 +173,8 @@ function command_diff_secrets {
 }
 
 function command_deploy {
-  discover
+  init_stack_context
+  discover_stack_context
   run_deploy
 }
 
