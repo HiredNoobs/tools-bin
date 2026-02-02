@@ -15,7 +15,7 @@ This is both for my servers and daily drivers, though some scripts will be for o
 ``movein.sh`` usage:
 
 ```bash
-curl -L https://raw.githubusercontent.com/HiredNoobs/bin/refs/heads/master/bin/movein.sh | bash -s [username]
+curl -L https://raw.githubusercontent.com/HiredNoobs/tools-bin/refs/heads/master/bin/movein.sh | bash -s [username]
 ```
 
 After running you should update the password for the new user with ``passwd [username]``.
