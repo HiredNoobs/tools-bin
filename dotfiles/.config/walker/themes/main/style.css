@@ -151,16 +151,15 @@ child:selected .item-box {
   color: @foreground;
 }
 
-.keybinds {
-}
+.global-keybinds {}
 
-.keybind {
-}
+.keybinds {}
+
+.keybind {}
 
 .keybind-bind {
   /* color: lighter(@window_bg_color); */
   font-weight: bold;
 }
 
-.keybind-label {
-}
+.keybind-label {}

@@ -32,8 +32,7 @@ scrollbar {
   color: @text;
 }
 
-.box {
-}
+.box {}
 
 .search-container {
   border-radius: 10px;
@@ -51,24 +50,19 @@ scrollbar {
 
 
 .input:focus,
-.input:active {
-}
+.input:active {}
 
-.content-container {
-}
+.content-container {}
 
-.placeholder {
-}
+.placeholder {}
 
-.scroll {
-}
+.scroll {}
 
 .list {
   color: @text;
 }
 
-child {
-}
+child {}
 
 .item-box {
   border-radius: 10px;
@@ -87,11 +81,9 @@ child:selected .item-box {
   background: alpha(@background, 0.8);
 }
 
-.item-text-box {
-}
+.item-text-box {}
 
-.item-text {
-}
+.item-text {}
 
 .item-subtext {
   font-size: 12px;
@@ -145,23 +137,20 @@ child:selected .item-box {
   -gtk-icon-size: 64px;
 }
 
-.keybinds-wrapper {
+.keybinds {
   border-top: 1px solid darker(@border);
   font-size: 12px;
   opacity: 0.5;
   color: @foreground;
 }
 
-.keybinds {
-}
+.global-keybinds {}
 
-.keybind {
-}
+.keybind {}
 
 .keybind-bind {
   /* color: lighter(@window_bg_color); */
   font-weight: bold;
 }
 
-.keybind-label {
-}
+.keybind-label {}
