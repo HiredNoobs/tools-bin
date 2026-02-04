@@ -19,7 +19,7 @@
 # 2) Clones this repo into the users home directory.
 #
 # Usage:
-# movein.sh [username]
+# movein.sh [username] [password]
 
 set -euo pipefail
 
@@ -41,8 +41,10 @@ function log_error() {
 # else we use the current user.
 if [[ "$EUID" -eq 0 ]]; then
   USERNAME="${1:-hirednoobs}"
+  PASSWORD="${2:-}"
 else
   USERNAME="$USER"
+  PASSWORD=""
 fi
 
 REPO_URL="https://github.com/HiredNoobs/tools-bin.git"
@@ -64,7 +66,13 @@ if [[ "$EUID" -eq 0 ]]; then
     chmod 0440 "/etc/sudoers.d/$USERNAME"
 
     log_info "Created user '$USERNAME' and added to sudo group."
-    log_info "Update the password for '$USERNAME' manually with 'passwd $USERNAME'."
+
+    if [[ -n "$PASSWORD" ]]; then
+      echo "${USERNAME}:${PASSWORD}" | chpasswd
+      log_info "Default password set for '$USERNAME'."
+    else
+      log_info "Update the password for '$USERNAME' manually with 'passwd $USERNAME'."
+    fi
   fi
 
   if [[ -d "$BIN_DIR/.git" ]]; then
@@ -86,5 +94,3 @@ else
     git clone "$REPO_URL" "$BIN_DIR"
   fi
 fi
-
-
