@@ -16,6 +16,10 @@ tooltip {
     color: @color7;
 }
 
+tooltip label {
+  color: white;
+}
+
 #clock:hover,
 #custom-notification:hover,
 #pulseaudio:hover,
@@ -103,7 +107,7 @@ tooltip {
 }
 
 #battery {
-    padding: 0px 10px 0 5;
+    padding: 0px 10px 0px 5px;
     transition: all .3s ease;
     color: @color7;
 }
