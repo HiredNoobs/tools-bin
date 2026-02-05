@@ -9,7 +9,6 @@ source $HERE/lib/logging.sh
 # Helper functions
 # -----------------------------------------------------
 
-# Ensures the environment is setup correctly
 function check_env {
   if [[ -z "$DEPLOYMENT" ]]; then
     log_error "DEPLOYMENT is unset - source a stack.env file"
@@ -115,7 +114,7 @@ function run_deploy {
 }
 
 function run_clean {
-  docker stack rm $STACK
+  docker stack rm "$STACK" --detach=false
 }
 
 # -----------------------------------------------------
@@ -185,6 +184,8 @@ function command_deploy {
 check_env
 
 source "./stack"
+
+stack_check_env
 
 ARG=${1:-help}
 CMD="command_$ARG"

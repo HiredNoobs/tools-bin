@@ -40,3 +40,7 @@ function add_user_to_group {
     sudo usermod -aG "$group" "$user"
   fi
 }
+
+function list {
+  printf "  %s\n" $1
+}
