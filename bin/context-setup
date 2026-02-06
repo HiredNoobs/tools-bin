@@ -7,7 +7,7 @@ function clean_docker_contexts {
   context_count=$(echo $contexts | wc -w)
   if [[ $context_count -gt 0 ]]; then
     echo "Deleting contexts:"
-    docker context rm $contexts
+    docker context rm -f "$contexts"
     echo
   fi
 }
@@ -26,7 +26,7 @@ function create_context {
 function configure_docker_contexts {
   clean_docker_contexts
   echo "Creating contexts:"
-  create_context "development.core"    "altas.hirednoobs.online"
+  create_context "development.core"    "atlas.hirednoobs.online"
   create_context "production.core"     "prod-rsyslog001.hirednoobs.online"
   create_context "production.services" "prod-vault001.hirednoobs.online"
 }
