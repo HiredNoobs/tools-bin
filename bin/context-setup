@@ -26,14 +26,14 @@ function create_context {
 function configure_docker_contexts {
   clean_docker_contexts
   echo "Creating contexts:"
-  create_context "development.core"    "altas"
-  create_context "production.core"     "prod-rsyslog001"
-  create_context "production.services" "prod-vault001"
+  create_context "development.core"    "altas.hirednoobs.online"
+  create_context "production.core"     "prod-rsyslog001.hirednoobs.online"
+  create_context "production.services" "prod-vault001.hirednoobs.online"
 }
 
 function install_vault_client {
   curl https://releases.hashicorp.com/vault/1.21.0/vault_1.21.0_linux_386.zip -o /tmp/vault.zip
-  unzip /tmp/vault.zip -d /tmp/vault
+  unzip -o /tmp/vault.zip -d /tmp/vault
   mv /tmp/vault/vault ~/tools-bin/bin/vault
   chmod +x ~/tools-bin/bin/vault
 }
