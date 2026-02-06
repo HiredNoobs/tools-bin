@@ -2,14 +2,15 @@
 
 # Removes all non-default docker contexts
 function clean_docker_contexts {
-  local contexts context_count
+  local contexts
   contexts=$(docker context ls --format '{{ .Name }}' | grep -v 'default')
-  context_count=$(echo $contexts | wc -w)
-  if [[ $context_count -gt 0 ]]; then
-    echo "Deleting contexts:"
-    docker context rm -f "$contexts"
-    echo
-  fi
+  
+  [[ -z "$contexts" ]] && return 0
+
+  echo "Deleting contexts:"
+  for context in $contexts; do
+    docker context rm -f "$context"
+  done
 }
 
 function create_context {
@@ -25,6 +26,8 @@ function create_context {
 
 function configure_docker_contexts {
   clean_docker_contexts
+
+  echo
   echo "Creating contexts:"
   create_context "development.core"    "atlas.hirednoobs.online"
   create_context "production.core"     "prod-rsyslog001.hirednoobs.online"
