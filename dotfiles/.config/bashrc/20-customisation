@@ -6,13 +6,14 @@
 # Prompt
 # -----------------------------------------------------
 function color_environment {
-  if [[ "$1" =~ production ]]; then
-    echo "\[\e[31m\]$1\[\e[0m\]"
-  elif [[ "$1" =~ test ]]; then
-    echo "\[\e[33m\]$1\[\e[0m\]"
-  else
-    echo "\[\e[32m\]$1\[\e[0m\]"
-  fi
+  local color
+  case "$1" in
+    *production*) color='\[\e[31m\]';;
+    *test*)       color='\[\e[33m\]';;
+    *)            color='\[\e[32m\]';;
+  esac
+
+  printf '%s%s\[\e[0m\]' "$color" "$1"
 }
 
 function parse_git_branch {
