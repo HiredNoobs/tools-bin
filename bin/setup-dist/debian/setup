@@ -4,7 +4,7 @@
 # It doesn't do anything when executed directly.
 
 function configure_bash {
-  sudo apt-get install bash-completion
+  sudo apt-get install -y bash-completion
   rsync -av "$ROOT/dotfiles/.bashrc" ~/.bashrc
   rsync -av --delete "$ROOT/dotfiles/.config/bashrc/" "$XDG_CONFIG_HOME/bashrc/"
 }
@@ -36,7 +36,7 @@ function configure_docker {
 
 function configure_vim {
   log_info "Installing vim."
-  sudo apt-get install vim
+  sudo apt-get install -y vim
 
   mkdir -p ~/.vim/autoload ~/.vim/bundle
 
@@ -55,6 +55,6 @@ function configure_vim {
 }
 
 function configure_tmux {
-  sudo apt-get install tmux
+  sudo apt-get install -y tmux
   rsync -av --delete "$ROOT/dotfiles/.config/tmux/" "$XDG_CONFIG_HOME/tmux/"
 }

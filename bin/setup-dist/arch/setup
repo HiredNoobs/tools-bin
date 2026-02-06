@@ -12,17 +12,17 @@ function configure_bash {
 function configure_hyprland {
   log_info "Configuring hyprland."
   log_info "Installing dependencies."
-  sudo pacman -S --needed hyprland xdg-desktop-portal-hyprland polkit-kde-agent \
+  sudo pacman -S --needed --noconfirm hyprland xdg-desktop-portal-hyprland polkit-kde-agent \
     brightnessctl pamixer waybar blueman bluez swaync swaybg starship
   
   # Are qt6ct & kvantum the only ones actually in use?
-  sudo pacman -S --needed qt5-wayland qt6-wayland qt5ct qt6ct kvantum
+  sudo pacman -S --needed --noconfirm qt5-wayland qt6-wayland qt5ct qt6ct kvantum
   
   # Should we just remove pywal from the deps and copy the theme into the repo?
   yay -S --needed hyprlock hypridle grimblast otf-codenewroman-nerd pywal
 
   # hyprpm deps
-  sudo pacman -S --needed cmake cpio pkg-config gcc
+  sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc
 
   # Application launcher
   yay -S --needed walker elephant-websearch elephant-calc elephant-files elephant-files \
@@ -54,7 +54,7 @@ function configure_hyprland {
 
 function configure_docker {
   log_info "Installing docker and docker compose v2 latest."
-  sudo pacman -S docker docker-compose
+  sudo pacman -S --needed --noconfirm docker docker-compose
 
   log_info "Adding $USER to docker group"
   create_group docker
@@ -66,7 +66,7 @@ function configure_docker {
 
 function configure_vim {
   log_info "Installing vim."
-  sudo pacman -S vim
+  sudo pacman -S --needed --noconfirm vim
 
   mkdir -p ~/.vim/autoload ~/.vim/bundle
 
@@ -85,6 +85,6 @@ function configure_vim {
 }
 
 function configure_tmux {
-  sudo pacman -S tmux
+  sudo pacman -S --needed --noconfirm tmux
   rsync -av --delete "$ROOT/dotfiles/.config/tmux/" "$XDG_CONFIG_HOME/tmux/"
 }
