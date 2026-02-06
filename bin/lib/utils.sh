@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+#
 # General use utility functions, does nothing by itself.
 # There shouldn't be any distro specific stuff in here...
 
@@ -42,5 +44,9 @@ function add_user_to_group {
 }
 
 function list {
-  printf "  %s\n" $1
+  printf "  %s\n" "$1"
+}
+
+function count {
+  echo "$1" | wc -w
 }

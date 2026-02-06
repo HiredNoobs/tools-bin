@@ -4,20 +4,15 @@ THIS=$(realpath "$0")
 HERE=$(dirname "$THIS")
 
 source $HERE/lib/logging.sh
+source $HERE/lib/utils.sh
 
 # -----------------------------------------------------
 # Helper functions
 # -----------------------------------------------------
 
 function check_env {
-  if [[ -z "$DEPLOYMENT" ]]; then
+  if [[ ! -v DEPLOYMENT ]]; then
     log_error "DEPLOYMENT is unset - source a stack.env file"
-    exit 1
-  fi
-
-  local stack_repo=$(basename $PWD)
-  if [[ $DEPLOYMENT != "$stack_repo"* ]]; then
-    log_error "DEPLOYMENT ($DEPLOYMENT) doesn't match current repo ($stack_repo)"
     exit 1
   fi
 
@@ -29,8 +24,9 @@ function check_env {
 }
 
 function init_stack_context {
-  export STACK_BASE="$PWD"
-  export STACK=$(echo $DEPLOYMENT | sed 's/^stack\-//; s/\-/_/g')
+  export STACK_PATH="$PWD"
+  local stack_base=$(basename "$STACK_PATH"| sed 's/^stack\-//')
+  export STACK="${stack_base}_${DEPLOYMENT}"
   export CONFIGS="${ENVIRONMENT_BASE}/configs"
   export SECRETS="${ENVIRONMENT_BASE}/secrets"
 }
@@ -49,7 +45,7 @@ function discover_stack_context {
 # -----------------------------------------------------
 
 function run_help {
-  if [ -f "$HERE/deployment_help"]; then
+  if [ -f "$HERE/deployment_help" ]; then
     source "$HERE/deployment_help"
   fi
 
@@ -57,7 +53,7 @@ function run_help {
     source "$STACK_BASE/stack_help"
   fi
 
-  local deployment_commands=$(declare -F | awk '/ command_/ && (!_help$/ || /command_help$/) { gsub("command_", "", $3); print $3 }')
+  local deployment_commands=$(declare -F | awk '/ command_/ && (!/_help$/ || /command_help$/) { gsub("command_", "", $3); print $3 }')
 
   log_info "Deployment commands:"
   local term_width=$(tput cols)
@@ -67,7 +63,7 @@ function run_help {
     local help_func="command_${func}_help"
     if declare -F "$help_func" > /dev/null; then
       local help_output=$("$help_func")
-      local combined_output=$(echo "$help_output" | awk 'BEGIN {ORS=" "} {if (NF == 0} {print "\n"} else {print}}' | sed 's/$ //' | fold -s -w $term_width)
+      local combined_output=$(echo "$help_output" | awk 'BEGIN { ORS=" " } { if (NF == 0) { print "\n" } else { print } }' | sed 's/$ //' | fold -s -w "$term_width")
       log_info "$combined_output" | sed 's/^/    /'
     fi
   done
@@ -98,8 +94,6 @@ function run_diff_secrets {
 }
 
 function run_env {
-  init_stack_context
-  discover_stack_context
   echo "DEPLOYMENT  = $DEPLOYMENT"
   echo "STACK       = $STACK"
   echo "ENVIRONMENT = $ENVIRONMENT"
@@ -122,7 +116,6 @@ function run_clean {
 # -----------------------------------------------------
 
 function command_help {
-  init_stack_context
   run_help
 }
 
@@ -133,7 +126,6 @@ function command_help {
 # The main purpose of this is for running `env env`
 # to see the "discovered" environment variables.
 function command_env {
-  init_stack_context
   discover_stack_context
   if [ -z "$1" ]; then
     run_env
@@ -145,7 +137,6 @@ function command_env {
 }
 
 function command_pull_secrets {
-  init_stack_context
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
@@ -154,7 +145,6 @@ function command_pull_secrets {
 }
 
 function command_push_secrets {
-  init_stack_context
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
@@ -163,7 +153,6 @@ function command_push_secrets {
 }
 
 function command_diff_secrets {
-  init_stack_context
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
@@ -172,7 +161,6 @@ function command_diff_secrets {
 }
 
 function command_deploy {
-  init_stack_context
   discover_stack_context
   run_deploy
 }
@@ -182,16 +170,16 @@ function command_deploy {
 # -----------------------------------------------------
 
 check_env
-
 source "./stack"
 
+init_stack_context
 stack_check_env
 
 ARG=${1:-help}
 CMD="command_$ARG"
 shift
 
-if declare -F $CMD >/dev/null; then
+if declare -F "$CMD" >/dev/null; then
   $CMD "$@"
 else
   log_error "$ARG is not a valid command."

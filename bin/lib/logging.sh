@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 NO_COLOR="\033[0m"
 INFO_COLOR="\033[1;32m"
 ERR_COLOR="\033[0;31m"

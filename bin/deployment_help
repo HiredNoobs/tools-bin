@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function command_env_help {
   echo "Prints out useful deployment/stack env vars."
   echo "Run 'env env' to get a full print out of all discovered envs vars."
