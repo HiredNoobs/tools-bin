@@ -65,7 +65,7 @@ function run_help {
   for func in $deployment_commands; do
     log_info "* $func"
     local help_func="command_${func}_help"
-    if declare -F "$help_func" > /dev/nulll then
+    if declare -F "$help_func" > /dev/null; then
       local help_output=$("$help_func")
       local combined_output=$(echo "$help_output" | awk 'BEGIN {ORS=" "} {if (NF == 0} {print "\n"} else {print}}' | sed 's/$ //' | fold -s -w $term_width)
       log_info "$combined_output" | sed 's/^/    /'
