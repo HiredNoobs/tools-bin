@@ -49,7 +49,7 @@ fi
 
 REPO_URL="https://github.com/HiredNoobs/tools-bin.git"
 HOME_DIR="/home/$USERNAME"
-BIN_DIR="$HOME_DIR/bin"
+BIN_DIR="$HOME_DIR/tools-bin"
 
 # TODO: Setup for Arch too :)
 # I don't run this on Arch often but it might be nice to have.
