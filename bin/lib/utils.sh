@@ -44,7 +44,10 @@ function add_user_to_group {
 }
 
 function list {
-  printf "  %s\n" "$1"
+  local item
+  for item in "$@"; do
+    echo "  $item"
+  done
 }
 
 function count {
