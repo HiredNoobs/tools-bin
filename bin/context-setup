@@ -2,7 +2,7 @@
 
 # Removes all non-default docker contexts
 function clean_docker_contexts {
-  local contexts
+  local contexts context
   contexts=$(docker context ls --format '{{ .Name }}' | grep -v 'default')
   
   [[ -z "$contexts" ]] && return 0
