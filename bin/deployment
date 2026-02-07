@@ -166,7 +166,7 @@ function command_deploy {
   run_deploy
 }
 
-function command_run_clean {
+function command_clean {
   run_clean
 }
 
