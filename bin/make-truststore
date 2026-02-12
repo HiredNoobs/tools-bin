@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# Usage: make-truststore <truststore-name> <cert1> [cert2 ...] [--outdir DIR]
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source "$HERE/lib/logging.sh"
+
+# -----------------------------------------------------
+# Parsing args
+# -----------------------------------------------------
+
+# Defaults
+OUTDIR="$PWD"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --outdir|-o) OUTDIR="$2"; shift 2;;
+    --) shift; while [[ $# -gt 0 ]]; do POSITIONAL_ARGS+=("$1"); shift; done;;
+    -*) log_error "Unknown option: $1"; exit 1;;
+    *) POSITIONAL_ARGS+=("$1"); shift;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}"
+
+TRUSTSTORE_NAME="$1"
+shift 1
+CERTS=("$@")
+
+# -----------------------------------------------------
+# Main
+# -----------------------------------------------------
+
+mkdir -p "$OUTDIR"
+
+TS_FILE="${OUTDIR}/${TRUSTSTORE_NAME}.jks"
+
+if [ -f "$TS_FILE" ]; then
+  echo "Existing truststore found at $TS_FILE — removing it"
+  rm -f "$TS_FILE"
+fi
+
+for CERT in "${CERTS[@]}"; do
+  if [ ! -f "$CERT" ]; then
+    echo "Error: certificate file not found: $CERT"
+    exit 1
+  fi
+
+  ALIAS=$(basename "$CERT" | sed 's/\.[^.]*$//')
+
+  echo "Importing $CERT as alias '$ALIAS'..."
+  keytool -import \
+    -alias "$ALIAS" \
+    -file "$CERT" \
+    -keystore "$TS_FILE" \
+    -storepass changeit \
+    -noprompt
+done
+
+echo "Truststore: $TS_FILE"

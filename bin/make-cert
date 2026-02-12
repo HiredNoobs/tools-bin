@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+#
+# Usage: make-cert <service> <hostname1> [hostname2 ...] [--outdir DIR] [--ca-key FILE] [--ca-crt FILE]
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source "$HERE/lib/logging.sh"
+
+# -----------------------------------------------------
+# Parsing args
+# -----------------------------------------------------
+
+# Defaults
+OUTDIR="$PWD"
+CA_KEY=""
+CA_CRT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --outdir|-o)
+      OUTDIR="$2"
+      shift 2
+      ;;
+    --ca-key)
+      CA_KEY="$2"
+      shift 2
+      ;;
+    --ca-crt)
+      CA_CRT="$2"
+      shift 2
+      ;;
+    --) shift; while [[ $# -gt 0 ]]; do POSITIONAL_ARGS+=("$1"); shift; done;;
+    -*) log_error "Unknown option: $1"; exit 1;;
+    *) POSITIONAL_ARGS+=("$1"); shift;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}"
+
+SERVICE="$1"
+shift 1
+HOSTS=("$@")
+
+# -----------------------------------------------------
+# Main
+# -----------------------------------------------------
+
+mkdir -p "$OUTDIR"
+
+KEY_FILE="${OUTDIR}/${SERVICE}.key"
+CSR_FILE="${OUTDIR}/${SERVICE}.csr"
+CRT_FILE="${OUTDIR}/${SERVICE}.crt"
+
+log_info "Generating SAN list..."
+SAN_CONFIG=$(mktemp)
+
+{
+  echo "[req]"
+  echo "distinguished_name=req_distinguished_name"
+  echo "req_extensions=req_ext"
+  echo "prompt=no"
+
+  echo "[req_distinguished_name]"
+  echo "CN=${SERVICE}"
+
+  echo "[req_ext]"
+  echo "subjectAltName=@alt_names"
+
+  echo "[alt_names]"
+  i=1
+  for h in "${HOSTS[@]}"; do
+    echo "DNS.${i} = ${h}"
+    i=$((i+1))
+  done
+} > "$SAN_CONFIG"
+
+log_info "Generating service private key..."
+openssl genrsa -out "$KEY_FILE" 4096
+
+log_info "Generating CSR..."
+openssl req -new \
+  -key "$KEY_FILE" \
+  -config "$SAN_CONFIG" \
+  -out "$CSR_FILE"
+
+log_info "Generating cert..."
+if [[ -n "$CA_KEY" && -n "$CA_CRT" ]]; then
+  openssl x509 -req \
+    -in "$CSR_FILE" \
+    -CA "$CA_CRT" \
+    -CAkey "$CA_KEY" \
+    -CAcreateserial \
+    -days 825 \
+    -extensions req_ext \
+    -extfile "$SAN_CONFIG" \
+    -out "$CRT_FILE"
+else
+  openssl req -x509 -new \
+    -key "$KEY_FILE" \
+    -days 825 \
+    -extensions req_ext \
+    -config "$SAN_CONFIG" \
+    -out "$CRT_FILE"
+fi
+
+rm -f "$SAN_CONFIG"
+
+log_info "Key:  $KEY_FILE"
+log_info "CSR:  $CSR_FILE"
+log_info "Cert: $CRT_FILE"

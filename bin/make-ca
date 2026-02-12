@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# Usage: make-ca <ca-name> [--outdir DIR]
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source "$HERE/lib/logging.sh"
+
+# -----------------------------------------------------
+# Parsing args
+# -----------------------------------------------------
+
+# Defaults
+OUTDIR="$PWD"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --outdir|-o) OUTDIR="$2"; shift 2;;
+    --) shift; while [[ $# -gt 0 ]]; do POSITIONAL_ARGS+=("$1"); shift; done;;
+    -*) log_error "Unknown option: $1"; exit 1;;
+    *) POSITIONAL_ARGS+=("$1"); shift;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}"
+CA_NAME="${1:-ca}"
+
+# -----------------------------------------------------
+# Main
+# -----------------------------------------------------
+
+mkdir -p "$OUTDIR"
+
+CA_KEY="${OUTDIR}/ca.key"
+CA_CRT="${OUTDIR}/ca.crt"
+
+log_info "Generating CA private key..."
+openssl genrsa -out "$CA_KEY" 4096
+
+log_info "Generating CA certificate..."
+openssl req -x509 -new -nodes \
+  -key "$CA_KEY" \
+  -subj "/CN=${CA_NAME}" \
+  -days 3650 \
+  -out "$CA_CRT"
+
+log_info "Key:  $CA_KEY"
+log_info "Cert: $CA_CRT"
