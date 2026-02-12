@@ -38,19 +38,19 @@ mkdir -p "$OUTDIR"
 TS_FILE="${OUTDIR}/${TRUSTSTORE_NAME}.jks"
 
 if [ -f "$TS_FILE" ]; then
-  echo "Existing truststore found at $TS_FILE — removing it"
+  log_info "Existing truststore found at $TS_FILE — removing it"
   rm -f "$TS_FILE"
 fi
 
 for CERT in "${CERTS[@]}"; do
   if [ ! -f "$CERT" ]; then
-    echo "Error: certificate file not found: $CERT"
+    log_error "Error: certificate file not found: $CERT"
     exit 1
   fi
 
   ALIAS=$(basename "$CERT" | sed 's/\.[^.]*$//')
 
-  echo "Importing $CERT as alias '$ALIAS'..."
+  log_info "Importing $CERT as alias '$ALIAS'..."
   keytool -import \
     -alias "$ALIAS" \
     -file "$CERT" \
@@ -59,4 +59,4 @@ for CERT in "${CERTS[@]}"; do
     -noprompt
 done
 
-echo "Truststore: $TS_FILE"
+log_info "Truststore: $TS_FILE"

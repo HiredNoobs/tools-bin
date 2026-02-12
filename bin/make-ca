@@ -32,8 +32,8 @@ CA_NAME="${1:-ca}"
 
 mkdir -p "$OUTDIR"
 
-CA_KEY="${OUTDIR}/ca.key"
-CA_CRT="${OUTDIR}/ca.crt"
+CA_KEY="${OUTDIR}/${CA_NAME}.key"
+CA_CRT="${OUTDIR}/${CA_NAME}.crt"
 
 log_info "Generating CA private key..."
 openssl genrsa -out "$CA_KEY" 4096
