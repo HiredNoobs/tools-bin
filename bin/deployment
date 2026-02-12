@@ -107,6 +107,10 @@ function run_deploy {
   stack_deploy
 }
 
+function run_status {
+  docker stack ps "$STACK"
+}
+
 function run_clean {
   log_info "Removing $STACK..."
   docker stack rm "$STACK" --detach=false
@@ -164,6 +168,10 @@ function command_diff_secrets {
 function command_deploy {
   discover_stack_context
   run_deploy
+}
+
+function command_status {
+  run_status
 }
 
 function command_clean {
