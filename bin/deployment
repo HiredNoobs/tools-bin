@@ -172,10 +172,12 @@ function command_deploy {
 }
 
 function command_status {
+  discover_stack_context
   run_status
 }
 
 function command_clean {
+  discover_stack_context
   run_clean
 }
 
