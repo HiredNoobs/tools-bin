@@ -5,6 +5,7 @@ HERE=$(dirname "$THIS")
 
 source $HERE/lib/logging.sh
 source $HERE/lib/utils.sh
+source $HERE/lib/env
 
 # -----------------------------------------------------
 # Helper functions
