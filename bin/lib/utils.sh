@@ -44,9 +44,11 @@ function add_user_to_group {
 }
 
 function list {
-  local item
+  local item i
   for item in "$@"; do
-    echo "  $item"
+    for i in $item; do
+      echo "  $i"
+    done
   done
 }
 
