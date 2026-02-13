@@ -52,6 +52,8 @@ function discover_stack_context {
 # -----------------------------------------------------
 
 function run_help {
+  local deployment_commands term_width help_func help_output combined_output
+
   if [ -f "$HERE/deployment_help" ]; then
     source "$HERE/deployment_help"
   fi
@@ -60,17 +62,17 @@ function run_help {
     source "$STACK_BASE/stack_help"
   fi
 
-  local deployment_commands=$(declare -F | awk '/ command_/ && (!/_help$/ || /command_help$/) { gsub("command_", "", $3); print $3 }')
+  deployment_commands=$(declare -F | awk '/ command_/ && (!/_help$/ || /command_help$/) { gsub("command_", "", $3); print $3 }')
 
   log_info "Deployment commands:"
-  local term_width=$(tput cols)
+  term_width=$(tput cols)
 
   for func in $deployment_commands; do
     log_info "* $func"
-    local help_func="command_${func}_help"
+    help_func="command_${func}_help"
     if declare -F "$help_func" > /dev/null; then
-      local help_output=$("$help_func")
-      local combined_output=$(echo "$help_output" | awk 'BEGIN { ORS=" " } { if (NF == 0) { print "\n" } else { print } }' | sed 's/$ //' | fold -s -w "$term_width")
+      help_output=$("$help_func")
+      combined_output=$(echo "$help_output" | awk 'BEGIN { ORS=" " } { if (NF == 0) { print "\n" } else { print } }' | sed 's/$ //' | fold -s -w "$term_width")
       log_info "$combined_output" | sed 's/^/    /'
     fi
   done
@@ -80,14 +82,14 @@ function run_pull_secrets {
   local vault_env="$1"
   local vault_secret="$2"
   mkdir -p "$SECRETS"
-  vault read "${vault_env}/${vault_secret}" -format=json | jq .data | secret-unpack "$SECRETS"
+  vault read "lab/${vault_env}/${vault_secret}" -format=json | jq .data | secret-unpack "$SECRETS"
 }
 
 function run_push_secrets {
   local vault_env="$1"
   local vault_secret="$2"
   if [ "$(ls -A $SECRETS)" ]; then
-    secret-pack ${SECRETS}/* | vault write "${vault_env}/${vault_secret}" -
+    secret-pack ${SECRETS}/* | vault write "lab/${vault_env}/${vault_secret}" -
   else
     log_info "There are no local secrets to push."
     log_info "If you intended to delete the $vault_secret secret please use the UI."
@@ -97,7 +99,7 @@ function run_push_secrets {
 function run_diff_secrets {
   local vault_env="$1"
   local vault_secret="$2"
-  vault read "${vault_env}/${vault_secret}" -format=json | jq .data | secret-diff "${SECRETS}"
+  vault read "lab/${vault_env}/${vault_secret}" -format=json | jq .data | secret-diff "${SECRETS}"
 }
 
 function run_env {
@@ -152,7 +154,7 @@ function command_pull_secrets {
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
-    run_pull_secrets "$ENVIRONMENT" "$DEPLOYMENT"
+    run_pull_secrets "$ENVIRONMENT" "$STACK"
   fi
 }
 
@@ -160,7 +162,7 @@ function command_push_secrets {
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
-    run_push_secrets "$ENVIRONMENT" "$DEPLOYMENT"
+    run_push_secrets "$ENVIRONMENT" "$STACK"
   fi
 }
 
@@ -168,7 +170,7 @@ function command_diff_secrets {
   if [[ -n "$1" && -n "$2" ]]; then
     run_pull_secrets "$1" "$2"
   else
-    run_diff_secrets "$ENVIRONMENT" "$DEPLOYMENT"
+    run_diff_secrets "$ENVIRONMENT" "$STACK"
   fi
 }
 
