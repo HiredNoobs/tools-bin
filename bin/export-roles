@@ -22,7 +22,7 @@ import sys
 from typing import Dict, List
 
 
-def export_roles(stack: str, docker_construct: Dict) -> None:
+def export_roles(stack: str, docker_construct: Dict, domain: None | str = None) -> None:
     roles: Dict[str, List] = collections.defaultdict(list)
     nodes = {
         node["Description"]["Hostname"]: node["Spec"]["Labels"].keys()
@@ -38,6 +38,13 @@ def export_roles(stack: str, docker_construct: Dict) -> None:
             role = role[len(stack) + 1 :]
             hosts = " ".join(hostnames)
             print(f"export {role.upper()}_NODES={shlex.quote(hosts)}")
+            if domain:
+                fq_hostnames = [
+                    f"{host}.{domain}" if not host.endswith(domain) else host
+                    for host in hosts
+                ]
+                hosts = " ".join(fq_hostnames)
+                print(f"export {role.upper()}_FQDN_NODES={shlex.quote(hosts)}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,6 +52,13 @@ def parse_args() -> argparse.Namespace:
         description="Prints out export commands based on docker labels."
     )
     parser.add_argument("stack", type=str, help="Stack name to filter labels.")
+    parser.add_argument(
+        "-d",
+        "--domain",
+        type=str,
+        default=None,
+        help="Domain name to use for the FQDN exports. Defaults to None.",
+    )
     return parser.parse_args()
 
 
@@ -53,7 +67,7 @@ def main() -> None:
     # For reference: https://docs.docker.com/reference/cli/docker/inspect/
     docker_construct = json.load(sys.stdin)
 
-    export_roles(args.stack, docker_construct)
+    export_roles(args.stack, docker_construct, domain=args.domain)
 
 
 if __name__ == "__main__":
