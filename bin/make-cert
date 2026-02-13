@@ -60,9 +60,11 @@ SAN_CONFIG=$(mktemp)
 
   echo "[alt_names]"
   i=1
-  for h in "${HOSTS[@]}"; do
-    echo "DNS.${i} = ${h}"
-    i=$((i+1))
+  for item in "${HOSTS[@]}"; do
+    for host in $item; do
+      echo "DNS.${i} = ${host}"
+      i=$((i+1))
+    done
   done
 } > "$SAN_CONFIG"
 
