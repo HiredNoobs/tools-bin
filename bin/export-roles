@@ -41,7 +41,7 @@ def export_roles(stack: str, docker_construct: Dict, domain: None | str = None) 
             if domain:
                 fq_hostnames = [
                     f"{host}.{domain}" if not host.endswith(domain) else host
-                    for host in hosts
+                    for host in hostnames
                 ]
                 hosts = " ".join(fq_hostnames)
                 print(f"export {role.upper()}_FQDN_NODES={shlex.quote(hosts)}")

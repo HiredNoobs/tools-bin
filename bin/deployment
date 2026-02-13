@@ -39,9 +39,9 @@ function discover_stack_context {
   fi
 
   if [[ -v DOMAIN ]]; then
-    docker node ls -q | xargs docker node inspect | export-roles "$STACK" --domain "$DOMAIN" | eval
+    eval "$(docker node ls -q | xargs docker node inspect | export-roles "$STACK" --domain "$DOMAIN")"
   else
-    docker node ls -q | xargs docker node inspect | export-roles "$STACK" | eval
+    eval "$(docker node ls -q | xargs docker node inspect | export-roles "$STACK")"
   fi
 
   stack_discover
