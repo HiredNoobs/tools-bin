@@ -43,6 +43,10 @@ function add_user_to_group {
   fi
 }
 
+function first {
+  echo "${1%% *}"
+}
+
 function list {
   local item i
   for item in "$@"; do
