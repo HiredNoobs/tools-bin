@@ -26,7 +26,7 @@ function check_env {
 
 function init_stack_context {
   export STACK_PATH="$PWD"
-  local stack_base=$(basename "$STACK_PATH"| sed 's/^stack\-//')
+  local stack_base=$(basename "$STACK_PATH" | sed 's/^stack\-//')
   export STACK="${stack_base}_${DEPLOYMENT}"
   export CONFIGS="${ENVIRONMENT_BASE}/configs"
   export SECRETS="${ENVIRONMENT_BASE}/secrets"
@@ -102,6 +102,10 @@ function run_diff_secrets {
   vault read "lab/${vault_env}/${vault_secret}" -format=json | jq .data | secret-diff "${SECRETS}"
 }
 
+function run_tools {
+  stack_tools
+}
+
 function run_env {
   echo "DEPLOYMENT  = $DEPLOYMENT"
   echo "STACK       = $STACK"
@@ -133,20 +137,11 @@ function command_help {
   run_help
 }
 
-# Discovers and prints out the env.
-#
-# If another command is passed as an arg rather than
-# printing the env it will run that command.
-# The main purpose of this is for running `env env`
-# to see the "discovered" environment variables.
-function command_env {
-  discover_stack_context
-  if [ -z "$1" ]; then
-    run_env
+function command_tools {
+  if [ ! -d "$STACK_PATH/tools" ]; then
+    log_info "No tools for current deployment."
   else
-    $@
-    local error=$?
-    exit $error
+    run_tools
   fi
 }
 
@@ -171,6 +166,23 @@ function command_diff_secrets {
     run_pull_secrets "$1" "$2"
   else
     run_diff_secrets "$ENVIRONMENT" "$STACK"
+  fi
+}
+
+# Discovers and prints out the env.
+#
+# If another command is passed as an arg rather than
+# printing the env it will run that command.
+# The main purpose of this is for running `env env`
+# to see the "discovered" environment variables.
+function command_env {
+  discover_stack_context
+  if [ -z "$1" ]; then
+    run_env
+  else
+    $@
+    local error=$?
+    exit $error
   fi
 }
 
