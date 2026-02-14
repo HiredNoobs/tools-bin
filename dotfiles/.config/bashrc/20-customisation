@@ -86,7 +86,7 @@ _deployment_completions() {
 
   if [[ $prev == "tools" ]]; then
     if [[ -d "$PWD/tools" ]]; then
-      file_list=$(find $PWD/tools -maxdepth 1 -type f -executable)
+      file_list=$(find $PWD/tools -maxdepth 1 -type f -executable -executable -exec basename {} \;)
       COMPREPLY=($(compgen -W "$file_list" -- "$cur"))
     else
       COMPREPLY=()
