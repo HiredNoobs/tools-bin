@@ -103,7 +103,7 @@ function run_diff_secrets {
 }
 
 function run_tools {
-  stack_tools
+  stack_tools $@
 }
 
 function run_env {
@@ -141,7 +141,7 @@ function command_tools {
   if [ ! -d "$STACK_PATH/tools" ]; then
     log_info "No tools for current deployment."
   else
-    run_tools
+    run_tools $@
   fi
 }
 
