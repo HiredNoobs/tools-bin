@@ -7,12 +7,3 @@ export PATH="~/tools-bin/bin:$PATH"
 
 # For tmux
 export SHELL=$(which bash)
-
-# Env specific exports
-export VAULT_ADDR="https://vault.hirednoobs.online"
-
-if docker context inspect --format '{{json .}}' "development.core" >/dev/null 2>&1; then
-    export DOCKER_CONTEXT="development.core"
-else
-    export DOCKER_CONTEXT="default"
-fi

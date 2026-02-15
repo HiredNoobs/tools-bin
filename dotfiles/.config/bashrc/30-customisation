@@ -36,7 +36,7 @@ function prompt_setter {
   local context
   context="$(color_environment $DOCKER_CONTEXT)"
   if [ -n "$DEPLOYMENT" ]; then
-    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${DEPLOYMENT}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574\W$(update_git_segment) \$ '
+    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${STACK}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574\W$(update_git_segment) \$ '
   else
     PS1=$"[$context \W$(update_git_segment)] \$ "
   fi
