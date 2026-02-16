@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Usage: make-ca <ca-name> [--outdir DIR]
+# Usage: make-ca <CN> [--outdir DIR]
 
 THIS=$(realpath "$0")
 HERE=$(dirname "$THIS")
@@ -24,7 +24,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${POSITIONAL_ARGS[@]}"
-CA_NAME="${1:-ca}"
+CN="${1:-ca}"
 
 # -----------------------------------------------------
 # Main
@@ -32,8 +32,8 @@ CA_NAME="${1:-ca}"
 
 mkdir -p "$OUTDIR"
 
-CA_KEY="${OUTDIR}/${CA_NAME}.key"
-CA_CRT="${OUTDIR}/${CA_NAME}.crt"
+CA_KEY="${OUTDIR}/ca.key"
+CA_CRT="${OUTDIR}/ca.crt"
 
 log_info "Generating CA private key..."
 openssl genrsa -out "$CA_KEY" 4096
@@ -41,7 +41,7 @@ openssl genrsa -out "$CA_KEY" 4096
 log_info "Generating CA certificate..."
 openssl req -x509 -new -nodes \
   -key "$CA_KEY" \
-  -subj "/CN=${CA_NAME}" \
+  -subj "/CN=${CN}" \
   -days 3650 \
   -out "$CA_CRT"
 
