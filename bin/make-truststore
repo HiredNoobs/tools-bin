@@ -11,7 +11,6 @@ source "$HERE/lib/logging.sh"
 # Parsing args
 # -----------------------------------------------------
 
-# Defaults
 OUTDIR="$PWD"
 
 while [[ $# -gt 0 ]]; do
@@ -36,6 +35,10 @@ CERTS=("$@")
 mkdir -p "$OUTDIR"
 
 TS_FILE="${OUTDIR}/${TRUSTSTORE_NAME}.jks"
+PASS_FILE="${OUTDIR}/truststore.pass"
+
+TRUSTSTORE_PASS=$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 32)
+echo "$TRUSTSTORE_PASS" > "$PASS_FILE"
 
 if [ -f "$TS_FILE" ]; then
   log_info "Existing truststore found at $TS_FILE — removing it"
@@ -55,7 +58,7 @@ for CERT in "${CERTS[@]}"; do
     -alias "$ALIAS" \
     -file "$CERT" \
     -keystore "$TS_FILE" \
-    -storepass changeit \
+    -storepass "$TRUSTSTORE_PASS" \
     -noprompt
 done
 
