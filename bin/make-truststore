@@ -37,8 +37,12 @@ mkdir -p "$OUTDIR"
 TS_FILE="${OUTDIR}/${TRUSTSTORE_NAME}.jks"
 PASS_FILE="${OUTDIR}/truststore.pass"
 
-TRUSTSTORE_PASS=$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 32)
-echo "$TRUSTSTORE_PASS" > "$PASS_FILE"
+if [[ -f "$PASS_FILE" ]]; then
+  TRUSTSTORE_PASS=$(<"${OUTDIR}/truststore.pass")
+else
+  TRUSTSTORE_PASS=$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 32)
+  echo "$TRUSTSTORE_PASS" > "$PASS_FILE"
+fi
 
 if [ -f "$TS_FILE" ]; then
   log_info "Existing truststore found at $TS_FILE — removing it"
