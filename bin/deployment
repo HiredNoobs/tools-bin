@@ -24,14 +24,6 @@ function check_env {
   fi
 }
 
-function init_stack_context {
-  export STACK_PATH="$PWD"
-  local stack_base=$(basename "$STACK_PATH" | sed 's/^stack\-//')
-  export STACK="${stack_base}_${DEPLOYMENT}"
-  export CONFIGS="${ENVIRONMENT_BASE}/configs"
-  export SECRETS="${ENVIRONMENT_BASE}/secrets"
-}
-
 function discover_stack_context {
   export DOCKER_CONTEXT="$CONTEXT"
   if [ -f "${SECRETS}/secrets.env" ]; then
@@ -209,8 +201,6 @@ function command_clean {
 
 check_env
 source "./stack"
-
-init_stack_context
 stack_check_env
 
 ARG=${1:-help}
