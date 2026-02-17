@@ -35,10 +35,10 @@ CERTS=("$@")
 mkdir -p "$OUTDIR"
 
 TS_FILE="${OUTDIR}/${TRUSTSTORE_NAME}-truststore.jks"
-PASS_FILE="${OUTDIR}/truststore.pass"
+PASS_FILE="${OUTDIR}/${TRUSTSTORE_NAME}-truststore.pass"
 
 if [[ -f "$PASS_FILE" ]]; then
-  TRUSTSTORE_PASS=$(<"${OUTDIR}/truststore.pass")
+  TRUSTSTORE_PASS=$(<"$PASS_FILE")
 else
   TRUSTSTORE_PASS=$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 32)
   echo "$TRUSTSTORE_PASS" > "$PASS_FILE"
