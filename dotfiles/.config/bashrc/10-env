@@ -1,6 +1,7 @@
 # -----------------------------------------------------
 # ENV
 # -----------------------------------------------------
+
 export VAULT_ADDR="https://vault.hirednoobs.online"
 export ANSIBLE_HOST_CHECKING_ENABLED=false
 

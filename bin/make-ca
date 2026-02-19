@@ -11,7 +11,6 @@ source "$HERE/lib/logging.sh"
 # Parsing args
 # -----------------------------------------------------
 
-# Defaults
 OUTDIR="$PWD"
 
 while [[ $# -gt 0 ]]; do
@@ -38,11 +37,29 @@ CA_CRT="${OUTDIR}/ca.crt"
 log_info "Generating CA private key..."
 openssl genrsa -out "$CA_KEY" 4096
 
-log_info "Generating CA certificate..."
-openssl req -x509 -new -nodes \
+# Create temporary OpenSSL config for CA extensions
+CA_CONFIG=$(mktemp)
+
+{
+  echo "[req]"
+  echo "distinguished_name=req_distinguished_name"
+  echo "x509_extensions=v3_ca"
+  echo "prompt=no"
+
+  echo "[req_distinguished_name]"
+  echo "CN=${CN}"
+
+  echo "[v3_ca]"
+  echo "basicConstraints=critical, CA:TRUE"
+  echo "keyUsage=critical, keyCertSign, cRLSign"
+} > "$CA_CONFIG"
+
+log_info "Generating CA certificate with extensions..."
+openssl req -x509 -new \
   -key "$CA_KEY" \
-  -subj "/CN=${CN}" \
   -days 3650 \
+  -config "$CA_CONFIG" \
+  -extensions v3_ca \
   -out "$CA_CRT"
 
 log_info "Key:  $CA_KEY"

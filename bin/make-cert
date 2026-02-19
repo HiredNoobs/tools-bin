@@ -43,7 +43,6 @@ KEY_FILE="${OUTDIR}/${SERVICE}.key"
 CSR_FILE="${OUTDIR}/${SERVICE}.csr"
 CRT_FILE="${OUTDIR}/${SERVICE}.crt"
 
-log_info "Generating SAN list..."
 SAN_CONFIG=$(mktemp)
 
 {
