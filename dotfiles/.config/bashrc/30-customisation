@@ -5,6 +5,7 @@
 # -----------------------------------------------------
 # Prompt
 # -----------------------------------------------------
+
 function color_environment {
   local color
   case "$1" in
@@ -22,23 +23,13 @@ function parse_git_branch {
   printf '(%s)' "${ref##refs/heads/}"
 }
 
-function update_git_segment {
-  local b
-  b=$(parse_git_branch)
-  if [ -n $b ]; then
-    GIT_SEGMENT=" ${b} "
-  else
-    GIT_SEGMENT=" "
-  fi
-}
-
 function prompt_setter {
   local context
   context="$(color_environment $DOCKER_CONTEXT)"
   if [ -n "$DEPLOYMENT" ]; then
-    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${STACK}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574\W$(update_git_segment) \$ '
+    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${STACK}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574\W \$(parse_git_branch) \$ '
   else
-    PS1=$"[$context \W$(update_git_segment)] \$ "
+    PS1=$"[$context \W \$(parse_git_branch)] \$ "
   fi
 }
 
