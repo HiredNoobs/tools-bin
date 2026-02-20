@@ -3,7 +3,8 @@
 # -----------------------------------------------------
 
 export EDITOR=vim
-export PATH="~/tools-bin/bin:$PATH"
+export TOOLS_BIN="$HOME/tools-bin/bin"
+export PATH="$TOOLS_BIN:$PATH"
 
 # For tmux
 export SHELL=$(which bash)
