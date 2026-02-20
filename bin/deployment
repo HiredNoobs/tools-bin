@@ -41,9 +41,10 @@ function env_matches_file {
   local line key value
 
   while IFS= read -r line; do
-    # Stripping comments, exports, and whitespace
-    line="${line%%#*}"
+    [[ "$line" =~ ^export[[:space:]]+ ]] || continue
+
     line="${line#export }"
+    line="${line%%#*}"
     line="$(echo "$line" | xargs)"
 
     [[ -z "$line" ]] && continue
@@ -59,6 +60,7 @@ function env_matches_file {
 
   return 0
 }
+
 
 function discover_stack_context {
   export DOCKER_CONTEXT="$CONTEXT"
