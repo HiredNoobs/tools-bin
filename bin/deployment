@@ -92,16 +92,16 @@ function run_help {
 
   deployment_commands=$(declare -F | awk '/ command_/ && (!/_help$/ || /command_help$/) { gsub("command_", "", $3); print $3 }')
 
-  log_info "Deployment commands:"
+  echo "Deployment commands:"
   term_width=$(tput cols)
 
   for func in $deployment_commands; do
-    log_info "* $func"
+    echo "* $func"
     help_func="command_${func}_help"
     if declare -F "$help_func" > /dev/null; then
       help_output=$("$help_func")
       combined_output=$(echo "$help_output" | awk 'BEGIN { ORS=" " } { if (NF == 0) { print "\n" } else { print } }' | sed 's/$ //' | fold -s -w "$term_width")
-      log_info "$combined_output" | sed 's/^/    /'
+      echo "$combined_output" | sed 's/^/    /'
     fi
   done
 }
@@ -119,8 +119,8 @@ function run_push_secrets {
   if [ "$(ls -A $SECRETS)" ]; then
     secret-pack ${SECRETS}/* | vault write "lab/${vault_env}/${vault_secret}" -
   else
-    log_info "There are no local secrets to push."
-    log_info "If you intended to delete the $vault_secret secret please use the UI."
+    echo "There are no local secrets to push."
+    echo "If you intended to delete the $vault_secret secret please use the UI."
   fi
 }
 
@@ -167,7 +167,7 @@ function command_help {
 
 function command_tools {
   if [ ! -d "$STACK_PATH/tools" ]; then
-    log_info "No tools for current deployment."
+    log_error "No tools for current deployment."
     exit 1
   fi
 

@@ -42,7 +42,6 @@ function prompt_setter {
     [ -n "$git_branch" ] && git_branch="$git_branch "
     PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${STACK}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574'"${venv}"'\W'"${git_branch}"'\$ '
   else
-    
     PS1=$"[$context ${venv}\W${git_branch}] \$ "
   fi
 }
@@ -97,9 +96,7 @@ _deployment_completions() {
       COMPREPLY=()
     fi
   else
-    # `deployment help` prints the command in color. The first `sed` strips that.
-    # See: https://stackoverflow.com/a/51141872
-    script_commands=$(deployment help | sed 's/\x1B\[[0-9;]\{1,\}[A-Za-z]//g' | grep '^* ' | sed 's/^* //' | tr '\n' ' ')
+    script_commands=$(deployment help | grep '^* ' | sed 's/^* //' | tr '\n' ' ')
     COMPREPLY=($(compgen -W "$script_commands" -- "$cur"))
   fi
 }
