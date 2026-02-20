@@ -36,31 +36,29 @@ function check_env {
   fi
 }
 
+# Compare the values in $1 (generally the stack.env) to the
+# current environment. If any differences are found return 1
+# else return 0.
 function env_matches_file {
-  local file="$1"
-  local line key value
+  local file evaluated_env exported_vars key expected
+  file="$1"
 
-  while IFS= read -r line; do
-    [[ "$line" =~ ^export[[:space:]]+ ]] || continue
+  evaluated_env=$(bash -c "set -a; source \"$file\" >/dev/null 2>&1; env")
+  exported_vars=$(grep -E '^[[:space:]]*export[[:space:]]+' "$file" \
+                  | sed -E 's/^[[:space:]]*export[[:space:]]+//' \
+                  | sed -E 's/[[:space:]]*#.*//' \
+                  | cut -d= -f1 \
+                  | xargs)
 
-    line="${line#export }"
-    line="${line%%#*}"
-    line="$(echo "$line" | xargs)"
-
-    [[ -z "$line" ]] && continue
-
-    key="${line%%=*}"
-    value="${line#*=}"
-
-    value="${value%\"}"; value="${value#\"}"
-    value="${value%\'}"; value="${value#\'}"
-
-    [[ "${!key}" != "$value" ]] && return 1
-  done < "$file"
+  for key in $exported_vars; do
+    expected=$(echo "$evaluated_env" | grep -E "^${key}=" | cut -d= -f2-)
+    if [[ -z "${!key+x}" || "${!key}" != "$expected" ]]; then
+      return 1
+    fi
+  done
 
   return 0
 }
-
 
 function discover_stack_context {
   export DOCKER_CONTEXT="$CONTEXT"
