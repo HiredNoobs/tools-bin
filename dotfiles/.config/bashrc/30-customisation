@@ -96,7 +96,7 @@ _deployment_completions() {
       COMPREPLY=()
     fi
   else
-    script_commands=$(deployment help | grep '^* ' | sed 's/^* //' | tr '\n' ' ')
+    script_commands=$(deployment help 2>/dev/null | grep '^* ' | sed 's/^* //' | tr '\n' ' ')
     COMPREPLY=($(compgen -W "$script_commands" -- "$cur"))
   fi
 }
