@@ -20,16 +20,30 @@ function color_environment {
 function parse_git_branch {
   local ref
   ref=$(git symbolic-ref --quiet HEAD 2>/dev/null) || return
-  printf '(%s)' "${ref##refs/heads/}"
+  printf "(%s)" "${ref##refs/heads/}"
+}
+
+function parse_venv {
+  if [[ -n "$VIRTUAL_ENV" ]]; then
+    printf "(%s)" "$(basename "$VIRTUAL_ENV")"
+  fi
 }
 
 function prompt_setter {
-  local context
+  local context venv git_branch
   context="$(color_environment $DOCKER_CONTEXT)"
+  venv="$(parse_venv)"
+  git_branch="$(parse_git_branch)"
+
+  [ -n "$venv" ] && venv="$venv " 
+  [ -n "$git_branch" ] && git_branch=" $git_branch" 
+
   if [ -n "$DEPLOYMENT" ]; then
-    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${STACK}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574\W'" \$(parse_git_branch)"' \$ '
+    [ -n "$git_branch" ] && git_branch="$git_branch "
+    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${STACK}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574'"${venv}"'\W'"${git_branch}"'\$ '
   else
-    PS1=$"[$context \W \$(parse_git_branch)] \$ "
+    
+    PS1=$"[$context ${venv}\W${git_branch}] \$ "
   fi
 }
 
