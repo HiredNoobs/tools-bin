@@ -27,9 +27,37 @@ function check_env {
 
   current_stack=$(basename "$PWD")
   if [ "stack-$STACK_BASE" != "$current_stack" ]; then
-    log_error "Sourced $STACK_BASE doesn't match the current stack."
+    log_error "Sourced stack ($STACK_BASE) doesn't match the current stack."
     exit 1
   fi
+
+  if ! env_matches_file "$ENVIRONMENT_BASE/stack.env"; then
+    log_warning "Current env doesn't match the stack.env"
+  fi
+}
+
+function env_matches_file {
+  local file="$1"
+  local line key value
+
+  while IFS= read -r line; do
+    # Stripping comments, exports, and whitespace
+    line="${line%%#*}"
+    line="${line#export }"
+    line="$(echo "$line" | xargs)"
+
+    [[ -z "$line" ]] && continue
+
+    key="${line%%=*}"
+    value="${line#*=}"
+
+    value="${value%\"}"; value="${value#\"}"
+    value="${value%\'}"; value="${value#\'}"
+
+    [[ "${!key}" != "$value" ]] && return 1
+  done < "$file"
+
+  return 0
 }
 
 function discover_stack_context {
