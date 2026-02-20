@@ -12,14 +12,22 @@ source $HERE/lib/env
 # -----------------------------------------------------
 
 function check_env {
+  local contexts current_stack
+
   if [[ ! -v DEPLOYMENT ]]; then
     log_error "DEPLOYMENT is unset - source a stack.env file"
     exit 1
   fi
 
-  local contexts=$(docker context ls --format '{{ .Name }}' | grep -v 'default')
+  contexts=$(docker context ls --format '{{ .Name }}' | grep -v 'default')
   if ! printf '%s\n' "$contexts" | grep -Fxq -- "$CONTEXT"; then
     log_error "Context, $CONTEXT, not in locally defined contexts."
+    exit 1
+  fi
+
+  current_stack=$(basename "$PWD")
+  if [ "stack-$STACK_BASE" != "$current_stack" ]; then
+    log_error "Sourced $STACK_BASE doesn't match the current stack."
     exit 1
   fi
 }
