@@ -6,6 +6,7 @@ HERE=$(dirname "$THIS")
 source $HERE/lib/logging.sh
 source $HERE/lib/utils.sh
 source $HERE/lib/env
+source $HERE/lib/confirmation.sh
 
 # -----------------------------------------------------
 # Helper functions
@@ -157,6 +158,23 @@ function run_clean {
   docker stack rm "$STACK" --detach=false
 }
 
+function run_purge {
+  local nodes
+
+  for var in $(compgen -e | grep '_FQDN_NODES$'); do
+    nodes="${!var}"
+
+    for host in $nodes; do
+      vols=$(docker -H "ssh://$host" volume ls -q --filter "name=${STACK}_.*_data")
+      
+      if [[ -n "$vols" ]]; then
+        log_warning "Deleting $vols from $host."
+        docker -H "ssh://$host" volume rm $vols
+      fi
+    done
+  done
+}
+
 # -----------------------------------------------------
 # Commands
 # -----------------------------------------------------
@@ -199,20 +217,13 @@ function command_diff_secrets {
   fi
 }
 
-# Discovers and prints out the env.
-#
-# If another command is passed as an arg rather than
-# printing the env it will run that command.
-# The main purpose of this is for running `env env`
-# to see the "discovered" environment variables.
 function command_env {
   discover_stack_context
   if [ -z "$1" ]; then
     run_env
   else
     $@
-    local error=$?
-    exit $error
+    exit $?
   fi
 }
 
@@ -229,6 +240,15 @@ function command_status {
 function command_clean {
   discover_stack_context
   run_clean
+}
+
+function command_purge {
+  discover_stack_context
+
+  confirm_dangerous || exit 0
+
+  run_clean
+  run_purge
 }
 
 # -----------------------------------------------------
