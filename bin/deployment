@@ -159,16 +159,19 @@ function run_clean {
 }
 
 function run_purge {
+  log_warning "Purging volumes for $STACK in $ENVIRONMENT."
+  
   local nodes
 
   for var in $(compgen -e | grep '_FQDN_NODES$'); do
     nodes="${!var}"
 
     for host in $nodes; do
+      log_warning "Checking $host for volumes..."
       vols=$(docker -H "ssh://$host" volume ls -q --filter "name=${STACK}_.*_data")
       
       if [[ -n "$vols" ]]; then
-        log_warning "Deleting $vols from $host."
+        log_warning "Deleting $vols."
         docker -H "ssh://$host" volume rm $vols
       fi
     done
@@ -248,6 +251,8 @@ function command_purge {
   confirm_dangerous || exit 0
 
   run_clean
+  log_info "Waiting for volumes to detach..."
+  sleep 10
   run_purge
 }
 
