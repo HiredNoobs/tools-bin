@@ -111,7 +111,9 @@ function run_pull_secrets {
   local vault_env="$1"
   local vault_secret="$2"
   mkdir -p "$SECRETS"
-  vault read "lab/${vault_env}/${vault_secret}" -format=json | jq .data | secret-unpack "$SECRETS"
+  if out=$(vault read "lab/${vault_env}/${vault_secret}" -format=json); then
+    echo "$out" | jq .data | secret-diff "${SECRETS}"
+  fi
 }
 
 function run_push_secrets {
@@ -128,7 +130,9 @@ function run_push_secrets {
 function run_diff_secrets {
   local vault_env="$1"
   local vault_secret="$2"
-  vault read "lab/${vault_env}/${vault_secret}" -format=json | jq .data | secret-diff "${SECRETS}"
+  if out=$(vault read "lab/${vault_env}/${vault_secret}" -format=json); then
+    echo "$out" | jq .data | secret-diff "${SECRETS}"
+  fi
 }
 
 function run_tools {
@@ -163,6 +167,9 @@ function run_purge {
   
   local nodes
 
+  # This will potentially run against the same nodes multiple times
+  # for stacks with mulitple containers on the same nodes.
+  # Is this worth addressing?
   for var in $(compgen -e | grep '_FQDN_NODES$'); do
     nodes="${!var}"
 
@@ -171,7 +178,7 @@ function run_purge {
       vols=$(docker -H "ssh://$host" volume ls -q --filter "name=${STACK}_.*_data")
       
       if [[ -n "$vols" ]]; then
-        log_warning "Deleting $vols."
+        log_warning "Deleting:"
         docker -H "ssh://$host" volume rm $vols
       fi
     done
