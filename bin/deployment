@@ -112,7 +112,7 @@ function run_pull_secrets {
   local vault_secret="$2"
   mkdir -p "$SECRETS"
   if out=$(vault read "lab/${vault_env}/${vault_secret}" -format=json); then
-    echo "$out" | jq .data | secret-diff "${SECRETS}"
+    echo "$out" | jq .data | secret-unpack "${SECRETS}"
   fi
 }
 
