@@ -38,6 +38,7 @@ function configure_docker_contexts {
   echo
   log_info "Creating contexts:"
   create_context "development.core"    "atlas.${DOMAIN}"
+  create_context "production.edge"     "prod-nginx001.${DOMAIN}"
   create_context "production.core"     "prod-rsyslog001.${DOMAIN}"
   create_context "production.services" "prod-vault001.${DOMAIN}"
 }
