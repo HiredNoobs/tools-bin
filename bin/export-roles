@@ -22,9 +22,11 @@ import sys
 from typing import Dict, List
 
 
-def export_roles(stack: str, docker_construct: Dict, domain: None | str = None) -> None:
+def export_roles(
+    stack: str, docker_construct: List[Dict], domain: None | str = None
+) -> None:
     roles: Dict[str, List] = collections.defaultdict(list)
-    nodes = {
+    nodes: Dict[str, List[str]] = {
         node["Description"]["Hostname"]: node["Spec"]["Labels"].keys()
         for node in docker_construct
     }
@@ -34,17 +36,22 @@ def export_roles(stack: str, docker_construct: Dict, domain: None | str = None) 
             roles[label].append(node)
 
     for role, hostnames in roles.items():
-        if role.startswith(stack):
-            role = role[len(stack) + 1 :]
-            hosts = " ".join(hostnames)
-            print(f"export {role.upper()}_NODES={shlex.quote(hosts)}")
-            if domain:
-                fq_hostnames = [
-                    f"{host}.{domain}" if not host.endswith(domain) else host
-                    for host in hostnames
-                ]
-                hosts = " ".join(fq_hostnames)
-                print(f"export {role.upper()}_FQDN_NODES={shlex.quote(hosts)}")
+        if not role.startswith(stack):
+            continue
+
+        # Role without the stack, e.g. kafka_core_broker -> broker
+        role = role[len(stack) + 1 :].upper()
+
+        hosts = " ".join(hostnames)
+        print(f"export {role}_NODES={shlex.quote(hosts)}")
+
+        if domain:
+            fq_hostnames = [
+                f"{host}.{domain}" if not host.endswith(domain) else host
+                for host in hostnames
+            ]
+            hosts = " ".join(fq_hostnames)
+            print(f"export {role}_FQDN_NODES={shlex.quote(hosts)}")
 
 
 def parse_args() -> argparse.Namespace:
