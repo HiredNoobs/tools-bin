@@ -4,7 +4,6 @@ THIS=$(realpath "$0")
 HERE=$(dirname "$THIS")
 
 source $HERE/lib/logging.sh
-source $HERE/lib/env
 
 # -----------------------------------------------------
 # Functions

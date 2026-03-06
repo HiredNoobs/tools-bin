@@ -2,8 +2,10 @@
 # ENV
 # -----------------------------------------------------
 
-export VAULT_ADDR="https://vault.hirednoobs.online"
 export ANSIBLE_HOST_CHECKING_ENABLED=false
+
+export DOMAIN="hirednoobs.online"
+export VAULT_ADDR="https://vault.$DOMAIN"
 
 if docker context inspect --format '{{json .}}' "development.core" >/dev/null 2>&1; then
     export DOCKER_CONTEXT="development.core"

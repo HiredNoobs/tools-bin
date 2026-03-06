@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-#
-# Common env vars
-export DOMAIN="hirednoobs.online"
