@@ -125,11 +125,20 @@ function run_pull_secrets {
 function run_push_secrets {
   local vault_env="$1"
   local vault_secret="$2"
-  if [ "$(ls -A $SECRETS)" ]; then
+
+  # Check for at least one non-hidden file
+  if compgen -G "$SECRETS"/* > /dev/null; then
     if [ "${VAULT_KV_VERSION:-}" = "2" ]; then
-      secret-pack $SECRETS/* | vault kv put -mount labv2 "$vault_env/$vault_secret" -
+      local cas
+      if [ -f "$SECRETS/.metadata.json" ]; then
+        cas=$(jq -r '.version' "$SECRETS/.metadata.json")
+      else
+        cas="0"
+      fi
+
+      secret-pack "$SECRETS"/* | vault kv put -cas="$cas" -mount labv2 "$vault_env/$vault_secret" -
     else
-      secret-pack $SECRETS/* | vault write "lab/$vault_env/$vault_secret" -
+      secret-pack "$SECRETS"/* | vault write "lab/$vault_env/$vault_secret" -
     fi
   else
     echo "There are no local secrets to push."
@@ -142,7 +151,7 @@ function run_diff_secrets {
   local vault_secret="$2"
   if [ "${VAULT_KV_VERSION:-}" = "2" ]; then
     if out=$(vault kv get -format=json -mount labv2 "$vault_env/$vault_secret"); then
-      echo "$out" | jq '.data.data' | secret-unpack "$SECRETS"
+      echo "$out" | jq '.data.data' | secret-diff "$SECRETS"
     fi
   else
     if out=$(vault read "lab/${vault_env}/${vault_secret}" -format=json); then
