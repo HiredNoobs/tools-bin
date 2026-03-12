@@ -158,10 +158,12 @@ function run_diff_secrets {
   if [ "${VAULT_KV_VERSION:-}" = "2" ]; then
     if out=$(vault kv get -format=json -mount labv2 "$vault_env/$vault_secret"); then
       echo "$out" | jq '.data.data' | secret-diff "$SECRETS"
+      return $?
     fi
   else
     if out=$(vault read "lab/${vault_env}/${vault_secret}" -format=json); then
       echo "$out" | jq '.data' | secret-diff "${SECRETS}"
+      return $?
     fi
   fi
 }
@@ -235,27 +237,29 @@ function command_tools {
 }
 
 function command_pull_secrets {
-  if [[ -n "$1" && -n "$2" ]]; then
-    run_pull_secrets "$1" "$2"
-  else
-    run_pull_secrets "$ENVIRONMENT" "$STACK"
-  fi
+  local env="${1:-$ENVIRONMENT}"
+  local secret="${2:-$STACK}"
+
+  run_pull_secrets "$env" "$secret"
 }
 
 function command_push_secrets {
-  if [[ -n "$1" && -n "$2" ]]; then
-    run_pull_secrets "$1" "$2"
-  else
-    run_push_secrets "$ENVIRONMENT" "$STACK"
+  local env="${1:-$ENVIRONMENT}"
+  local secret="${2:-$STACK}"
+
+  if run_diff_secrets "$env" "$secret" >/dev/null 2>&1; then
+    echo "Local secrets are identical to upstream. Skipping push."
+    return 0
   fi
+
+  run_push_secrets "$env" "$secret"
 }
 
 function command_diff_secrets {
-  if [[ -n "$1" && -n "$2" ]]; then
-    run_pull_secrets "$1" "$2"
-  else
-    run_diff_secrets "$ENVIRONMENT" "$STACK"
-  fi
+  local env="${1:-$ENVIRONMENT}"
+  local secret="${2:-$STACK}"
+
+  run_diff_secrets "$env" "$secret"
 }
 
 function command_env {
