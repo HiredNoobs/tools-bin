@@ -137,11 +137,9 @@ function run_push_secrets {
       fi
 
       if secret-pack "$SECRETS"/* | vault kv put -cas="$cas" -mount labv2 "$vault_env/$vault_secret" -; then
-        # On the first write this will pull the metadata and create the .metadata.json file
-        if [ "$cas" = "0" ]; then
-          vault kv get -format=json -mount labv2 "$vault_env/$vault_secret" \
-            | jq '.data.metadata' > "$SECRETS/.metadata.json"
-        fi
+        # Refresh metadata after a successful write
+        vault kv get -format=json -mount labv2 "$vault_env/$vault_secret" \
+          | jq '.data.metadata' > "$SECRETS/.metadata.json"
       fi
     else
       secret-pack "$SECRETS"/* | vault write "lab/$vault_env/$vault_secret" -
