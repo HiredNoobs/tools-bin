@@ -6,5 +6,8 @@ export EDITOR=vim
 export TOOLS_BIN="$HOME/tools-bin/bin"
 export PATH="$TOOLS_BIN:$PATH"
 
+# Disable XON/XOFF (ctrl+s)
+[[ $- == *i* ]] && stty -ixon
+
 # For tmux
 export SHELL=$(which bash)
