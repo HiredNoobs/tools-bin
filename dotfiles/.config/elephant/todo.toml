@@ -1,7 +1,0 @@
-icon = ""  
-min_score = 50
-create_prefix = "add"
-urgent_time_frame = 10
-duck_player_volumes = true
-title = "Task Due"
-body = "%TASK%"

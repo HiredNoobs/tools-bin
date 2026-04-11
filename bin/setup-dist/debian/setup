@@ -27,7 +27,7 @@ function configure_docker {
 
   log_info "Adding $USER to docker group"
   create_group docker
-  add_user_to_group $USER docker
+  add_user_to_group "$USER" docker
   log_info "User added to docker group, relog or use 'exec sudo su -l \$USER' to access docker"
 
   log_info "Starting and enabling docker"

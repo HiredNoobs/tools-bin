@@ -30,26 +30,21 @@ function configure_hyprland {
 
   log_info "Dependencies installed. Starting configuration."
 
-  # Using the wallpaper is nice is theory but it basically
-  # just generates shades of blue with very little contrast...
-  # Maybe there's some settings for wal that would help?
-  # Or maybe I just need a wallpaper with more colors...
-  # wal -i ~/tools-bin/images/wallpapers/nord_scenary.png
-  wal --theme base16-gruvbox-medium
-
   # Bluetooth will start in non-discoverable mode
   sudo sed -i -e 's/^\#AutoEnable=true/AutoEnable=false/' /etc/bluetooth/main.conf
   sudo systemctl enable bluetooth --now
 
   rsync -av "$ROOT/dotfiles/.config/starship.toml" ~/.config/starship.toml
 
-  rsync -av --delete "$ROOT/dotfiles/.config/hypr/" "$XDG_CONFIG_HOME/hypr/"
-  rsync -av --delete "$ROOT/dotfiles/.config/waybar/" "$XDG_CONFIG_HOME/waybar/"
-  rsync -av --delete "$ROOT/dotfiles/.config/swaync/" "$XDG_CONFIG_HOME/swaync/"
-  rsync -av --delete "$ROOT/dotfiles/.config/kitty/" "$XDG_CONFIG_HOME/kitty/"
-  rsync -av --delete "$ROOT/dotfiles/.config/fish/" "$XDG_CONFIG_HOME/fish/"
+  rsync -av --delete "$ROOT/dotfiles/.config/wal/"      "$HOME/.cache/wal/"
+
+  rsync -av --delete "$ROOT/dotfiles/.config/hypr/"     "$XDG_CONFIG_HOME/hypr/"
+  rsync -av --delete "$ROOT/dotfiles/.config/waybar/"   "$XDG_CONFIG_HOME/waybar/"
+  rsync -av --delete "$ROOT/dotfiles/.config/swaync/"   "$XDG_CONFIG_HOME/swaync/"
+  rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
+  rsync -av --delete "$ROOT/dotfiles/.config/fish/"     "$XDG_CONFIG_HOME/fish/"
   rsync -av --delete "$ROOT/dotfiles/.config/elephant/" "$XDG_CONFIG_HOME/elephant/"
-  rsync -av --delete "$ROOT/dotfiles/.config/walker/" "$XDG_CONFIG_HOME/walker/"
+  rsync -av --delete "$ROOT/dotfiles/.config/walker/"   "$XDG_CONFIG_HOME/walker/"
 }
 
 function configure_docker {
@@ -58,7 +53,7 @@ function configure_docker {
 
   log_info "Adding $USER to docker group"
   create_group docker
-  add_user_to_group $USER docker
+  add_user_to_group "$USER" docker
 
   log_info "Starting and enabling docker"
   sudo systemctl enable docker --now

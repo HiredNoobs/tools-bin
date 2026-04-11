@@ -10,7 +10,7 @@ fi
 DISPATCHER=$1
 TARGET=$2
 
-if [[ $target =~ ^[0-9]+$ ]]; then
+if [[ $TARGET =~ ^[0-9]+$ ]]; then
   CURRENT_WORKSPACE=$(hyprctl activeworkspace -j | jq -r '.id')
   TARGET_WORKSPACE=$(( ((CURRENT_WORKSPACE - 1) / 10) * 10 + TARGET ))
   hyprctl dispatch "$DISPATCHER" "$TARGET_WORKSPACE"

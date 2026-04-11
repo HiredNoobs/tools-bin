@@ -10,12 +10,12 @@ set -e
 
 THIS=$(realpath "$0")
 HERE=$(dirname "$THIS")
-ROOT=$(realpath "$HERE/..")
+ROOT=$(realpath "$HERE/..")  # Used by sourced files!
 
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 
-source $HERE/lib/logging.sh
-source $HERE/lib/utils.sh
+source "$HERE/lib/logging.sh"
+source "$HERE/lib/utils.sh"
 
 # -----------------------------------------------------
 # Commands
@@ -23,10 +23,6 @@ source $HERE/lib/utils.sh
 
 function command_bash {
   configure_bash
-}
-
-function command_hypr {
-  configure_hyprland
 }
 
 function command_docker {
@@ -61,14 +57,14 @@ DISTRO_ID=$(awk -F'=' '/^ID=/ {print tolower($2)}' /etc/*-release 2> /dev/null)
 SETUP_FILE="$HERE/setup-dist/$DISTRO_ID/setup"
 
 if [ -f "$SETUP_FILE" ]; then
-  source $SETUP_FILE
+  source "$SETUP_FILE"
 else
   log_error "Unsupported distro '$DISTRO_ID'. Exiting..."
   exit 1
 fi
 
 # Basically every command assumes that this directory exists.
-mkdir -p $XDG_CONFIG_HOME
+mkdir -p "$XDG_CONFIG_HOME"
 
 for WORD in $@; do
   CMD="command_${WORD}"

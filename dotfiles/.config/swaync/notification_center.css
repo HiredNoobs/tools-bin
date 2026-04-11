@@ -87,7 +87,7 @@
   border-radius: 10px;
   margin: 2px 12px 12px 12px;
   align-items: center;
-  color: alpha(#000000, 0.8);
+  color: alpha(@color0, 0.8);
 }
 
 .widget-mpris button {
@@ -95,7 +95,7 @@
   border-radius: 20px;
   padding: 4px;
   margin: 20px 2px;
-  color: alpha(#000000, 0.8);
+  color: alpha(@color0, 0.8);
 }
 
 .widget-mpris button:hover {
@@ -108,7 +108,7 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  color: alpha(#000000, 0.8);
+  color: alpha(@color0, 0.8);
 }
 
 .widget-mpris-album-art {

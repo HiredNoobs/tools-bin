@@ -48,12 +48,10 @@ Included is a very basic Hyprland configuration.
 
 The initial confiuration is based on the following repos:
 
-Hyprland: [gaurav23b's simple-hyprland](https://github.com/gaurav23b/simple-hyprland)
-Hyprland: [end-4's dotfiles](https://github.com/end-4/dots-hyprland)
-Waybar: [elifouts' dotfiles](https://github.com/elifouts/Dotfiles)
-Wallpapers: [nordic-wallpapers](https://github.com/linuxdotexe/nordic-wallpapers)
-Notification center: [ML4W dotfiles](https://github.com/mylinuxforwork/dotfiles)
-Walker: [Maciejonos's dotfiles](https://github.com/Maciejonos/dotfiles)
+- Hyprland: [gaurav23b's simple-hyprland](https://github.com/gaurav23b/simple-hyprland)
+- Waybar: [elifouts' dotfiles](https://github.com/elifouts/Dotfiles)
+- Notification center: [ML4W dotfiles](https://github.com/mylinuxforwork/dotfiles)
+- Wallpapers: [nordic-wallpapers](https://github.com/linuxdotexe/nordic-wallpapers)
 
 ### Keybinds
 
