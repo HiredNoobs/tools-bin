@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 OPTIONS="Fullscreen (instant)\nFullscreen (2s delay)\nSelect Area (instant)\nSelect Area (2s delay)"
-CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -p "Screenshots" -theme ~/.config/rofi/config.rasi)
+CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "Screenshots" -theme ~/.config/rofi/config.rasi)
+
+mkdir -p ~/Pictures/screenshots
 
 case $CHOICE in
   "Fullscreen (instant)") grimblast --notify copysave screen ~/Pictures/screenshots/$(date +%Y%m%d-%H%M%S).png ;;

@@ -1,17 +1,14 @@
 @import "~/.cache/wal/colors-rofi-dark.rasi"
 
 configuration {
-    font: "CodeNewRoman Nerd Font Propo 11";
+    font: "CodeNewRoman Nerd Font Propo 13";
     show-icons: true;
     icon-theme: "Papirus";
     display-drun: "Apps";
     display-run: "Run";
     display-window: "Windows";
     drun-display-format: "{name}";
-}
 
-* {
-    border: 2px;
-    border-radius: 10px;
-    padding: 5px;
+    kb-cancel: "Escape,MousePrimary";
+    hover-select: true;
 }

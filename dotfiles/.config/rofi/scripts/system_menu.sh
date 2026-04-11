@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 OPTIONS="Lock\nSleep\nRestart\nShutdown"
-CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -p "System" -theme ~/.config/rofi/config.rasi)
+CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "System" -theme ~/.config/rofi/config.rasi)
 
 case $CHOICE in
     Lock) hyprlock ;;

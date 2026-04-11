@@ -15,9 +15,9 @@
 
     selected-active-background: #fb4934;
     selected-active-foreground: @foreground;
-    selected-normal-background: #b8bb26;
+    selected-normal-background: #fb4934;
     selected-normal-foreground: @foreground;
-    selected-urgent-background: #fabd2f;
+    selected-urgent-background: #fb4934;
     selected-urgent-foreground: @foreground;
 
     background-color: @background;
@@ -29,8 +29,11 @@
 
 #window {
     background-color: @background;
-    border: 0;
+    border: 2px;
+    border-color: @urgent-background;
+    border-radius: 15px;
     padding: 2.5ch;
+    width: 30%;
 }
 
 #mainbox {
