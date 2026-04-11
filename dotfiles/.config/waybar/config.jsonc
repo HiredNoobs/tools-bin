@@ -62,7 +62,7 @@
         }
     },
     "network": {
-        "format-wifi": "",
+        "format-wifi": " {essid}",
         "format-ethernet": "",
         "format-disconnected": "",
         "tooltip-format-disconnected": "Error",
@@ -121,6 +121,7 @@
         "modules": [
             "custom/expand",
             "tray",
+            "backlight",
             "custom/endpoint"
         ]
     },
@@ -150,6 +151,14 @@
         "on-scroll-up": "pamixer --default-source -i 5",
         "on-scroll-down": "pamixer --default-source -d 5",
         "scroll-step": 5
+    },
+    "backlight": {
+        "device": "intel_backlight",
+        "format": "{icon} {percent}%",
+        "format-icons": ["󰃞", "󰃟", "󰃠"],
+        "on-scroll-up": "brightnessctl set 1%+",
+        "on-scroll-down": "brightnessctl set 1%-",
+        "min-length": 6
     },
     "cpu": {
         "format": "󰻠 {usage}%",
