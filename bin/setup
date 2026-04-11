@@ -29,6 +29,10 @@ function command_docker {
   configure_docker
 }
 
+function command_hypr {
+  configure_hypr
+}
+
 function command_vim {
   configure_vim
 }
