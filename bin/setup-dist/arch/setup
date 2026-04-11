@@ -16,13 +16,10 @@ function configure_hyprland {
   # Hyprland + utils
   sudo pacman -S --needed --noconfirm hyprland \
     pipewire wireplumber xdg-desktop-portal-hyprland hyprpolkitagent \
-    brightnessctl pamixer waybar blueman bluez swaync swaybg starship rofi
+    brightnessctl pamixer waybar blueman bluez swaync swaybg starship rofi \
+    qt5-wayland qt6-wayland qt5ct qt6ct kvantum
   
-  # Are qt6ct & kvantum the only ones actually in use?
-  sudo pacman -S --needed --noconfirm qt5-wayland qt6-wayland qt5ct qt6ct kvantum
-  
-  # Should we just remove pywal from the deps and copy the theme into the repo?
-  yay -S --needed hyprlock hypridle grimblast otf-codenewroman-nerd pywal
+  yay -S --needed hyprlock hypridle grimblast otf-codenewroman-nerd
 
   # hyprpm deps
   sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc
@@ -40,10 +37,9 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/dotfiles/.config/hypr/"     "$XDG_CONFIG_HOME/hypr/"
   rsync -av --delete "$ROOT/dotfiles/.config/waybar/"   "$XDG_CONFIG_HOME/waybar/"
   rsync -av --delete "$ROOT/dotfiles/.config/swaync/"   "$XDG_CONFIG_HOME/swaync/"
+  rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
   rsync -av --delete "$ROOT/dotfiles/.config/fish/"     "$XDG_CONFIG_HOME/fish/"
-  rsync -av --delete "$ROOT/dotfiles/.config/elephant/" "$XDG_CONFIG_HOME/elephant/"
-  rsync -av --delete "$ROOT/dotfiles/.config/walker/"   "$XDG_CONFIG_HOME/walker/"
 }
 
 function configure_docker {
