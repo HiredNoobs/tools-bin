@@ -12,8 +12,11 @@ function configure_bash {
 function configure_hyprland {
   log_info "Configuring hyprland."
   log_info "Installing dependencies."
-  sudo pacman -S --needed --noconfirm hyprland xdg-desktop-portal-hyprland polkit-kde-agent \
-    brightnessctl pamixer waybar blueman bluez swaync swaybg starship
+
+  # Hyprland + utils
+  sudo pacman -S --needed --noconfirm hyprland \
+    pipewire wireplumber xdg-desktop-portal-hyprland hyprpolkitagent \
+    brightnessctl pamixer waybar blueman bluez swaync swaybg starship rofi
   
   # Are qt6ct & kvantum the only ones actually in use?
   sudo pacman -S --needed --noconfirm qt5-wayland qt6-wayland qt5ct qt6ct kvantum
@@ -23,10 +26,6 @@ function configure_hyprland {
 
   # hyprpm deps
   sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc
-
-  # Application launcher
-  yay -S --needed walker elephant-websearch elephant-calc elephant-files elephant-files \
-    elephant-menus elephant-todo
 
   log_info "Dependencies installed. Starting configuration."
 
