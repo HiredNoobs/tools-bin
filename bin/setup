@@ -30,7 +30,7 @@ function command_docker {
 }
 
 function command_hypr {
-  configure_hypr
+  configure_hyprland
 }
 
 function command_vim {
