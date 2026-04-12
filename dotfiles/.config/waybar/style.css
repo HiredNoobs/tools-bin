@@ -25,7 +25,7 @@ tooltip label {
 
 /* Shared hover behavior */
 #clock:hover,
-#custom-notification:hover,
+#custom-wlogout:hover,
 #pulseaudio:hover,
 #bluetooth:hover,
 #network:hover,
@@ -39,7 +39,7 @@ tooltip label {
 
 /* Shared module styling */
 #clock,
-#custom-notification,
+#custom-wlogout,
 #bluetooth,
 #pulseaudio,
 #backlight,
@@ -57,7 +57,7 @@ tooltip label {
 }
 
 /* Individual padding overrides */
-#custom-notification { padding: 0 10px 0 5px; }
+#custom-wlogout { padding: 0 10px 0 5px; }
 #clock { padding: 0 5px 0 10px; }
 #battery { padding: 0 10px 0 5px; }
 

@@ -6,15 +6,18 @@
     "margin-top": 7,
     "margin-bottom": 0,
     "reload_style_on_change": true,
+
     "modules-left": [
         "clock",
         "cpu",
         "memory",
         "temperature"
     ],
+
     "modules-center": [
         "hyprland/workspaces"
     ],
+
     "modules-right": [
         "group/expand",
         "pulseaudio",
@@ -24,6 +27,10 @@
         "battery",
         "custom/wlogout"
     ],
+
+    /* -------------------------
+        Workspaces
+    ------------------------- */
     "hyprland/workspaces": {
         "format": "{icon}",
         "format-icons": {
@@ -32,21 +39,23 @@
             "empty": ""
         },
         "persistent-workspaces": {
-            "*": [
-                1,
-                2,
-                3,
-                4,
-                5
-            ]
+            "*": [1, 2, 3, 4, 5]
         }
     },
+
+    /* -------------------------
+        wlogout
+    ------------------------- */
     "custom/wlogout": {
         "tooltip": false,
         "format": "",
         "on-click": "wlogout",
         "escape": true
     },
+
+    /* -------------------------
+        Clock
+    ------------------------- */
     "clock": {
         "format": "{:%A    %B-%d-%Y    %H:%M:%S %p} ",
         "interval": 1,
@@ -61,6 +70,10 @@
             "on-click": "shift_up"
         }
     },
+
+    /* -------------------------
+        Network
+    ------------------------- */
     "network": {
         "format-wifi": " {essid}",
         "format-ethernet": "",
@@ -70,6 +83,10 @@
         "tooltip-format-ethernet": "{ifname} 🖧 ",
         "on-click": "kitty nmtui"
     },
+
+    /* -------------------------
+        Bluetooth
+    ------------------------- */
     "bluetooth": {
         "format-on": "󰂯",
         "format-off": "󰂲",
@@ -83,6 +100,10 @@
         "on-click": "rfkill toggle bluetooth",
         "on-click-right": "blueman-manager"
     },
+
+    /* -------------------------
+        Battery
+    ------------------------- */
     "battery": {
         "interval": 30,
         "states": {
@@ -103,6 +124,10 @@
             "󰁹"
         ]
     },
+
+    /* -------------------------
+        Expandable Group
+    ------------------------- */
     "custom/expand": {
         "format": "",
         "tooltip": false
@@ -125,6 +150,10 @@
             "custom/endpoint"
         ]
     },
+
+    /* -------------------------
+        Audio
+    ------------------------- */
     "pulseaudio": {
         "format": "{icon} {volume}%",
         "tooltip": false,
@@ -152,6 +181,10 @@
         "on-scroll-down": "pamixer --default-source -d 5",
         "scroll-step": 5
     },
+
+    /* -------------------------
+        Brightness
+    ------------------------- */
     "backlight": {
         "device": "intel_backlight",
         "format": "{icon} {percent}%",
@@ -160,6 +193,10 @@
         "on-scroll-down": "brightnessctl set 1%-",
         "min-length": 6
     },
+
+    /* -------------------------
+        System
+    ------------------------- */
     "cpu": {
         "format": "󰻠 {usage}%",
         "tooltip": true
@@ -173,6 +210,10 @@
         "format": " {temperatureC}°C",
         "tooltip": false
     },
+
+    /* -------------------------
+        Tray
+    ------------------------- */
     "tray": {
         "icon-size": 14,
         "spacing": 10
