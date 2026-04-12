@@ -62,6 +62,10 @@ tooltip label {
 #battery { padding: 0 10px 0 5px; }
 
 /* Battery states */
+#battery {
+    background: rgba(0,0,0,0); /* Stops low battery from applying a white background */
+}
+
 #battery.charging {
     color: #26A65B;
 }
