@@ -48,9 +48,8 @@ Included is a very basic Hyprland configuration.
 
 The initial confiuration is based on the following repos:
 
-- Hyprland: [gaurav23b's simple-hyprland](https://github.com/gaurav23b/simple-hyprland)
+- Hyprland + wlogout: [gaurav23b's simple-hyprland](https://github.com/gaurav23b/simple-hyprland)
 - Waybar: [elifouts' dotfiles](https://github.com/elifouts/Dotfiles)
-- Notification center: [ML4W dotfiles](https://github.com/mylinuxforwork/dotfiles)
 - Wallpapers: [nordic-wallpapers](https://github.com/linuxdotexe/nordic-wallpapers)
 
 ### Keybinds
@@ -71,6 +70,7 @@ Application shortcuts:
 - `Super` + `W` = Web browser
 - `Super` + `E` = File explorer
 - `Super` + `T` = Terminal
+- `Super` + `C` = Code editor
 
 </details>
 

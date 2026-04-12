@@ -19,7 +19,7 @@ function configure_hyprland {
     brightnessctl pamixer waybar blueman bluez swaync swaybg starship rofi \
     qt5-wayland qt6-wayland qt5ct qt6ct kvantum
   
-  yay -S --needed hyprlock hypridle grimblast otf-codenewroman-nerd
+  yay -S --needed hyprlock hypridle grimblast wlogout otf-codenewroman-nerd
 
   # hyprpm deps
   sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc
@@ -36,6 +36,7 @@ function configure_hyprland {
 
   rsync -av --delete "$ROOT/dotfiles/.config/hypr/"     "$XDG_CONFIG_HOME/hypr/"
   rsync -av --delete "$ROOT/dotfiles/.config/waybar/"   "$XDG_CONFIG_HOME/waybar/"
+  rsync -av --delete "$ROOT/dotfiles/.config/wlogout/"  "$XDG_CONFIG_HOME/wlogout/"
   rsync -av --delete "$ROOT/dotfiles/.config/swaync/"   "$XDG_CONFIG_HOME/swaync/"
   rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
