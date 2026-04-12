@@ -22,7 +22,7 @@
         "bluetooth",
         "network",
         "battery",
-        "custom/notification"
+        "custom/wlogout"
     ],
     "hyprland/workspaces": {
         "format": "{icon}",
@@ -41,10 +41,10 @@
             ]
         }
     },
-    "custom/notification": {
+    "custom/wlogout": {
         "tooltip": false,
-        "format": "",
-        "on-click": "swaync-client -t -sw",
+        "format": "",
+        "on-click": "wlogout",
         "escape": true
     },
     "clock": {
