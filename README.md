@@ -50,6 +50,7 @@ The initial confiuration is based on the following repos:
 
 - Hyprland + wlogout: [gaurav23b's simple-hyprland](https://github.com/gaurav23b/simple-hyprland)
 - Waybar: [elifouts' dotfiles](https://github.com/elifouts/Dotfiles)
+- Waybar context menu concept: [cebem1nt's dotfiles](https://github.com/cebem1nt/dotfiles)
 - Wallpapers: [nordic-wallpapers](https://github.com/linuxdotexe/nordic-wallpapers)
 
 ### Keybinds
