@@ -16,7 +16,7 @@ function configure_hyprland {
   # Hyprland + utils
   sudo pacman -S --needed --noconfirm hyprland \
     pipewire wireplumber xdg-desktop-portal-hyprland hyprpolkitagent udiskie \
-    brightnessctl pamixer waybar blueman bluez dunst swaybg starship rofi \
+    brightnessctl hyprsunset pamixer waybar blueman bluez dunst swaybg starship rofi \
     pavucontrol qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme
   
   yay -S --needed hyprlock hypridle grimblast wlogout otf-codenewroman-nerd
