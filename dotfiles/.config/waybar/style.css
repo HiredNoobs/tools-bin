@@ -119,19 +119,19 @@ tooltip label {
 
 /* Expand icon */
 #custom-expand {
-    color: alpha(@foreground, .2);
+    color: @color7;
     text-shadow: 0 0 2px rgba(0, 0, 0, .7);
 }
 
 #custom-expand:hover {
-    color: rgba(255, 255, 255, .2);
-    text-shadow: 0 0 2px rgba(255, 255, 255, .5);
+    color: @color9;
+    text-shadow: 0 0 2px @color9;
 }
 
 /* Endpoint */
 #custom-endpoint {
     color: transparent;
-    text-shadow: 0 0 1.5px rgba(0, 0, 0, 1);
+    text-shadow: 0 0 1.5px @color7;
 }
 
 /* Tray menu */

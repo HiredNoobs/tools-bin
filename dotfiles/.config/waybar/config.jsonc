@@ -105,7 +105,13 @@
         "tooltip-format-enumerate-connected": "{device_alias}\n{device_address}",
         "tooltip-format-enumerate-connected-battery": "{device_alias}\n{device_address}\n{device_battery_percentage}%",
         "on-click": "rfkill toggle bluetooth",
-        "on-click-right": "blueman-manager"
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/bluetooth.xml",
+        "menu-actions": {
+  			"action-1": "rfkill unblock bluetooth",
+  			"action-2": "rfkill block bluetooth",
+            "action-3": "hyprctl dispatch exec [float] 'blueman-manager'"
+  		}
     },
 
     /* -----------------------------------------------------
