@@ -183,7 +183,12 @@
             "portable": "",
             "car": "",
             "default": ["","", "", ""]
-        }
+        },
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/audio.xml",
+        "menu-actions": {
+  			"action-1": "hyprctl dispatch exec [float] 'pavucontrol -t 3'"
+  		}
     },
     "pulseaudio#microphone": {
         "format": "{format_source}",
@@ -192,7 +197,12 @@
         "on-click": "pamixer --default-source -t",
         "on-scroll-up": "pamixer --default-source -i 5",
         "on-scroll-down": "pamixer --default-source -d 5",
-        "scroll-step": 5
+        "scroll-step": 5,
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/audio.xml",
+        "menu-actions": {
+  			"action-1": "hyprctl dispatch exec [float] 'pavucontrol -t 4'"
+  		}
     },
 
     /* -----------------------------------------------------
