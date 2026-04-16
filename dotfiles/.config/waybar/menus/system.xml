@@ -27,24 +27,30 @@
 
     <child>
       <object class="GtkMenuItem" id="action-2">
-        <property name="label">Theme settings</property>
+        <property name="label">Theme</property>
         <child type="submenu">
           <object class="GtkMenu">
 
             <child>
               <object class="GtkMenuItem" id="action-2-1">
-                <property name="label">GTK</property>
+                <property name="label">Wallpaper</property>
               </object>
             </child>
 
             <child>
               <object class="GtkMenuItem" id="action-2-2">
-                <property name="label">QT6</property>
+                <property name="label">GTK</property>
               </object>
             </child>
 
             <child>
               <object class="GtkMenuItem" id="action-2-3">
+                <property name="label">QT6</property>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkMenuItem" id="action-2-4">
                 <property name="label">Kvantum</property>
               </object>
             </child>

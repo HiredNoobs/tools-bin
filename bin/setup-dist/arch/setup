@@ -33,6 +33,9 @@ function configure_hyprland {
 
   rsync -av "$ROOT/dotfiles/.config/starship.toml" ~/.config/starship.toml
 
+  rsync -av --delete "$ROOT/images/wallpapers"          "$HOME/Pictures/wallpapers"
+  rsync -av --delete "$ROOT/images/profile-pictures"    "$HOME/Pictures/profile-pictures"
+
   rsync -av --delete "$ROOT/dotfiles/.config/wal/"      "$HOME/.cache/wal/"
 
   rsync -av --delete "$ROOT/dotfiles/.config/hypr/"     "$XDG_CONFIG_HOME/hypr/"

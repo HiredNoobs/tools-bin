@@ -9,7 +9,7 @@
         "menu": "on-click-right",
         "menu-file": "~/.config/waybar/menus/nightlight.xml",
         "menu-actions": {
-  			"action-1": "~/.config/waybar/scripts/toggle_nightlight.sh"
+  			"action-1": "~/.config/waybar/scripts/toggle-nightlight.sh"
   		}
     }
 }

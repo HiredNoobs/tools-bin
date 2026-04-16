@@ -7,9 +7,10 @@
         "menu-actions": {
             "action-1-1": "hyprctl dispatch exec [float] 'kitty htop'",
             "action-1-2": "hyprctl dispatch exec [float] 'kitty nvtop'",
-            "action-2-1": "hyprctl dispatch exec [float] nwg-look",
-            "action-2-2": "hyprctl dispatch exec [float] qt6ct",
-            "action-2-3": "hyprctl dispatch exec [float] kvantummanager",
+            "action-2-1": "~/.config/waybar/scripts/select-wallpaper.sh",
+            "action-2-2": "hyprctl dispatch exec [float] nwg-look",
+            "action-2-3": "hyprctl dispatch exec [float] qt6ct",
+            "action-2-4": "hyprctl dispatch exec [float] kvantummanager",
             "action-3": "hyprctl reload"
   		}
     }
