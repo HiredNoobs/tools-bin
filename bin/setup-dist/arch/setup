@@ -31,10 +31,11 @@ function configure_hyprland {
   sudo sed -i -e 's/^\#AutoEnable=true/AutoEnable=false/' /etc/bluetooth/main.conf
   sudo systemctl enable bluetooth --now
 
-  rsync -av "$ROOT/dotfiles/.config/starship.toml" ~/.config/starship.toml
+  rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
-  rsync -av --delete "$ROOT/images/wallpapers/"          "$HOME/Pictures/wallpapers/"
-  rsync -av --delete "$ROOT/images/profile-pictures/"    "$HOME/Pictures/profile-pictures/"
+  rsync -av "$ROOT/dotfiles/.config/current-wallpaper"  "$HOME/.config/current-wallpaper"
+  rsync -av --delete "$ROOT/images/wallpapers/"         "$HOME/Pictures/wallpapers/"
+  rsync -av --delete "$ROOT/images/profile-pictures/"   "$HOME/Pictures/profile-pictures/"
 
   rsync -av --delete "$ROOT/dotfiles/.config/wal/"      "$HOME/.cache/wal/"
 
