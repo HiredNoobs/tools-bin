@@ -1,0 +1,9 @@
+#custom-expand {
+    color: @color7;
+    text-shadow: 0 0 2px rgba(0, 0, 0, .7);
+}
+
+#custom-expand:hover {
+    color: @color9;
+    text-shadow: 0 0 2px @color9;
+}

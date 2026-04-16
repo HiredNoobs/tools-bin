@@ -1,0 +1,15 @@
+{
+    "backlight": {
+        "device": "intel_backlight",
+        "format": "{icon} {percent}%",
+        "format-icons": ["󰃞", "󰃟", "󰃠"],
+        "on-scroll-up": "brightnessctl set 1%+",
+        "on-scroll-down": "brightnessctl --min-value=10000 set 1%-",
+        "min-length": 6,
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/nightlight.xml",
+        "menu-actions": {
+  			"action-1": "~/.config/waybar/scripts/toggle_nightlight.sh"
+  		}
+    }
+}

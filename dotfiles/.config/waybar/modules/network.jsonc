@@ -1,0 +1,18 @@
+{
+    "network": {
+        "format-wifi": " {essid}",
+        "format-ethernet": "",
+        "format-disconnected": "",
+        "tooltip-format-disconnected": "Disconnected",
+        "tooltip-format-wifi": "{essid} ({signalStrength}%) ",
+        "tooltip-format-ethernet": "{ifname} 🖧 ",
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/network.xml",
+        "menu-actions": {
+  			"action-1": "nmcli radio wifi on",
+  			"action-2": "nmcli radio wifi off",
+            "action-3": "hyprctl dispatch exec [float] 'kitty nmtui'",
+            "action-4": "hyprctl dispatch exec nm-connection-editor"
+  		}
+    }
+}

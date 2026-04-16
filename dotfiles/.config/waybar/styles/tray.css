@@ -1,0 +1,5 @@
+#tray menu *,
+#tray menu separator {
+    padding: 0 5px;
+    transition: all .3s ease;
+}

@@ -1,0 +1,8 @@
+{
+    "custom/wlogout": {
+        "tooltip": false,
+        "format": "",
+        "on-click": "wlogout",
+        "escape": true
+    }
+}

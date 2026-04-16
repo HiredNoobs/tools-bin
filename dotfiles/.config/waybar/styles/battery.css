@@ -1,0 +1,16 @@
+#battery {
+    background: rgba(0,0,0,0); /* Stops low battery from applying a white background */
+}
+
+#battery.charging {
+    color: #26A65B;
+}
+
+#battery.warning:not(.charging) {
+    color: #ffbe61;
+}
+
+#battery.critical:not(.charging) {
+    color: #f53c3c;
+    animation: blink .5s linear infinite alternate;
+}

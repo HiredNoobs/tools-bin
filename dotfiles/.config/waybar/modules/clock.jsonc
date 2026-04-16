@@ -1,0 +1,13 @@
+{
+    "clock": {
+        "format": "{:%A    %B-%d-%Y    %H:%M:%S %p}",
+        "interval": 1,
+        "tooltip-format": "<tt>{calendar}</tt>",
+        "on-click": "hyprctl dispatch exec [float] gnome-calendar",
+        "calendar": {
+            "format": {
+                "today": "<span color='#fb4934'><b>{}</b></span>"
+            }
+        }
+    }
+}

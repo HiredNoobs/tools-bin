@@ -1,0 +1,61 @@
+* {
+    font-size: 15px;
+    font-family: "CodeNewRoman Nerd Font Propo";
+}
+
+window#waybar {
+    border-radius: 10px;
+    background: alpha(@background, .6);
+    box-shadow: 0 0 2px rgba(0, 0, 0, .6);
+}
+
+/* Tooltips */
+tooltip {
+    background: @background;
+    color: @color7;
+}
+
+tooltip label {
+    color: white;
+}
+
+/* Shared hover behavior */
+#custom-arch:hover,
+#clock:hover,
+#custom-wlogout:hover,
+#pulseaudio:hover,
+#bluetooth:hover,
+#network:hover,
+#battery:hover,
+#cpu:hover,
+#memory:hover,
+#temperature:hover {
+    transition: all .3s ease;
+    color: @color9;
+}
+
+/* Shared module styling */
+#custom-arch,
+#clock,
+#custom-wlogout,
+#bluetooth,
+#pulseaudio,
+#backlight,
+#network,
+#battery,
+#cpu,
+#memory,
+#temperature,
+#group-expand,
+#custom-expand,
+#tray {
+    padding: 0 5px;
+    transition: all .3s ease;
+    color: @color7;
+}
+
+/* Individual padding overrides */
+#custom-arch { padding: 0 5px 0 15px; }
+#clock { padding: 0 5px 0 10px; }
+#custom-wlogout { padding: 0 10px 0 5px; }
+#battery { padding: 0 10px 0 5px; }

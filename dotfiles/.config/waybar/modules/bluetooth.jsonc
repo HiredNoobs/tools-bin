@@ -1,0 +1,21 @@
+{
+    "bluetooth": {
+        "format-on": "󰂯",
+        "format-off": "󰂲",
+        "format-disabled": "󰂲",
+        "format-connected-battery": "{device_battery_percentage}% 󰂯",
+        "format-alt": "{device_alias} 󰂯",
+        "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+        "tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}",
+        "tooltip-format-enumerate-connected": "{device_alias}\n{device_address}",
+        "tooltip-format-enumerate-connected-battery": "{device_alias}\n{device_address}\n{device_battery_percentage}%",
+        "on-click": "rfkill toggle bluetooth",
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/bluetooth.xml",
+        "menu-actions": {
+  			"action-1": "rfkill unblock bluetooth",
+  			"action-2": "rfkill block bluetooth",
+            "action-3": "hyprctl dispatch exec [float] 'blueman-manager'"
+  		}
+    }
+}
