@@ -3,7 +3,7 @@
 function get_wallpapers {
   local wallpapers wallpaper
   
-  wallpapers=$(find "$HOME/Pictures/Wallpapers" -type f \( -name "*.jpg" -o -name "*.png" \))
+  wallpapers=$(find "$HOME/Pictures/wallpapers" -type f \( -name "*.jpg" -o -name "*.png" \))
 
   for wallpaper in $wallpapers; do
     printf "%s\x00icon\x1f%s\n" "$(basename "$wallpaper")" "$wallpaper"
@@ -11,4 +11,4 @@ function get_wallpapers {
 }
 
 CHOICE=$(get_wallpapers | rofi -dmenu -i -p "Wallpapers" -theme ~/.config/rofi/config.rasi)
-swaybg -i "$CHOICE" -m fill
+swaybg -i "$HOME/Pictures/wallpapers/$CHOICE" -m fill
