@@ -22,6 +22,7 @@
 
     "modules-right": [
         "group/expand",
+        "backlight",
         "pulseaudio",
         "pulseaudio#microphone",
         "bluetooth",
@@ -88,14 +89,11 @@
         "format": "{:%A    %B-%d-%Y    %H:%M:%S %p}",
         "interval": 1,
         "tooltip-format": "<tt>{calendar}</tt>",
+        "on-click": "hyprctl dispatch exec [float] gnome-calendar",
         "calendar": {
             "format": {
-                "today": "<span color='#fAfBfC'><b>{}</b></span>"
+                "today": "<span color='#fb4934'><b>{}</b></span>"
             }
-        },
-        "actions": {
-            "on-click-right": "shift_down",
-            "on-click": "shift_up"
         }
     },
 
@@ -183,7 +181,6 @@
         "modules": [
             "custom/expand",
             "tray",
-            "backlight",
             "custom/endpoint"
         ]
     },
