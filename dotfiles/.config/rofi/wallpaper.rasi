@@ -1,0 +1,41 @@
+@import "~/.cache/wal/colors-rofi-dark.rasi"
+
+configuration {
+    font: "CodeNewRoman Nerd Font Propo 12";
+    show-icons: true;
+    icon-theme: "Papirus";
+
+    kb-cancel: "Escape,MousePrimary";
+    hover-select: true;
+
+    lines: 3;
+    columns: 6;
+    cycle: false;
+    scrollbar: false;
+
+    drun-display-format: "{name}";
+}
+
+window {
+    width: 40%;
+    height: 45%;
+    border-radius: 6px;
+}
+
+element {
+    padding: 4px;
+    spacing: 6px;
+
+    orientation: vertical;
+}
+
+element-icon {
+    size: 128px;
+}
+
+element-text {
+    expand: false;
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    padding: 2px 0px;
+}
