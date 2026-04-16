@@ -7,7 +7,8 @@ if [[ "$TEMP" -eq 6500 ]]; then
 else
   # Identity doesn't seem to reset the temp value,
   # hence we do it manually.
-  # Does this make the identity call redundant?
+  # 'identity' is still necessary, else it resets to the
+  # default value from the exec-once.
   hyprctl hyprsunset temperature 6500
   hyprctl hyprsunset identity
 fi

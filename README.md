@@ -64,6 +64,7 @@ Window control:
 - `Super` + `Shift` + `↓` = Move current window down
 - `Super` + `Shift` + `↑` = Move current window up
 - `Super` + `Shift` + `→` = Move current window right
+- `Super` + `LMB` = drag window
 
 Application shortcuts:
 

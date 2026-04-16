@@ -8,7 +8,9 @@
     "reload_style_on_change": true,
 
     "modules-left": [
+        "custom/arch",
         "clock",
+        "custom/endpoint",
         "cpu",
         "memory",
         "temperature"
@@ -27,6 +29,32 @@
         "battery",
         "custom/wlogout"
     ],
+
+    /* -----------------------------------------------------
+        Arch icon
+    ----------------------------------------------------- */
+    "custom/arch": {
+        "format": "󰣇",
+        "tooltip": false,
+        "menu": "on-click-right",
+        "menu-file": "~/.config/waybar/menus/system.xml",
+        "menu-actions": {
+            "action-1-1": "hyprctl dispatch exec [float] 'kitty htop'",
+            "action-1-2": "hyprctl dispatch exec [float] 'kitty nvtop'",
+            "action-2-1": "hyprctl dispatch exec [float] nwg-look",
+            "action-2-2": "hyprctl dispatch exec [float] qt6ct",
+            "action-2-3": "hyprctl dispatch exec [float] kvantummanager",
+            "action-3": "hyprctl reload"
+  		}
+    },
+
+    /* -----------------------------------------------------
+        Separator
+    ----------------------------------------------------- */
+    "custom/endpoint": {
+        "format": "|",
+        "tooltip": false
+    },
 
     /* -----------------------------------------------------
         Workspaces
@@ -57,7 +85,7 @@
         Clock
     ----------------------------------------------------- */
     "clock": {
-        "format": "{:%A    %B-%d-%Y    %H:%M:%S %p} ",
+        "format": "{:%A    %B-%d-%Y    %H:%M:%S %p}",
         "interval": 1,
         "tooltip-format": "<tt>{calendar}</tt>",
         "calendar": {
@@ -145,10 +173,6 @@
         "format": "",
         "tooltip": false
     },
-    "custom/endpoint": {
-        "format": "|",
-        "tooltip": false
-    },
     "group/expand": {
         "orientation": "horizontal",
         "drawer": {
@@ -213,7 +237,7 @@
         "format": "{icon} {percent}%",
         "format-icons": ["󰃞", "󰃟", "󰃠"],
         "on-scroll-up": "brightnessctl set 1%+",
-        "on-scroll-down": "brightnessctl set 1%-",
+        "on-scroll-down": "brightnessctl --min-value=10000 set 1%-",
         "min-length": 6,
         "menu": "on-click-right",
         "menu-file": "~/.config/waybar/menus/nightlight.xml",
