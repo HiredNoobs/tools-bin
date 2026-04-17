@@ -12,5 +12,6 @@ function get_wallpapers {
 
 CHOICE=$(get_wallpapers | rofi -dmenu -i -p "Wallpapers" -theme ~/.config/rofi/wallpaper.rasi)
 if [[ -n "${CHOICE:-}" ]]; then
-  swaybg -i "$HOME/Pictures/wallpapers/$CHOICE" -m fill
+  cp "$HOME/Pictures/wallpapers/$CHOICE" "$HOME/.cache/current-wallpaper"
+  swaybg -i "$HOME/.cache/current-wallpaper" -m fill
 fi
