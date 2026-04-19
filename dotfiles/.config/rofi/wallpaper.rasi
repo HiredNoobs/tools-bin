@@ -4,22 +4,22 @@ configuration {
     font: "CodeNewRoman Nerd Font Propo 12";
     show-icons: true;
     icon-theme: "Papirus";
+    drun-display-format: "{name}";
 
     kb-cancel: "Escape,MousePrimary";
     hover-select: true;
 
-    lines: 3;
-    columns: 6;
-    cycle: false;
     scrollbar: false;
-
-    drun-display-format: "{name}";
 }
 
 window {
     width: 40%;
     height: 45%;
     border-radius: 6px;
+}
+
+listview {
+    columns: 4;
 }
 
 element {

@@ -11,4 +11,12 @@ configuration {
 
     kb-cancel: "Escape,MousePrimary";
     hover-select: true;
+
+    scrollbar: false;
+}
+
+window {
+    width: 40%;
+    height: 45%;
+    border-radius: 6px;
 }
