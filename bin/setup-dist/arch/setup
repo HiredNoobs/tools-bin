@@ -14,8 +14,8 @@ function configure_hyprland {
   log_info "Installing dependencies."
 
   # Hyprland + utils
-  sudo pacman -S --needed --noconfirm hyprland \
-    pipewire wireplumber xdg-desktop-portal-hyprland hyprpolkitagent udiskie \
+  sudo pacman -S --needed --noconfirm hyprland sddm \
+    pulseaudio pipewire wireplumber xdg-desktop-portal-hyprland hyprpolkitagent udiskie \
     brightnessctl hyprsunset pamixer waybar blueman bluez dunst swaybg starship rofi \
     yazi gnome-calendar htop nvtop pavucontrol qt5-wayland qt6-wayland qt5ct qt6ct \
     kvantum-qt5 kvantum adw-gtk-theme
@@ -73,6 +73,7 @@ function configure_vim {
   log_info "Cloning vim addons."
 
   get_latest_git https://github.com/vim-airline/vim-airline.git ~/.vim/bundle/airline
+  get_latest_git https://github.com/preservim/nerdtree.git ~/.vim/bundle/nerdtree
   get_latest_git https://github.com/tpope/vim-fugitive.git ~/.vim/bundle/fugitive
   get_latest_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify
   get_latest_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox

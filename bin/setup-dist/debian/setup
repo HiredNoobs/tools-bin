@@ -47,6 +47,7 @@ function configure_vim {
   log_info "Cloning vim addons."
 
   get_latest_git https://github.com/vim-airline/vim-airline.git ~/.vim/bundle/airline
+  get_latest_git https://github.com/preservim/nerdtree.git ~/.vim/bundle/nerdtree
   get_latest_git https://github.com/tpope/vim-fugitive.git ~/.vim/bundle/fugitive
   get_latest_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify
   get_latest_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox
