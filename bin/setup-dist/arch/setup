@@ -85,6 +85,13 @@ function configure_vim {
   get_latest_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify
   get_latest_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox
 
+  log_info "Installing YouCompleteMe."
+
+  get_latest_git https://github.com/ycm-core/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe
+  git -C ~/.vim/bundle/YouCompleteMe submodule update --init --recursive
+  python3 ~/.vim/bundle/YouCompleteMe/install.py
+
+  log_info "Copying vim config file."
   rsync -av "$ROOT/dotfiles/.vimrc" ~/.vimrc
 }
 
