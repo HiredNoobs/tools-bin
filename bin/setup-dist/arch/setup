@@ -36,7 +36,7 @@ function configure_hyprland {
   cursor_version=$(get_latest_release "catppuccin/cursors")
   curl -fsSL "https://github.com/catppuccin/cursors/releases/download/$cursor_version/catppuccin-latte-red-cursors.zip" \
     -o /tmp/catppuccin-latte-red-cursors.zip
-  unzip /tmp/catppuccin-latte-red-cursors.zip -d "$HOME/.local/share/icons/"
+  unzip -o /tmp/catppuccin-latte-red-cursors.zip -d "$HOME/.local/share/icons/"
 
   rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
