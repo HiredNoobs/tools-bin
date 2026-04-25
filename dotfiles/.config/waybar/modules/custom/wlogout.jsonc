@@ -2,7 +2,7 @@
     "custom/wlogout": {
         "tooltip": false,
         "format": "",
-        "on-click": "wlogout",
+        "on-click": "hyprctl dispatch exec wlogout",
         "escape": true
     }
 }
