@@ -31,6 +31,9 @@ function configure_hyprland {
   sudo sed -i -e 's/^\#AutoEnable=true/AutoEnable=false/' /etc/bluetooth/main.conf
   sudo systemctl enable bluetooth --now
 
+  get_latest_git https://github.com/ndom91/rose-pine-hyprcursor.git /tmp/rose-pine-hyprcursor
+  cp -r /tmp/rose-pine-hyprcursor/* "$HOME/.local/share/icons/rose-pine-hyprcursor/"
+
   rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
   rsync -av "$ROOT/images/wallpapers/nord_scenary.png"  "$HOME/.cache/current-wallpaper"
