@@ -10,6 +10,8 @@ function configure_bash {
 }
 
 function configure_hyprland {
+  local cursor_version
+
   log_info "Configuring hyprland."
   log_info "Installing dependencies."
 
@@ -31,9 +33,10 @@ function configure_hyprland {
   sudo sed -i -e 's/^\#AutoEnable=true/AutoEnable=false/' /etc/bluetooth/main.conf
   sudo systemctl enable bluetooth --now
 
-  get_latest_git https://github.com/ndom91/rose-pine-hyprcursor.git /tmp/rose-pine-hyprcursor
-  mkdir -p "$HOME/.local/share/icons/rose-pine-hyprcursor"
-  cp -r /tmp/rose-pine-hyprcursor/hyprcursors_uncompressed/* "$HOME/.local/share/icons/rose-pine-hyprcursor/"
+  cursor_version=$(get_latest_release "catppuccin/cursors")
+  curl -fsSL "https://github.com/catppuccin/cursors/releases/download/$cursor_version/catppuccin-latte-dark-cursors.zip" \
+    -o /tmp/catppuccin-latte-dark-cursors.zip
+  unzip /tmp/catppuccin-latte-dark-cursors.zip -d "$HOME/.local/share/icons/catppuccin-latte-dark-cursors"
 
   rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
