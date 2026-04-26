@@ -14,7 +14,7 @@ CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "Uptime: $UPTIME" -theme ~/.conf
 case $CHOICE in
   $LOGOUT) hyprctl dispatch exit ;;
   $LOCK) hyprlock ;;
-  $SLEEP) systemctl suspend-then-hibernate ;;
+  $SLEEP) systemctl suspend-then-hibernate || systemctl suspend ;;
   $REBOOT) systemctl reboot ;;
   $SHUTDOWN) systemctl poweroff ;;
 esac

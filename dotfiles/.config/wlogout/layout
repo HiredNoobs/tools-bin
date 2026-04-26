@@ -7,7 +7,7 @@
 
 {
     "label" : "suspend",
-    "action" : "systemctl suspend-then-hibernate",
+    "action" : "systemctl suspend-then-hibernate || systemctl suspend",
     "text" : "Sleep",
     "keybind" : "u"
 }
