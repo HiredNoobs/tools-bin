@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-LOGOUT=" Logout"
-LOCK=" Lock"
-SLEEP=" Sleep"
-REBOOT=" Reboot"
-SHUTDOWN=" Shutdown"
+LOGOUT="󰍃 Logout"
+LOCK=" Lock"
+SLEEP="⏾ Sleep"
+REBOOT=" Reboot"
+SHUTDOWN="⏻ Shutdown"
 
 OPTIONS="$LOGOUT\n$LOCK\n$SLEEP\n$REBOOT\n$SHUTDOWN"
 UPTIME="$(uptime -p | sed 's/up //g')"
