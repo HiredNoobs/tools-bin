@@ -8,7 +8,7 @@ SELECT_AREA_DELAY="󱎫 Select Area (2s delay)"
 SCREENSHOT_DIR="$HOME/Pictures/screenshots"
 
 OPTIONS="$FULLSCREEN_INSTANT\n$FULLSCREEN_DELAY\n$SELECT_AREA_INSTANT\n$SELECT_AREA_DELAY"
-CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "Screenshots ($SCREENSHOT_DIR)" -theme ~/.config/rofi/screenshot.rasi)
+CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "$SCREENSHOT_DIR" -theme ~/.config/rofi/screenshot.rasi)
 
 mkdir -p "$SCREENSHOT_DIR"
 
