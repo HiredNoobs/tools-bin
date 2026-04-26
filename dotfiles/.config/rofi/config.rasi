@@ -1,7 +1,6 @@
-@import "~/.cache/wal/colors-rofi-dark.rasi"
+@import "common.rasi"
 
 configuration {
-    font: "CodeNewRoman Nerd Font Propo 13";
     show-icons: true;
     icon-theme: "Papirus";
     display-drun: "Apps";
@@ -11,12 +10,8 @@ configuration {
 
     kb-cancel: "Escape,MousePrimary";
     hover-select: true;
-
-    scrollbar: false;
 }
 
 window {
-    width: 40%;
-    height: 45%;
     border-radius: 6px;
 }
