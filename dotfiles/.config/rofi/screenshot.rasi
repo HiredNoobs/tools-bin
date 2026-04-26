@@ -1,0 +1,60 @@
+@import "common.rasi"
+
+configuration {
+    show-icons: true;
+    icon-theme: "Papirus";
+    drun-display-format: "{name}";
+
+    kb-cancel: "Escape,MousePrimary";
+    hover-select: true;
+}
+
+window {
+    border-radius: 6px;
+}
+
+inputbar {
+    border-radius: 12px;
+
+    spacing: 20px;
+    padding: 15px;
+
+    background-color: #282B31FF;
+}
+
+prompt {
+    background-color: #282B31FF;
+}
+
+textbox-prompt-colon {
+    enabled: false;
+}
+
+entry {
+    enabled: false;
+
+    background-color: #282B31FF;
+}
+
+case-indicator {
+    background-color: #282B31FF;
+}
+
+listview {
+    columns: 1;
+    lines: 4;
+    layout: vertical;
+    spacing: 5px;
+
+    scrollbar: false;
+
+    padding: 10px 10px 0px 10px;
+}
+
+element {
+    spacing: 10px;
+    margin: 0px;
+    padding: 5px;
+    border: 0px solid;
+    border-radius: 12px;
+}

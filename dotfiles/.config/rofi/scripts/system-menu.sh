@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 LOGOUT="󰍃 Logout"
-LOCK=" Lock"
+LOCK=" Lock"
 SLEEP="⏾ Sleep"
 REBOOT=" Reboot"
 SHUTDOWN="⏻ Shutdown"
@@ -9,7 +9,7 @@ SHUTDOWN="⏻ Shutdown"
 OPTIONS="$LOGOUT\n$LOCK\n$SLEEP\n$REBOOT\n$SHUTDOWN"
 UPTIME="$(uptime -p | sed 's/up //g')"
 
-CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "Uptime: $UPTIME" -theme ~/.config/rofi/config.rasi -theme-str "entry { enabled: false; }")
+CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "Uptime: $UPTIME" -theme ~/.config/rofi/system.rasi)
 
 case $CHOICE in
   $LOGOUT) hyprctl dispatch exit ;;
