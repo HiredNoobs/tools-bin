@@ -21,6 +21,9 @@ let NERDTreeShowHidden=1
 
 let g:ycm_autoclose_preview_window_after_insertion=1
 
+" ctrl+y and enter to stop completion
+let g:ycm_key_list_stop_completion=['<C-y>', '<CR>']
+
 " have vim jump to the last position when reopening a file
 autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 
