@@ -12,9 +12,9 @@ UPTIME="$(uptime -p | sed 's/up //g')"
 CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "Uptime: $UPTIME" -theme ~/.config/rofi/system.rasi)
 
 case $CHOICE in
-  $LOGOUT) hyprctl dispatch exit ;;
-  $LOCK) hyprlock ;;
-  $SLEEP) systemctl suspend-then-hibernate || systemctl suspend ;;
-  $REBOOT) systemctl reboot ;;
-  $SHUTDOWN) systemctl poweroff ;;
+  "$LOGOUT") hyprctl dispatch exit ;;
+  "$LOCK") hyprlock ;;
+  "$SLEEP") systemctl suspend-then-hibernate || systemctl suspend ;;
+  "$REBOOT") systemctl reboot ;;
+  "$SHUTDOWN") systemctl poweroff ;;
 esac

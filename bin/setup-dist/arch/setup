@@ -19,10 +19,10 @@ function configure_hyprland {
   sudo pacman -S --needed --noconfirm hyprland hyprlock hypridle \
     sddm pipewire pipewire-audio pipewire-pulse wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland \
     hyprpolkitagent udiskie brightnessctl hyprsunset pamixer waybar blueman bluez dunst \
-    swaybg starship rofi yazi gnome-calendar htop nvtop pavucontrol qt5-wayland qt6-wayland \
-    qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme otf-codenewroman-nerd
+    swaybg starship rofi yazi gnome-calendar grim slurp swappy htop nvtop pavucontrol \
+    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme otf-codenewroman-nerd
   
-  yay -S --needed grimblast-git wlogout librewolf-bin
+  yay -S --needed wlogout librewolf-bin
 
   # hyprpm deps
   sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc
@@ -52,6 +52,7 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/dotfiles/.config/dunst/"    "$XDG_CONFIG_HOME/dunst/"
   rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
+  rsync -av --delete "$ROOT/dotfiles/.config/swappy/"   "$XDG_CONFIG_HOME/swappy/"
   rsync -av --delete "$ROOT/dotfiles/.config/fish/"     "$XDG_CONFIG_HOME/fish/"
 }
 
