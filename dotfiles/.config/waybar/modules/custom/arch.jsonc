@@ -5,12 +5,12 @@
         "menu": "on-click-right",
         "menu-file": "~/.config/waybar/menus/system.xml",
         "menu-actions": {
-            "action-1-1": "hyprctl dispatch exec [float] 'kitty htop'",
-            "action-1-2": "hyprctl dispatch exec [float] 'kitty nvtop'",
+            "action-1-1": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty htop\", { float = true, center = true })'",
+            "action-1-2": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty nvtop\", { float = true, center = true })'",
             "action-2-1": "~/.config/rofi/scripts/wallpaper-menu.sh",
-            "action-2-2": "hyprctl dispatch exec [float] nwg-look",
-            "action-2-3": "hyprctl dispatch exec [float] qt6ct",
-            "action-2-4": "hyprctl dispatch exec [float] kvantummanager",
+            "action-2-2": "hyprctl dispatch 'hl.dsp.exec_cmd(\"nwg-look\", { float = true, center = true })'",
+            "action-2-3": "hyprctl dispatch 'hl.dsp.exec_cmd(\"qt6ct\", { float = true, center = true })'",
+            "action-2-4": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kvantummanager\", { float = true, center = true })'",
             "action-3": "hyprctl reload"
   		}
     }

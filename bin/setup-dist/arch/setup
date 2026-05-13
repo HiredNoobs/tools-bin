@@ -16,13 +16,13 @@ function configure_hyprland {
   log_info "Installing dependencies."
 
   # Hyprland + utils
-  sudo pacman -S --needed --noconfirm hyprland \
+  sudo pacman -S --needed --noconfirm hyprland hyprlock hypridle \
     sddm pipewire pipewire-audio pipewire-pulse wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland \
     hyprpolkitagent udiskie brightnessctl hyprsunset pamixer waybar blueman bluez dunst \
     swaybg starship rofi yazi gnome-calendar htop nvtop pavucontrol qt5-wayland qt6-wayland \
-    qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme
+    qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme otf-codenewroman-nerd
   
-  yay -S --needed hyprlock hypridle grimblast wlogout otf-codenewroman-nerd librewolf-bin
+  yay -S --needed grimblast-git wlogout librewolf-bin
 
   # hyprpm deps
   sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc

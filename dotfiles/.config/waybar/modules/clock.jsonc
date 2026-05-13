@@ -3,7 +3,7 @@
         "format": "{:%A    %B-%d-%Y    %H:%M:%S %p}",
         "interval": 1,
         "tooltip-format": "<tt>{calendar}</tt>",
-        "on-click": "hyprctl dispatch exec [float] gnome-calendar",
+        "on-click": "hyprctl dispatch 'hl.dsp.exec_cmd(\"gnome-calendar\", { float = true, center = true })'",
         "calendar": {
             "format": {
                 "today": "<span color='#fb4934'><b>{}</b></span>"
