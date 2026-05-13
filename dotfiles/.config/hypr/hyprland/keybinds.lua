@@ -21,18 +21,18 @@ hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
 
 -- Move window (within workspace), arrow keys and vim binds
 hl.bind(mainMod .. " + SHIFT + LEFT", hl.dsp.window.move({ direction = "left" }))
-hl.bind(mainMod .. " + SHIFT + RIGHT", hl.dsp.window.move({ direction = "right "}))
+hl.bind(mainMod .. " + SHIFT + RIGHT", hl.dsp.window.move({ direction = "right" }))
 hl.bind(mainMod .. " + SHIFT + UP", hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + DOWN", hl.dsp.window.move({ direction = "down" }))
 
 hl.bind(mainMod .. " + H", hl.dsp.window.move({ direction = "left" }))
-hl.bind(mainMod .. " + L", hl.dsp.window.move({ direction = "right "}))
+hl.bind(mainMod .. " + L", hl.dsp.window.move({ direction = "right" }))
 hl.bind(mainMod .. " + K", hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + J", hl.dsp.window.move({ direction = "down" }))
 
 -- Fullscreen
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen_state({ 1, 0, "toggle" })) -- Maximise but don't inform app
-hl.bind(mainMod .. " + ENTER", hl.dsp.window.fullscreen_state({ 2, 2, "toggle" })) -- Fullscreen, inform app
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen_state({ internal = 1, client = 0, action = "toggle" })) -- Maximise but don't inform app
+hl.bind(mainMod .. " + RETURN", hl.dsp.window.fullscreen_state({ internal = 2, client = 2, action = "toggle" })) -- Fullscreen, inform app
 
 -- Toggle floating
 hl.bind(mainMod .. " + D", hl.dsp.window.float({ action = "toggle" }))
@@ -53,10 +53,10 @@ for i = 1, 10 do
     local kp = "KP_" .. key -- Keypad keys
 
 	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-	hl.bind(mainMod .. " + ALT + " .. key, hl.dsp.window.move({ workspace = i }))
+	hl.bind(mainMod .. " + ALT + " .. key, hl.dsp.window.move({ workspace = i, follow = false }))
 
     hl.bind(mainMod .. " + " .. kp, hl.dsp.focus({ workspace = i }))
-    hl.bind(mainMod .. " + ALT + " .. kp, hl.dsp.window.move({ workspace = i }))
+    hl.bind(mainMod .. " + ALT + " .. kp, hl.dsp.window.move({ workspace = i, follow = false }))
 end
 
 -------------------------------------------------------
