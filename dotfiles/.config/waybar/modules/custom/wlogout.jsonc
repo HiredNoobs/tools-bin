@@ -2,7 +2,7 @@
     "custom/wlogout": {
         "tooltip": false,
         "format": "",
-        "on-click": "hyprctl dispatch 'hl.dsp.exec_cmd(\"wlogout\")",
+        "on-click": "hyprctl dispatch 'hl.dsp.exec_cmd(\"wlogout\")'",
         "escape": true
     }
 }
