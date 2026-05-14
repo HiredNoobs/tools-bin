@@ -59,7 +59,7 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + ALT + " .. kp, hl.dsp.window.move({ workspace = i, follow = false }))
 end
 
-hl.bind(mainMod .. " + G", hl.dsp.workspace.toggle_special({ special_name = "special:games" })))
+hl.bind(mainMod .. " + G", hl.dsp.workspace.toggle_special({ special_name = "special:games" }))
 
 -------------------------------------------------------
 -- Session control
