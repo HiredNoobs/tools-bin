@@ -11,7 +11,7 @@
         "menu-actions": {
   			"action-1": "nmcli radio wifi on",
   			"action-2": "nmcli radio wifi off",
-            "action-3": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty nmtui\", { float = true, center = true, size = { \"cursor_x-(window_w*0.5))\", \"(cursor_y-(window_h*0.5))\" } })'",
+            "action-3": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty nmtui\", { float = true, center = true, size = { \"monitor_w*0.5\", \"monitor_h*0.5\" } })'",
             "action-4": "hyprctl dispatch 'hl.dsp.exec_cmd(\"nm-connection-editor\", { float = true, center = true })'"
   		}
     }

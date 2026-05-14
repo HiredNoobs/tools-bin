@@ -28,7 +28,7 @@ for _, modal_title in ipairs(modal_titles) do
         match = match,
         float = true,
         center = true,
-        size = { "cursor_x-(window_w*0.5))", "(cursor_y-(window_h*0.5))" }
+        size = { "monitor_w*0.5", "monitor_h*0.5" }
     })
 end
 

@@ -80,7 +80,7 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("librewolf || firefox"))
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("steam"))
 
-hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -1 bash -c btop", { stay_focused = true, float = true, center = true, size = { "cursor_x-(window_w*0.5))", "(cursor_y-(window_h*0.5))" } }))
+hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -1 bash -c btop", { stay_focused = true, float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }))
 
 -- Waybar toggle
 hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("pkill waybar || waybar"))
