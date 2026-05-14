@@ -78,15 +78,36 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("librewolf || firefox"))
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
 hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -1 bash -c btop", { float = true }))
 
--- Screenshots
-hl.bind("PRINT", hl.dsp.exec_cmd("pkill rofi || ~/.config/rofi/scripts/screenshot-menu.sh"))
-hl.bind(mainMod .. " + PRINT", hl.dsp.exec_cmd("grimblast --notify copysave screen ~/Pictures/screenshots/$(date +%Y%m%d-%H%M%S).png"))
-hl.bind(mainMod .. " + SHIFT + PRINT", hl.dsp.exec_cmd("grimblast --notify copysave active ~/Pictures/screenshots/$(date +%Y%m%d-%H%M%S).png"))
-hl.bind(mainMod .. " + ALT + PRINT", hl.dsp.exec_cmd("grimblast --freeze --notify copysave area ~/Pictures/screenshots/$(date +%Y%m%d-%H%M%S).png"))
-
-
 -- Waybar toggle
 hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("pkill waybar || waybar"))
+
+-------------------------------------------------------
+-- Screenshot shortcuts
+-------------------------------------------------------
+
+-- Screenshot rofi menu
+hl.bind("PRINT", hl.dsp.exec_cmd("pkill rofi || ~/.config/rofi/scripts/screenshot-menu.sh"))
+
+-- Select area, saves unedited file, copies to clipboard, then opens file in swappy
+hl.bind(mainMod .. " + PRINT", function()
+    local file = "$HOME/Pictures/screenshots/snip-" .. os.date("%Y%m%d_%Hh%Mm%Ss-") .. math.random(10000) .. ".png"
+    local grim = "grim -g \"$(slurp)\" \"" .. file .. "\""
+    local message = " && notify-send -i \"" .. file .. "\" Screenshot saved to '" .. file .. "'"
+    local copy = " && wl-copy < \"" .. file .. "\""
+    local swappy = " && swappy -f \"" .. file .. "\""
+
+    hl.dispatch(hl.dsp.exec_cmd(grim .. message .. copy .. swappy))
+end)
+
+-- Full screen saves file, copies to clipboard
+hl.bind("ALT + PRINT", function()
+    local file = "$HOME/Pictures/screenshots/full-" .. os.date("%Y%m%d_%Hh%Mm%Ss-") .. math.random(10000) .. ".png"
+    local grim = "grim \"" .. file .. "\""
+    local message = " && notify-send -i \"" .. file .. "\" Screenshot saved to '" .. file .. "'"
+    local copy = " && wl-copy < \"" .. file .. "\""
+
+    hl.dispatch(hl.dsp.exec_cmd(grim .. message .. copy))
+end)
 
 -------------------------------------------------------
 -- Media control
