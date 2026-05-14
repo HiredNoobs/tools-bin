@@ -5,8 +5,8 @@
         "menu": "on-click-right",
         "menu-file": "~/.config/waybar/menus/system.xml",
         "menu-actions": {
-            "action-1-1": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty htop\", { float = true, center = true })'",
-            "action-1-2": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty nvtop\", { float = true, center = true })'",
+            "action-1-1": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty htop\", { float = true, center = true, size = { \"cursor_x-(window_w*0.5))\", \"(cursor_y-(window_h*0.5))\" } })'",
+            "action-1-2": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty nvtop\", { float = true, center = true, size = { \"cursor_x-(window_w*0.5))\", \"(cursor_y-(window_h*0.5))\" } })'",
             "action-2-1": "~/.config/rofi/scripts/wallpaper-menu.sh",
             "action-2-2": "hyprctl dispatch 'hl.dsp.exec_cmd(\"nwg-look\", { float = true, center = true })'",
             "action-2-3": "hyprctl dispatch 'hl.dsp.exec_cmd(\"qt6ct\", { float = true, center = true })'",
