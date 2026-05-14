@@ -24,8 +24,12 @@ for _, modal_title in ipairs(modal_titles) do
         title = modal_title
     }
 
-    hl.window_rule({ match = match, float = true })
-    hl.window_rule({ match = match, center = true })
+    hl.window_rule({
+        match = match,
+        float = true,
+        center = true,
+        size = { "cursor_x-(window_w*0.5))", "(cursor_y-(window_h*0.5))" }
+    })
 end
 
 -- Steam & games
@@ -40,9 +44,13 @@ hl.window_rule({
     name = "steam-games",
     match = { initial_class = "steam_app_\\d" },
     workspace = "special:games silent",
+    fullscreen_state = "2 2",
+    idle_inhibit = "always",
     render_unfocused = true,
+    no_anim = true,
     no_blur = true,
     no_dim = true,
+    no_focus = true,
     no_shadow = true,
     opaque = true,
     content = "game",
