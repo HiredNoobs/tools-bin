@@ -20,3 +20,8 @@ for _, title in ipairs(modal_titles) do
     hl.window_rule({ match = match, center = true })
 end
 
+-------------------------------------------------------
+-- Layer rules
+-------------------------------------------------------
+
+hl.layer_rule({ match = { namespace = "rofi" }, no_anim = true})
