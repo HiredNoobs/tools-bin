@@ -90,7 +90,7 @@ hl.bind("PRINT", hl.dsp.exec_cmd("pkill rofi || ~/.config/rofi/scripts/screensho
 
 -- Select area, saves unedited file, copies to clipboard, then opens file in swappy
 hl.bind(mainMod .. " + PRINT", function()
-    local file = "$HOME/Pictures/screenshots/snip-" .. os.date("%Y%m%d_%H%M%S-") .. math.random(10000) .. ".png"
+    local file = "$HOME/Pictures/screenshots/snip-" .. os.date("%Y%m%d_%H%M%S-") .. math.random(32767) .. ".png"
     local grim = "grim -g \"$(slurp)\" \"" .. file .. "\""
     local message = " && notify-send -i \"" .. file .. "\" \"Screenshot saved to '" .. file .. "'\""
     local copy = " && wl-copy < \"" .. file .. "\""
@@ -101,7 +101,7 @@ end)
 
 -- Full screen saves file, copies to clipboard
 hl.bind("ALT + PRINT", function()
-    local file = "$HOME/Pictures/screenshots/full-" .. os.date("%Y%m%d_%H%M%S-") .. math.random(10000) .. ".png"
+    local file = "$HOME/Pictures/screenshots/full-" .. os.date("%Y%m%d_%H%M%S-") .. math.random(32767) .. ".png"
     local grim = "grim \"" .. file .. "\""
     local message = " && notify-send -i \"" .. file .. "\" \"Screenshot saved to '" .. file .. "'\""
     local copy = " && wl-copy < \"" .. file .. "\""

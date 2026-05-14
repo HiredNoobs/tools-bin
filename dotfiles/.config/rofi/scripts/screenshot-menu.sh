@@ -14,24 +14,24 @@ mkdir -p "$SCREENSHOT_DIR"
 
 case "$CHOICE" in
   "$FULLSCREEN_INSTANT")
-    FILE="$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png"
+    FILE="$SCREENSHOT_DIR/full-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
     grim "$FILE"
     swappy -f "$FILE"
     ;;
   "$FULLSCREEN_DELAY")
     sleep 2
-    FILE="$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png"
+    FILE="$SCREENSHOT_DIR/full-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
     grim "$FILE"
     swappy -f "$FILE"
     ;;
   "$SELECT_AREA_INSTANT")
-    FILE="$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png"
+    FILE="$SCREENSHOT_DIR/snip-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
     grim -g "$(slurp)" "$FILE"
     swappy -f "$FILE"
     ;;
   "$SELECT_AREA_DELAY")
     sleep 2
-    FILE="$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png"
+    FILE="$SCREENSHOT_DIR/snip-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
     grim -g "$(slurp)" "$FILE"
     swappy -f "$FILE"
     ;;
