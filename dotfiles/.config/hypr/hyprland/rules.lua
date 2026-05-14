@@ -5,7 +5,8 @@
 -- Browser
 hl.window_rule({
     match = { class = "librewolf|firefox" },
-    workspace = "2 silent"
+    workspace = "2 silent",
+    no_initial_focus = true
 })
 
 -- Browser modals
@@ -29,7 +30,8 @@ end
 -- Steam & games
 hl.window_rule({
     match = { class = "steam" },
-    workspace = "1 silent"
+    workspace = "1 silent",
+    no_initial_focus = true
 })
 
 hl.window_rule({
@@ -57,7 +59,8 @@ hl.window_rule({
 -- Discord
 hl.window_rule({
     match = { class = "discord" },
-    workspace = "3 silent"
+    workspace = "3 silent",
+    no_initial_focus = true
 })
 
 -------------------------------------------------------
