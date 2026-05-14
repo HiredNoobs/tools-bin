@@ -59,6 +59,8 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + ALT + " .. kp, hl.dsp.window.move({ workspace = i, follow = false }))
 end
 
+hl.bind(mainMod .. " + G", hl.dsp.workspace.toggle_special({ special_name = "special:games" })))
+
 -------------------------------------------------------
 -- Session control
 -------------------------------------------------------
@@ -76,7 +78,9 @@ hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty -1"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("kitty -1 bash -c yazi"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("librewolf || firefox"))
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
-hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -1 bash -c btop", { float = true }))
+hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("steam"))
+
+hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -1 bash -c btop", { stay_focused = true, float = true, center = true, size = { "cursor_x-(window_w*0.5))", "(cursor_y-(window_h*0.5))" } }))
 
 -- Waybar toggle
 hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("pkill waybar || waybar"))
