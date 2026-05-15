@@ -10,6 +10,14 @@ hl.window_rule({
     focus_on_activate = false
 })
 
+hl.window_rule({
+    match = {
+        class = "librewolf|firefox",
+        title = "[Pp]rivate [Bbrowsing]"
+    },
+    no_screen_share = true
+})
+
 -- Browser modals
 local modal_titles = {
     "[Ss]ave [Ii]mage",
@@ -32,7 +40,7 @@ for _, modal_title in ipairs(modal_titles) do
     })
 end
 
--- Steam & games
+-- Steam
 hl.window_rule({
     match = { class = "steam" },
     workspace = "1 silent",
@@ -41,29 +49,28 @@ hl.window_rule({
 })
 
 hl.window_rule({
-    name = "steam-games",
-    match = { initial_class = "steam_app_\\d" },
+    match = {
+        initial_class = "steam",
+        initial_title = "negative:^([Ss]team|steamapp.*|steam_app.*)$"
+    },
+    float = true
+})
+
+-- Steam games
+hl.window_rule({
+    match = { initial_class = "^(steam_app_.*)" }, -- This one needs the ^() for some reason...?
     workspace = "special:games silent",
+    no_initial_focus = true,
+    focus_on_activate = false,
     fullscreen_state = "2 2",
     idle_inhibit = "always",
     render_unfocused = true,
     no_anim = true,
     no_blur = true,
     no_dim = true,
-    no_focus = true,
     no_shadow = true,
     opaque = true,
-    content = "game",
     immediate = true,
-})
-
-hl.window_rule({
-    name = "float-steam-children",
-    match = {
-        initial_class = "steam",
-        initial_title = "negative:^(steam|steamapp.*)$"
-    },
-    float = true
 })
 
 -- Discord

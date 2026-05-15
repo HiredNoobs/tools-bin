@@ -59,15 +59,14 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + ALT + " .. kp, hl.dsp.window.move({ workspace = i, follow = false }))
 end
 
-hl.bind(mainMod .. " + G", hl.dsp.workspace.toggle_special({ special_name = "special:games" }))
+hl.bind(mainMod .. " + G", hl.dsp.workspace.toggle_special("games"))
 
 -------------------------------------------------------
 -- Session control
 -------------------------------------------------------
 
 hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("pkill rofi || ~/.config/rofi/scripts/system-menu.sh"))
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"))
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend"))
+hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("loginctl lock-session"))
 
 -------------------------------------------------------
 -- Application shortcuts
@@ -75,12 +74,12 @@ hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend"))
 
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("pkill rofi || rofi -show drun -theme ~/.config/rofi/launcher.rasi"))
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty -1"))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("kitty -1 bash -c yazi"))
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("kitty bash -c yazi", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("librewolf || firefox"))
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("steam"))
 
-hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty -1 bash -c btop", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }))
+hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty bash -c btop", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }))
 
 -- Waybar toggle
 hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("pkill waybar || waybar"))
