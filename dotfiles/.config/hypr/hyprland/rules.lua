@@ -13,7 +13,7 @@ hl.window_rule({
 hl.window_rule({
     match = {
         class = "librewolf|firefox",
-        title = "[Pp]rivate [Bbrowsing]"
+        title = "[Pp]rivate [Bb]rowsing"
     },
     no_screen_share = true
 })
@@ -60,6 +60,7 @@ hl.window_rule({
 hl.window_rule({
     match = { initial_class = "^(steam_app_.*)" }, -- This one needs the ^() for some reason...?
     workspace = "special:games silent",
+    float = false,
     no_initial_focus = true,
     focus_on_activate = false,
     fullscreen_state = "2 2",
