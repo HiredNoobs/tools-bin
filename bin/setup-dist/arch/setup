@@ -20,7 +20,8 @@ function configure_hyprland {
     sddm pipewire pipewire-audio pipewire-pulse wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland \
     udiskie brightnessctl pamixer waybar blueman bluez dunst libnotify wl-clipboard \
     swaybg starship rofi yazi gnome-calendar grim slurp swappy htop nvtop pavucontrol \
-    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme otf-codenewroman-nerd
+    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme otf-codenewroman-nerd \
+    vlc
   
   yay -S --needed wlogout librewolf-bin
 
@@ -38,6 +39,7 @@ function configure_hyprland {
     -o /tmp/catppuccin-latte-red-cursors.zip
   unzip -o /tmp/catppuccin-latte-red-cursors.zip -d "$HOME/.local/share/icons/"
 
+  rsync -av "$ROOT/dotfiles/.config/mimeapps.list"      "$HOME/.config/mimeapps.list"
   rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
   rsync -av "$ROOT/images/wallpapers/nord_scenary.png"  "$HOME/.cache/current-wallpaper"
