@@ -9,15 +9,76 @@ function get_latest_release {
 }
 
 # Clones if not already cloned or pulls updates if exists
+# Returns:
+#   0 = no changes
+#   1 = changes pulled or commit/tag checkout changed state
+#   2 = errors
 function get_latest_git {
-  local repo target
+  local repo target commit tag positional_args head_commit head_tag output changed
+  positional_args=()
+  changed=0
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --commit) commit="$2"; shift 2;;
+      --tag) tag="$2"; shift 2;;
+      -*) log_error "Unknown option: $1"; return 2;;
+      *) positional_args+=("$1"); shift;;
+    esac
+  done
+
+  set -- "${positional_args[@]}"
   repo=$1
   target=$2
 
+  if [[ -n "${commit:-}" && -n "${tag:-}" ]]; then
+    log_error "--commit and --tag cannot be used together"
+    return 2
+  fi
+
   if [[ -d "$target/.git" ]]; then
-    git -C $target pull
+    head_commit=$(git -C "$target" rev-parse HEAD)
+    head_tag=$(git -C "$target" tag --points-at HEAD)
+
+    if [[ -n "${commit:-}" ]]; then
+      if [[ "$commit" != "$head_commit" ]]; then
+        git -C "$target" fetch origin "$commit" || return 2
+        git -C "$target" checkout "$commit" || return 2
+        changed=1
+      fi
+    elif [[ -n "${tag:-}" ]]; then
+      # TODO: Add --force option to ignore this check
+      if [[ "$tag" != "$head_tag" ]]; then
+        git -C "$target" fetch origin "refs/tags/$tag:refs/tags/$tag" || return 2
+        git -C "$target" checkout "tags/$tag" || return 2
+        changed=1
+      fi
+    else
+      output=$(git -C "$target" pull --ff-only 2>&1) || return 2
+      if ! grep -q "Already up to date" <<< "$output"; then
+        changed=1
+      fi
+    fi
   else
-    git clone $repo $target
+    if [[ -n "${commit:-}" ]]; then
+      git clone --no-checkout "$repo" "$target" || return 2
+      git -C "$target" fetch origin "$commit" || return 2
+      git -C "$target" checkout "$commit" || return 2
+    elif [[ -n "${tag:-}" ]]; then
+      git clone --no-checkout "$repo" "$target" || return 2
+      git -C "$target" fetch origin "refs/tags/$tag:refs/tags/$tag" || return 2
+      git -C "$target" checkout "tags/$tag" || return 2
+    else
+      git clone "$repo" "$target" || return 2
+    fi
+
+    changed=1
+  fi
+
+  if [[ "$changed" == 1 ]]; then
+    return 1
+  else
+    return 0
   fi
 }
 

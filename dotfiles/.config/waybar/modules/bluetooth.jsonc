@@ -15,7 +15,7 @@
         "menu-actions": {
   			"action-1": "rfkill unblock bluetooth",
   			"action-2": "rfkill block bluetooth",
-            "action-3": "hyprctl dispatch exec [float] 'blueman-manager'"
+            "action-3": "hyprctl dispatch 'hl.dsp.exec_cmd(\"blueman-manager\", { float = true, center = true })'"
   		}
     }
 }

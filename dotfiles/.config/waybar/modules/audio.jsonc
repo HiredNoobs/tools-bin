@@ -19,7 +19,7 @@
         "menu": "on-click-right",
         "menu-file": "~/.config/waybar/menus/audio.xml",
         "menu-actions": {
-  			"action-1": "hyprctl dispatch exec [float] 'pavucontrol -t 3'"
+            "action-1": "hyprctl dispatch 'hl.dsp.exec_cmd(\"pavucontrol -t 3\", { float = true, center = true })'"
   		}
     },
     "pulseaudio#microphone": {
@@ -33,7 +33,7 @@
         "menu": "on-click-right",
         "menu-file": "~/.config/waybar/menus/audio.xml",
         "menu-actions": {
-  			"action-1": "hyprctl dispatch exec [float] 'pavucontrol -t 4'"
+  			"action-1": "hyprctl dispatch 'hl.dsp.exec_cmd(\"pavucontrol -t 4\", { float = true, center = true })'"
   		}
     }
 }

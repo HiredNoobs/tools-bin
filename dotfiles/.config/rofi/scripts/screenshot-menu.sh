@@ -12,9 +12,27 @@ CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -i -p "$SCREENSHOT_DIR" -theme ~/.conf
 
 mkdir -p "$SCREENSHOT_DIR"
 
-case $CHOICE in
-  $FULLSCREEN_INSTANT) grimblast --notify copysave screen "$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png";;
-  $FULLSCREEN_DELAY) sleep 2 && grimblast --notify copysave screen "$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png";;
-  $SELECT_AREA_INSTANT) grimblast --freeze --notify copysave area "$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png";;
-  $SELECT_AREA_DELAY) sleep 2 && grimblast --freeze --notify copysave area "$SCREENSHOT_DIR/$(date +%Y%m%d-%H%M%S).png";;
+case "$CHOICE" in
+  "$FULLSCREEN_INSTANT")
+    FILE="$SCREENSHOT_DIR/full-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
+    grim "$FILE"
+    swappy -f "$FILE"
+    ;;
+  "$FULLSCREEN_DELAY")
+    sleep 2
+    FILE="$SCREENSHOT_DIR/full-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
+    grim "$FILE"
+    swappy -f "$FILE"
+    ;;
+  "$SELECT_AREA_INSTANT")
+    FILE="$SCREENSHOT_DIR/snip-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
+    grim -g "$(slurp)" "$FILE"
+    swappy -f "$FILE"
+    ;;
+  "$SELECT_AREA_DELAY")
+    sleep 2
+    FILE="$SCREENSHOT_DIR/snip-$(date +%Y%m%d-%H%M%S)-$RANDOM.png"
+    grim -g "$(slurp)" "$FILE"
+    swappy -f "$FILE"
+    ;;
 esac

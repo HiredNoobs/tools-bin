@@ -21,21 +21,21 @@
 
 {
     "label" : "reboot",
-    "action" : "systemctl reboot",
+    "action" : "hyprshutdown -t 'Rebooting...' --post-cmd 'systemctl reboot'",
     "text" : "Reboot",
     "keybind" : "r"
 }
 
 {
     "label" : "logout",
-    "action" : "hyprctl dispatch exit",
+    "action" : "hyprshutdown -t 'Logging out...'",
     "text" : "Logout",
     "keybind" : "e"
 }
 
 {
     "label" : "shutdown",
-    "action" : "systemctl poweroff",
+    "action" : "hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'",
     "text" : "Shutdown",
     "keybind" : "s"
 }

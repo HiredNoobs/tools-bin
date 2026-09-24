@@ -42,15 +42,15 @@ function configure_vim {
 
   log_info "Setting up vim addon manager (pathogen)."
 
-  curl -LSso ~/.vim/autoload/pathogen.vim https://raw.githubusercontent.com/tpope/vim-pathogen/master/autoload/pathogen.vim
+  curl -LSso ~/.vim/autoload/pathogen.vim https://raw.githubusercontent.com/tpope/vim-pathogen/ac4dd9494fa9008754e49dff85bff1b5746c89b4/autoload/pathogen.vim
 
   log_info "Cloning vim addons."
 
-  get_latest_git https://github.com/vim-airline/vim-airline.git ~/.vim/bundle/airline
-  get_latest_git https://github.com/preservim/nerdtree.git ~/.vim/bundle/nerdtree
-  get_latest_git https://github.com/tpope/vim-fugitive.git ~/.vim/bundle/fugitive
-  get_latest_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify
-  get_latest_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox
+  get_latest_git https://github.com/vim-airline/vim-airline.git ~/.vim/bundle/airline --commit 1586662296c9dc946083e17cb6a4ef0b3e7c0d68
+  get_latest_git https://github.com/preservim/nerdtree.git ~/.vim/bundle/nerdtree --commit 690d061b591525890f1471c6675bcb5bdc8cdff9
+  get_latest_git https://github.com/tpope/vim-fugitive.git ~/.vim/bundle/fugitive --commit 3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0
+  get_latest_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify --commit 3b5ae37eb2b77c3ae58d60dfdc3fc30258078663
+  get_latest_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox --commit 697c00291db857ca0af00ec154e5bd514a79191f
 
   rsync -av "$ROOT/dotfiles/.vimrc" ~/.vimrc
 }

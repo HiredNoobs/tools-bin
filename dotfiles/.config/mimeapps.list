@@ -1,0 +1,5 @@
+[Default Applications]
+inode/directory=yazi.desktop
+
+x-scheme-handler/http=librewolf.desktop;firefox.desktop;
+x-scheme-handler/https=librewolf.desktop;firefox.desktop;

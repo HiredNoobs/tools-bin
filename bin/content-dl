@@ -62,11 +62,11 @@ if [[ "$AUDIO_ONLY" == true ]]; then
   for URL in "$@"; do
     yt-dlp --extract-audio --audio-format m4a --embed-metadata --embed-thumbnail \
       --sponsorblock-remove all --sponsorblock-mark all --cookies-from-browser \
-      "$BROWSER" -P "~/Downloads" "$URL"
+      "$BROWSER" -P "$HOME/Downloads" "$URL"
   done
 else
   for URL in "$@"; do
     yt-dlp -f "bv*[vcodec^=avc]+ba[ext=m4a]/b[ext=mp4]/b" --sponsorblock-remove all \
-      --sponsorblock-mark all --cookies-from-browser "$BROWSER" -P "~/Downloads" "$URL"
+      --sponsorblock-mark all --cookies-from-browser "$BROWSER" -P "$HOME/Downloads" "$URL"
   done
 fi

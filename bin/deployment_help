@@ -1,22 +1,43 @@
 #!/usr/bin/env bash
 
+
+function command_tools_help {
+  echo "Runs a tool for a given stack. Searches in '\$STACK_PATH/tools'."
+}
+
+function command_secret_pull_help {
+  echo "Pulls stack secret from Vault."
+}
+
+function command_secret_push_help {
+  echo "Pushes stack secret to Vault."
+}
+
+function command_secret_status_help {
+  echo "Prints out key names that have changed compared to Vault."
+}
+
+function command_secret_diff_help {
+  echo "Prints out a diff for key/values that have changed compared to Vault."
+}
+
 function command_env_help {
   echo "Prints out useful deployment/stack env vars."
   echo "Run 'env env' to get a full print out of all discovered envs vars."
 }
 
-function command_pull_secrets_help {
-  echo "Pulls secrets for the stack from Vault"
-}
-
-function command_push_secrets_help {
-  echo "Pushes secrets for the stack into Vault."
-}
-
-function command_diff_secrets_help {
-  echo "Prints out a diff of local secrets compared to upstream Vault secrets."
-}
-
-function command_deployment_help {
+function command_deploy_help {
   echo "Deploys the stack."
+}
+
+function command_status_help {
+  echo "Alias for 'docker stack ps \$STACK'."
+}
+
+function command_clean_help {
+  echo "Alias for 'docker stack rm \$STACK'."
+}
+
+function command_purge_help {
+  echo "Removes a stack and then deletes the volumes."
 }
