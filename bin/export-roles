@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 #
 # Reads a docker construct from stdin, this should be the output
-# of `docker node inspect`, and writes export commands to stdout
-# for each role in the stack arg.
+# of `docker node inspect` or `kubectl get nodes -o json`, and
+# writes export commands to stdout for each role in the stack arg.
+# For k8s the node label keys are used, the values are ignored.
 #
 # A role is considered to be "in" a stack if it is prefixed
 # with the stack arg value. E.g. if this script is called
@@ -35,6 +36,28 @@ def export_roles(
         for label in labels:
             roles[label].append(node)
 
+    print_roles(stack, roles, domain)
+
+
+def export_k8s_roles(
+    stack: str, k8s_construct: Dict, domain: None | str = None
+) -> None:
+    roles: Dict[str, List] = collections.defaultdict(list)
+    nodes: Dict[str, List[str]] = {
+        node["metadata"]["name"]: node["metadata"].get("labels", {}).keys()
+        for node in k8s_construct["items"]
+    }
+
+    for node, labels in nodes.items():
+        for label in labels:
+            roles[label].append(node)
+
+    print_roles(stack, roles, domain)
+
+
+def print_roles(
+    stack: str, roles: Dict[str, List], domain: None | str = None
+) -> None:
     for role, hostnames in roles.items():
         if not role.startswith(stack):
             continue
@@ -71,10 +94,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    # For reference: https://docs.docker.com/reference/cli/docker/inspect/
-    docker_construct = json.load(sys.stdin)
+    construct = json.load(sys.stdin)
 
-    export_roles(args.stack, docker_construct, domain=args.domain)
+    # `kubectl get nodes -o json` returns a List object, `docker node inspect` an array.
+    # For reference: https://docs.docker.com/reference/cli/docker/inspect/
+    if isinstance(construct, dict) and "items" in construct:
+        export_k8s_roles(args.stack, construct, domain=args.domain)
+    else:
+        export_roles(args.stack, construct, domain=args.domain)
 
 
 if __name__ == "__main__":

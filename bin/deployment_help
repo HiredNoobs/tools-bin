@@ -31,11 +31,11 @@ function command_deploy_help {
 }
 
 function command_status_help {
-  echo "Alias for 'docker stack ps \$STACK'."
+  echo "Shows the stack's tasks (swarm) or the resources in the stack's namespace (k8s)."
 }
 
 function command_clean_help {
-  echo "Alias for 'docker stack rm \$STACK'."
+  echo "Removes the stack (swarm) or deletes the stack's namespace (k8s)."
 }
 
 function command_purge_help {

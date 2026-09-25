@@ -1,0 +1,4 @@
+# Binaries installed by context-setup
+bin/vault
+bin/talosctl
+bin/kubectl

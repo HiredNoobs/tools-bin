@@ -78,6 +78,21 @@ Application shortcuts:
 
 ## deployment
 
-Tooling for deploying stacks to docker swarms. This tooling is not generic and will only work with my stacks unless setup in the same way.
+Tooling for deploying stacks to docker swarms or k8s clusters. This tooling is not generic and will only work with my stacks unless setup in the same way.
+
+Each host manages a single orchestrator, configured with ``context-setup``:
+
+```bash
+context-setup swarm   # docker contexts
+context-setup k8s     # kubeconfigs generated with talosctl into ~/.kube/contexts
+```
+
+Both install the Vault client, ``k8s`` also installs the pinned ``talosctl`` and ``kubectl`` versions into ``bin/`` if they're missing or a different version.
+
+The k8s clusters run Talos, ``context-setup k8s`` creates a context for each talosconfig in ``~/.talos/contexts/<context>.yaml`` (e.g. ``production.core.yaml``), using the control plane IPs in it so it doesn't need DNS. Re-run it when the admin kubeconfig certificate expires. Talos enforces the ``baseline`` pod security standard, stacks that need more can set ``K8S_POD_SECURITY`` (e.g. ``privileged``) in their ``stack.env``.
+
+This writes ``~/.config/bashrc/40-host`` which sets ``ORCHESTRATOR`` (plus the default context) for ``deployment``. The orchestrator specific parts of ``deployment`` live in ``bin/lib/orchestrators/<orchestrator>.sh``.
+
+For k8s each stack is deployed to its own namespace, ``$K8S_NAMESPACE`` (``$STACK`` with ``_`` replaced by ``-``).
 
 ``secret-pack``, ``secret-unpack``, and ``secret-diff`` are python based helper scripts for deployment for reading and writing vault secrets.
