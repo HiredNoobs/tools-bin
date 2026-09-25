@@ -57,7 +57,12 @@ function command_help {
 # Useful links:
 # http://stackoverflow.com/questions/29581754
 # https://github.com/which-distro/os-release
-DISTRO_ID=$(awk -F'=' '/^ID=/ {print tolower($2)}' /etc/*-release 2> /dev/null)
+#
+# Only os-release, other *-release files can have their own ID too, e.g. the Debian
+# cloud images' build info has ID=genericcloud.
+OS_RELEASE=/etc/os-release
+[[ -f "$OS_RELEASE" ]] || OS_RELEASE=/usr/lib/os-release
+DISTRO_ID=$(. "$OS_RELEASE" 2> /dev/null && echo "${ID:-}" | tr '[:upper:]' '[:lower:]')
 SETUP_FILE="$HERE/setup-dist/$DISTRO_ID/setup"
 
 if [ -f "$SETUP_FILE" ]; then
