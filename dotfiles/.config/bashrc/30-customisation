@@ -31,7 +31,7 @@ function parse_venv {
 
 function prompt_setter {
   local context venv git_branch
-  context="$(color_environment $DOCKER_CONTEXT)"
+  context="$(color_environment "$(current_context)")"
   venv="$(parse_venv)"
   git_branch="$(parse_git_branch)"
 
@@ -51,17 +51,44 @@ PROMPT_COMMAND=prompt_setter
 # Extra commands
 # -----------------------------------------------------
 
-# `dc` command for viewing and switching docker context
+# Contexts depend on the host's ORCHESTRATOR (see context-setup),
+# k8s contexts are kubeconfig/talosconfig files selected with KUBECONFIG/TALOSCONFIG.
+function current_context {
+  case "$ORCHESTRATOR" in
+    k8s) [[ -n "$KUBECONFIG" ]] && basename "$KUBECONFIG" .yaml;;
+    *)   echo "${DOCKER_CONTEXT:-default}";;
+  esac
+}
+
+function list_contexts {
+  local config
+  case "$ORCHESTRATOR" in
+    k8s)
+      for config in "$KUBE_CONTEXTS"/*.yaml; do
+        [[ -f "$config" ]] && basename "$config" .yaml
+      done
+      ;;
+    *) docker context ls --format '{{ .Name }}';;
+  esac
+}
+
+# `dc` command for viewing and switching docker/kube context
 function dc {
   local contexts
-  contexts=$(docker context ls --format '{{ .Name }}')
+  contexts=$(list_contexts)
   if [[ -z "$1" ]]; then
-    echo "Current context: $DOCKER_CONTEXT"
+    echo "Current context: $(current_context)"
     echo
     echo "$contexts"
   else
     if echo "$contexts" | grep -q "^$1$"; then
-      DOCKER_CONTEXT="$1"
+      case "$ORCHESTRATOR" in
+        k8s)
+          export KUBECONFIG="$KUBE_CONTEXTS/$1.yaml"
+          export TALOSCONFIG="$TALOS_CONTEXTS/$1.yaml"
+          ;;
+        *)   export DOCKER_CONTEXT="$1";;
+      esac
     else
       echo "Context $1 does not exist in this environment."
     fi
@@ -73,7 +100,7 @@ _dc_completions() {
     return
   fi
 
-  COMPREPLY=($(compgen -W "$(docker context ls --format '{{ .Name }}')" -- "${COMP_WORDS[1]}"))
+  COMPREPLY=($(compgen -W "$(list_contexts)" -- "${COMP_WORDS[1]}"))
 }
 
 complete -F _dc_completions dc

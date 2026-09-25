@@ -7,6 +7,19 @@ source "$HERE/lib/logging.sh"
 source "$HERE/lib/utils.sh"
 source "$HERE/lib/confirmation.sh"
 
+# ORCHESTRATOR is set per host by `context-setup` (~/.config/bashrc/40-host)
+if [[ ! -v ORCHESTRATOR ]]; then
+  log_error "ORCHESTRATOR is unset - run 'context-setup <swarm|k8s>'"
+  exit 1
+fi
+
+if [[ ! -f "$HERE/lib/orchestrators/$ORCHESTRATOR.sh" ]]; then
+  log_error "Unsupported orchestrator: $ORCHESTRATOR"
+  exit 1
+fi
+
+source "$HERE/lib/orchestrators/$ORCHESTRATOR.sh"
+
 # -----------------------------------------------------
 # Helper functions
 # -----------------------------------------------------
@@ -19,7 +32,7 @@ function check_env {
     exit 1
   fi
 
-  contexts=$(docker context ls --format '{{ .Name }}' | grep -v 'default')
+  contexts=$(orchestrator_contexts)
   if ! printf '%s\n' "$contexts" | grep -Fxq -- "$CONTEXT"; then
     log_error "Context, $CONTEXT, not in locally defined contexts."
     exit 1
@@ -61,16 +74,16 @@ function env_matches_file {
 }
 
 function discover_stack_context {
-  export DOCKER_CONTEXT="$CONTEXT"
+  orchestrator_use_context "$CONTEXT"
 
   if [ -f "${SECRETS}/secrets.env" ]; then
     source "${SECRETS}/secrets.env"
   fi
 
   if [[ -v DOMAIN ]]; then
-    eval "$(docker node ls -q | xargs docker node inspect | export-roles "$STACK" --domain "$DOMAIN")"
+    eval "$(orchestrator_nodes | export-roles "$STACK" --domain "$DOMAIN")"
   else
-    eval "$(docker node ls -q | xargs docker node inspect | export-roles "$STACK")"
+    eval "$(orchestrator_nodes | export-roles "$STACK")"
   fi
 
   stack_discover
@@ -186,29 +199,37 @@ function run_tools {
 }
 
 function run_env {
-  echo "DEPLOYMENT  = $DEPLOYMENT"
-  echo "STACK       = $STACK"
-  echo "ENVIRONMENT = $ENVIRONMENT"
-  echo "CONTEXT     = $CONTEXT"
-  echo "CONFIGS     = $CONFIGS"
-  echo "SECRETS     = $SECRETS"
+  echo "DEPLOYMENT   = $DEPLOYMENT"
+  echo "STACK        = $STACK"
+  echo "ENVIRONMENT  = $ENVIRONMENT"
+  echo "ORCHESTRATOR = $ORCHESTRATOR"
+  echo "CONTEXT      = $CONTEXT"
+  if [[ -v K8S_NAMESPACE ]]; then
+    echo "NAMESPACE    = $K8S_NAMESPACE"
+  fi
+  echo "CONFIGS      = $CONFIGS"
+  echo "SECRETS      = $SECRETS"
   stack_env
 }
 
 function run_deploy {
+  orchestrator_prepare
+
   if [[ -f "$SECRETS/external.yml" ]]; then
-    local external_secret_env external_secret external_key
+    local external_secret_env external_secret external_key external_keys
 
     for external_secret_env in $(yq -r '.external | keys | .[]' "$SECRETS/external.yml"); do
       for external_secret in $(yq -r ".external.$external_secret_env | keys | .[]" "$SECRETS/external.yml"); do
         mkdir -p "$SECRETS/$external_secret"
         run_secret_pull "$external_secret_env" "$external_secret" "$SECRETS/$external_secret"
 
+        external_keys=()
         for external_key in $(yq -r ".external.$external_secret_env.${external_secret}[]" "$SECRETS/external.yml"); do
           if [[ -f "$SECRETS/$external_secret/$external_key" ]]; then
-            docker secret create "external_${STACK}.${external_secret}_${external_key//./_}" "$SECRETS/$external_secret/$external_key" > /dev/null
+            external_keys+=("$external_key")
           fi
         done
+        orchestrator_create_external_secret "$external_secret" "$SECRETS/$external_secret" "${external_keys[@]}"
 
         # $SECRETS is almostly certainly set but let's not accidentally run "rm -rf /"
         rm -rf "${SECRETS:?}/$external_secret"
@@ -220,43 +241,16 @@ function run_deploy {
 }
 
 function run_status {
-  docker stack ps "$STACK"
+  orchestrator_status
 }
 
 function run_clean {
-  local swarm_secrets swarm_secret
-
-  log_info "Removing $STACK."
-  docker stack rm "$STACK" --detach=false
-
-  log_info "Removing $STACK external secrets."
-  swarm_secrets=$(docker secret ls --format '{{ .ID }} {{ .Name }}' | grep "external_$STACK" | awk '{print $1}')
-  for swarm_secret in $swarm_secrets; do
-    docker secret rm "$swarm_secret" > /dev/null
-  done
+  orchestrator_clean
 }
 
 function run_purge {
   log_warning "Purging volumes for $STACK in $ENVIRONMENT."
-  
-  local nodes
-
-  # This will potentially run against the same nodes multiple times
-  # for stacks with mulitple containers on the same nodes.
-  # Is this worth addressing?
-  for var in $(compgen -e | grep '_FQDN_NODES$'); do
-    nodes="${!var}"
-
-    for host in $nodes; do
-      log_warning "Checking $host for volumes..."
-      vols=$(docker -H "ssh://$host" volume ls -q --filter "name=${STACK}_.*_data")
-      
-      if [[ -n "$vols" ]]; then
-        log_warning "Deleting:"
-        docker -H "ssh://$host" volume rm $vols
-      fi
-    done
-  done
+  orchestrator_purge
 }
 
 # -----------------------------------------------------
@@ -345,8 +339,6 @@ function command_purge {
   confirm_dangerous || exit 0
 
   run_clean
-  log_info "Waiting for volumes to detach..."
-  sleep 10
   run_purge
 }
 

@@ -4,13 +4,7 @@
 
 export ANSIBLE_HOST_CHECKING_ENABLED=false
 
-export DOMAIN="hirednoobs.online"
+export DOMAIN="hirednoobs.com"
 
 export VAULT_ADDR="https://vault.$DOMAIN"
 export VAULT_KV_VERSION="2"
-
-if docker context inspect --format '{{json .}}' "development.core" >/dev/null 2>&1; then
-    export DOCKER_CONTEXT="development.core"
-else
-    export DOCKER_CONTEXT="default"
-fi

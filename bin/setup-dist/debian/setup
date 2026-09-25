@@ -6,7 +6,8 @@
 function configure_bash {
   sudo apt-get install -y bash-completion
   rsync -av "$ROOT/dotfiles/.bashrc" ~/.bashrc
-  rsync -av --delete "$ROOT/dotfiles/.config/bashrc/" "$XDG_CONFIG_HOME/bashrc/"
+  # 40-host is generated per host by context-setup
+  rsync -av --delete --exclude "40-host" "$ROOT/dotfiles/.config/bashrc/" "$XDG_CONFIG_HOME/bashrc/"
 }
 
 function configure_docker {
