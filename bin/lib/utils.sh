@@ -82,6 +82,11 @@ function get_latest_git {
   fi
 }
 
+# get_latest_git for when changes don't matter, only fails on errors so it's safe with `set -e`.
+function sync_git {
+  get_latest_git "$@" || [[ $? -eq 1 ]]
+}
+
 # Creates a group if one doesn't already exist
 function create_group {
   local group
