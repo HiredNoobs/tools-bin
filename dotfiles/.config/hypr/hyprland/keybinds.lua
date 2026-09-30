@@ -66,7 +66,7 @@ hl.bind(mainMod .. " + G", hl.dsp.workspace.toggle_special("games"))
 -------------------------------------------------------
 
 hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("pkill rofi || ~/.config/rofi/scripts/system-menu.sh"), { description = "Toggle system control menu" })
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Lock session" })
+hl.bind(mainMod .. " + CONTROL + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Lock session" })
 
 -------------------------------------------------------
 -- Application shortcuts
