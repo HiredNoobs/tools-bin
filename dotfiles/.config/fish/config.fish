@@ -7,6 +7,7 @@ if status is-interactive
 
     # Update PATH
     fish_add_path ~/tools-bin/bin
+    fish_add_path ~/.local/bin
 
     # Env vars (-x = export)
     set -gx SHELL $(which fish)  # For tmux
