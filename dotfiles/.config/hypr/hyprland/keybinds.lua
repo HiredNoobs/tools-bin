@@ -93,8 +93,8 @@ hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("discord"), { description = "Open Dis
 
 hl.bind("CONTROL + SHIFT + ESCAPE", hl.dsp.exec_cmd("kitty bash -c btop", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }), { description = "Open btop" })
 
--- Waybar toggle
-hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("pkill waybar || waybar"), { description = "Toggle waybar" })
+-- Bar toggle
+hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("qs ipc call bar toggle || qs"), { description = "Toggle bar" })
 
 -------------------------------------------------------
 -- Screenshot shortcuts

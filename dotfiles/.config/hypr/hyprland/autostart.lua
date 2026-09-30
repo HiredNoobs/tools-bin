@@ -15,7 +15,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("hyprsunset --temperature 6500")
 
     -- Status bar
-    hl.exec_cmd("waybar")
+    hl.exec_cmd("qs")
 
     -- Notifications
     hl.exec_cmd("dunst")
