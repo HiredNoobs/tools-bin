@@ -10,4 +10,8 @@ chassis = chassis:gsub("%s+$", "")
 
 handle:close()
 
-pcall(require, "machines." .. chassis)
+-- Not every chassis has a machine file, but still surface errors from the ones that do
+local ok, err = pcall(require, "machines." .. chassis)
+if not ok and not err:find("module 'machines%.[^']*' not found") then
+    error(err)
+end

@@ -4,7 +4,7 @@
 
 -- Browser
 hl.window_rule({
-    match = { class = "librewolf|firefox" },
+    match = { class = "firefox" },
     workspace = "2 silent",
     no_initial_focus = true,
     focus_on_activate = false
@@ -12,7 +12,7 @@ hl.window_rule({
 
 hl.window_rule({
     match = {
-        class = "librewolf|firefox",
+        class = "firefox",
         title = "[Pp]rivate [Bb]rowsing"
     },
     no_screen_share = true
@@ -64,7 +64,7 @@ hl.window_rule({
     no_initial_focus = true,
     focus_on_activate = false,
     fullscreen_state = "2 2",
-    idle_inhibit = "always",
+    idle_inhibit = "focus", -- "always" stops the screen locking while a game is left running in the background
     render_unfocused = true,
     no_anim = true,
     no_blur = true,

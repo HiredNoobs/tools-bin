@@ -41,8 +41,9 @@ hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }), { descrip
 hl.bind(mainMod .. " + Q", hl.dsp.window.close(), { description = "Quit window" })
 hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.window.kill(), { description = "Kill window" })
 
--- Dragging windows
-hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { description = "Drag window" })
+-- Dragging and resizing windows
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, description = "Drag window" })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Resize window" })
 
 -------------------------------------------------------
 -- Workspace control
@@ -76,7 +77,7 @@ hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("pkill rofi || rofi -show drun -t
 
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty -1"), { description = "Open Terminal" })
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("kitty bash -c yazi", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }), { description = "Open File Explorer" })
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("librewolf || firefox"), { description = "Open web browser (LibreWolf or Firefox)" })
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("firefox"), { description = "Open web browser" })
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"), { description = "Open Code Editor" })
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("steam"), { description = "Open Steam" })
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("discord"), { description = "Open Discord" })
@@ -118,19 +119,20 @@ end, { description = "Screenshot - fullscreen" })
 -- Media control
 -------------------------------------------------------
 
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("pamixer -i 5", { repeating = true }))
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("pamixer -d 5 ", { repeating = true }))
-hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("pamixer --default-source -m"))
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("pamixer -t"))
+-- locked = works while the lock screen is active
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("pamixer -i 5"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("pamixer -d 5"), { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("pamixer --default-source -t"), { locked = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("pamixer -t"), { locked = true })
 
-hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"))
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"))
-hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"))
-hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"))
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
 -------------------------------------------------------
 -- Brightness control
 -------------------------------------------------------
 
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl s +5%", { repeating = true }))
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-", { repeating = true }))
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl s +5%"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-"), { locked = true, repeating = true })

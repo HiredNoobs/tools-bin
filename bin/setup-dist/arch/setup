@@ -18,17 +18,17 @@ function configure_hyprland {
   # Hyprland + utils
   sudo pacman -S --needed --noconfirm hyprland hyprlock hypridle hyprshutdown hyprsunset hyprpolkitagent \
     sddm pipewire pipewire-audio pipewire-pulse wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland \
-    udiskie brightnessctl pamixer playerctl waybar blueman bluez dunst libnotify wl-clipboard \
-    swaybg starship rofi yazi kitty fish gnome-calendar grim slurp swappy htop btop nvtop pavucontrol \
+    xdg-desktop-portal-gtk udiskie brightnessctl pamixer playerctl waybar blueman bluez dunst libnotify wl-clipboard \
+    swaybg starship rofi yazi kitty fish firefox gnome-calendar grim slurp swappy htop btop nvtop pavucontrol \
     networkmanager nm-connection-editor unzip \
     qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum nwg-look adw-gtk-theme papirus-icon-theme \
     otf-codenewroman-nerd
 
   if ! command -v yay > /dev/null; then
-    log_error "yay is required to install AUR packages (wlogout, librewolf-bin). Install it and re-run."
+    log_error "yay is required to install AUR packages (wlogout). Install it and re-run."
     return 1
   fi
-  yay -S --needed wlogout librewolf-bin
+  yay -S --needed wlogout
 
   # hyprpm deps
   sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc

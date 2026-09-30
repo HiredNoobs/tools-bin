@@ -29,9 +29,6 @@ hl.on("hyprland.start", function()
     -- Idle manager
     hl.exec_cmd("hypridle")
 
-    -- DBus environment
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
-
     -- Auto mount USB devices
     hl.exec_cmd("udiskie")
 end)
