@@ -40,6 +40,10 @@ hl.config({
     misc = {
         disable_hyprland_logo = true,
         force_default_wallpaper = 0,
-        focus_on_activate = true
+        focus_on_activate = true,
+        vrr = 3 -- Only for fullscreen windows with video or game content
+    },
+    render = {
+        direct_scanout = 2 -- Only for game content
     }
 })

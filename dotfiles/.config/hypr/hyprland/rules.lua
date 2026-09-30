@@ -59,7 +59,8 @@ hl.window_rule({
 -- Steam games
 hl.window_rule({
     match = { initial_class = "^(steam_app_.*)" },
-    workspace = "special:games silent",
+    workspace = "name:games silent",
+    content = "game", -- Enables the "game" auto modes for vrr, direct_scanout and no_break_fs_vrr
     float = false,
     no_initial_focus = true,
     focus_on_activate = false,

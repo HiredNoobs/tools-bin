@@ -10,6 +10,6 @@ hl.monitor({ output = "DP-2", mode = "1920x1080@60", position = "2560x0", scale 
 -------------------------------------------------------
 
 hl.workspace_rule({
-    workspace = "special:games",
+    workspace = "name:games",
     monitor = "DP-1"
 })

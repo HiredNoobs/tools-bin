@@ -60,7 +60,16 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + ALT + " .. kp, hl.dsp.window.move({ workspace = i, follow = false }), { description = "Send window to workspace N" })
 end
 
-hl.bind(mainMod .. " + G", hl.dsp.workspace.toggle_special("games"))
+-- Games get a regular workspace rather than a special one, so tearing and direct scanout can kick in
+hl.bind(mainMod .. " + G", function()
+    local ws = hl.get_active_workspace()
+
+    if ws ~= nil and ws.name == "games" then
+        hl.dispatch(hl.dsp.focus({ workspace = "previous" }))
+    else
+        hl.dispatch(hl.dsp.focus({ workspace = "name:games" }))
+    end
+end, { description = "Toggle games workspace" })
 
 -------------------------------------------------------
 -- Session control

@@ -23,6 +23,6 @@ hl.gesture({fingers = 3, direction = "horizontal", action = "workspace"})
 -------------------------------------------------------
 
 hl.workspace_rule({
-    workspace = "special:games",
+    workspace = "name:games",
     monitor = "eDP-1"
 })
