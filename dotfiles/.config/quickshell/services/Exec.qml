@@ -11,6 +11,8 @@ Singleton {
     // Open an app as a centred floating window, optionally at half the monitor size
     function floating(command: string, halfSize: bool): void {
         const size = halfSize ? `, size = { "monitor_w*0.5", "monitor_h*0.5" }` : "";
-        Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.exec_cmd("${command}", { float = true, center = true${size} })`]);
+        // The command goes inside a Lua string, so escape quotes and backslashes (e.g. drive labels)
+        const escaped = command.replace(/[\\"]/g, "\\$&");
+        Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.exec_cmd("${escaped}", { float = true, center = true${size} })`]);
     }
 }

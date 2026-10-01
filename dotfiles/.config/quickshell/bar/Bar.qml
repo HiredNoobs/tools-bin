@@ -38,7 +38,8 @@ PanelWindow {
             "system": arch,
             "audio": speaker,
             "connectivity": connectivity,
-            "display": backlight
+            "display": backlight,
+            "drives": drives
         };
         if (anchors[name])
             togglePanel(name, anchors[name]);
@@ -113,7 +114,7 @@ PanelWindow {
             onLeftClicked: root.togglePanel("calendar", this)
         }
 
-        // Apps, sound, connectivity, display, battery
+        // Apps, drives, sound, connectivity, display, battery
         Row {
             anchors.right: parent.right
             height: parent.height
@@ -123,6 +124,11 @@ PanelWindow {
                 id: apps
                 active: root.openPanel === "apps"
                 onLeftClicked: root.togglePanel("apps", this)
+            }
+            Drives {
+                id: drives
+                active: root.openPanel === "drives"
+                onLeftClicked: root.togglePanel("drives", this)
             }
             Audio {
                 id: speaker
@@ -152,7 +158,8 @@ PanelWindow {
                 "audio": audioPanel,
                 "connectivity": connectivityPanel,
                 "display": displayPanel,
-                "apps": appsPanel
+                "apps": appsPanel,
+                "drives": drivesPanel
             })
         onCloseRequested: root.closePanel()
     }
@@ -185,6 +192,14 @@ PanelWindow {
         id: connectivityPanel
 
         ConnectivityPanel {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    Component {
+        id: drivesPanel
+
+        DrivesPanel {
             onCloseRequested: root.closePanel()
         }
     }
