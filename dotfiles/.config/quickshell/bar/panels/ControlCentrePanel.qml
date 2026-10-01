@@ -15,12 +15,10 @@ Column {
     signal closeRequested
     signal tabRequested(string name)
 
-    // Same order as the icons on the bar (Media, which has no icon there, sits with Sound);
-    // Apps, Drives and Media only while there's something in them
+    // Same order as the icons on the bar; Apps and Drives only while there's something in them
     readonly property var tabs: [
         ...(SystemTray.items.values.length > 0 ? [{ name: "apps", icon: "\u{F003B}", label: "Apps" }] : []),
         ...(Drives.drives.length > 0 ? [{ name: "drives", icon: "\u{F02CA}", label: "Drives" }] : []),
-        ...(Media.players.length > 0 ? [{ name: "media", icon: "\u{F075A}", label: "Media" }] : []),
         { name: "audio", icon: "\u{F028}", label: "Sound" },
         { name: "connectivity", icon: Theme.wifiIcon(1), label: "Network" },
         { name: "display", icon: "\u{F0379}", label: "Display" },
@@ -121,7 +119,6 @@ Column {
             "connectivity": connectivityTab,
             "display": displayTab,
             "drives": drivesTab,
-            "media": mediaTab,
             "apps": appsTab
         })[root.tab] ?? null
         onLoaded: fadeIn.restart()
@@ -168,13 +165,6 @@ Column {
         id: drivesTab
         DrivesPanel {
             closeWhenEmpty: false
-            onCloseRequested: root.closeRequested()
-        }
-    }
-
-    Component {
-        id: mediaTab
-        MediaPanel {
             onCloseRequested: root.closeRequested()
         }
     }
