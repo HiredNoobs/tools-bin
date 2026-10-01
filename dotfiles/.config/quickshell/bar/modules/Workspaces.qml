@@ -3,8 +3,11 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Widgets
 import qs
+import qs.services
 
-// Workspaces 1-5 are always shown; others appear when they exist on this monitor.
+// This monitor's workspaces: each monitor has its own 1-10 (see WorkspaceRanges). 1-5 are
+// always shown, 6-10 when they exist. Workspaces from another monitor's range sitting here
+// (e.g. after unplugging that screen) and named ones like games follow after a divider.
 // Occupied workspaces are pills holding one icon per app; empty ones are dots.
 Row {
     id: root
@@ -12,18 +15,25 @@ Row {
     required property ShellScreen screen
     readonly property HyprlandMonitor monitor: Hyprland.monitorFor(screen)
     readonly property int persistent: 5
+    readonly property int offset: WorkspaceRanges.offsetFor(monitor?.name ?? "")
 
     readonly property var entries: {
         const existing = Hyprland.workspaces.values.filter(ws => !ws.name.startsWith("special:"));
+        const own = id => id > offset && id <= offset + 10;
         const shown = [];
 
-        for (let id = 1; id <= persistent; id++)
+        for (let n = 1; n <= persistent; n++) {
+            const id = offset + n;
             shown.push({ name: String(id), workspace: existing.find(ws => ws.id === id) ?? null });
+        }
 
-        existing
-            .filter(ws => (ws.id < 1 || ws.id > persistent) && ws.monitor === monitor)
-            .sort((a, b) => a.id - b.id)
+        const here = existing.filter(ws => ws.monitor === monitor).sort((a, b) => a.id - b.id);
+        here.filter(ws => own(ws.id) && ws.id > offset + persistent)
             .forEach(ws => shown.push({ name: ws.name, workspace: ws }));
+
+        // Not part of this monitor's range, marked by a divider before the first one
+        here.filter(ws => !own(ws.id))
+            .forEach((ws, index) => shown.push({ name: ws.name, workspace: ws, dividerBefore: index === 0 }));
 
         return shown;
     }
@@ -86,13 +96,26 @@ Row {
             // Has windows, but none with an icon: shown as a dot that isn't the "empty" grey
             readonly property bool hasWindows: (workspace?.toplevels.values.length ?? 0) > 0
 
-            width: occupied ? pill.width : dot.width
+            // Room for the divider before workspaces from another monitor's range
+            readonly property int inset: modelData.dividerBefore ? 12 : 0
+
+            width: inset + (occupied ? pill.width : dot.width)
             height: root.height
+
+            Rectangle {
+                visible: entry.modelData.dividerBefore ?? false
+                anchors.verticalCenter: parent.verticalCenter
+                x: 4
+                width: 1
+                height: 14
+                color: Theme.subtext
+            }
 
             // No icons to show: accent when active, faded accent when it has windows,
             // muted grey when empty; a little brighter on hover
             Text {
                 id: dot
+                x: entry.inset
 
                 visible: !entry.occupied
                 anchors.verticalCenter: parent.verticalCenter
@@ -124,6 +147,7 @@ Row {
             // Occupied workspace: pill of app icons, accent-tinted and outlined when active
             Rectangle {
                 id: pill
+                x: entry.inset
 
                 visible: entry.occupied
                 anchors.verticalCenter: parent.verticalCenter
