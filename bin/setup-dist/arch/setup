@@ -18,7 +18,7 @@ function configure_hyprland {
   # Hyprland + utils
   sudo pacman -S --needed --noconfirm hyprland hyprlock hypridle hyprshutdown hyprsunset hyprpolkitagent \
     sddm pipewire pipewire-audio pipewire-pulse wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland \
-    xdg-desktop-portal-gtk udiskie brightnessctl pamixer playerctl waybar quickshell blueman bluez dunst libnotify wl-clipboard \
+    xdg-desktop-portal-gtk udiskie brightnessctl pamixer playerctl waybar quickshell blueman bluez libnotify wl-clipboard \
     swaybg starship rofi yazi kitty fish firefox gnome-calendar grim slurp swappy htop btop nvtop pavucontrol \
     networkmanager nm-connection-editor unzip \
     qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum nwg-look adw-gtk-theme papirus-icon-theme \
@@ -58,7 +58,6 @@ function configure_hyprland {
   rsync -av --delete --exclude 'monitors.lua' "$ROOT/dotfiles/.config/hypr/" "$XDG_CONFIG_HOME/hypr/"
   rsync -av --delete "$ROOT/dotfiles/.config/waybar/"   "$XDG_CONFIG_HOME/waybar/"
   rsync -av --delete "$ROOT/dotfiles/.config/quickshell/" "$XDG_CONFIG_HOME/quickshell/"
-  rsync -av --delete "$ROOT/dotfiles/.config/dunst/"    "$XDG_CONFIG_HOME/dunst/"
   rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
   rsync -av --delete "$ROOT/dotfiles/.config/swappy/"   "$XDG_CONFIG_HOME/swappy/"

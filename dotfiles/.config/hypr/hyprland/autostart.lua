@@ -14,11 +14,8 @@ hl.on("hyprland.start", function()
     -- Nightlight
     hl.exec_cmd("hyprsunset --temperature 6500")
 
-    -- Status bar
+    -- Status bar and notifications
     hl.exec_cmd("qs")
-
-    -- Notifications
-    hl.exec_cmd("dunst")
 
     -- Wallpaper
     hl.exec_cmd("swaybg -i ~/.cache/current-wallpaper -m fill")
