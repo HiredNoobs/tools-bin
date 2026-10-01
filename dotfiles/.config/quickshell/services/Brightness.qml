@@ -28,14 +28,6 @@ Singleton {
         applyTimer.restart();
     }
 
-    function increase(): void {
-        Exec.run("brightnessctl set 1%+");
-    }
-
-    function decrease(): void {
-        Exec.run(`brightnessctl --min-value=${minRaw} set 1%-`);
-    }
-
     // Slider drags fire many values; only run brightnessctl every 50ms
     Timer {
         id: applyTimer

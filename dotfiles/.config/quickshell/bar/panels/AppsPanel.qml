@@ -13,9 +13,11 @@ Column {
 
     readonly property var items: SystemTray.items.values
 
-    // Last app quit while the panel was open
+    // Close when the last app quits (off inside the control centre, which switches tab instead)
+    property bool closeWhenEmpty: true
+
     onItemsChanged: {
-        if (items.length === 0)
+        if (closeWhenEmpty && items.length === 0)
             closeRequested();
     }
 

@@ -14,16 +14,23 @@ Text {
 
     signal leftClicked
     signal rightClicked
-    signal scrolledUp
-    signal scrolledDown
 
+    // Fixed width with the glyph centred (0 = fit the text), so an icon that changes glyph
+    // (e.g. the bell during Do Not Disturb) can't shift its neighbours
+    property int slotWidth: 0
+
+    width: slotWidth > 0 ? slotWidth : implicitWidth
     height: parent ? parent.height : Theme.barHeight
-    leftPadding: 5
-    rightPadding: 5
+    leftPadding: slotWidth > 0 ? 0 : 5
+    rightPadding: slotWidth > 0 ? 0 : 5
+    horizontalAlignment: Text.AlignHCenter
     verticalAlignment: Text.AlignVCenter
     font.family: Theme.fontFamily
     font.pixelSize: Theme.fontSize
-    color: active || (hoverable && hovered) ? Theme.accent : Theme.text
+    // Colour when not open or hovered (e.g. the Arch logo showing low battery)
+    property color restingColour: Theme.text
+
+    color: active || (hoverable && hovered) ? Theme.accent : restingColour
 
     Behavior on color {
         ColorAnimation { duration: Theme.animDuration }
@@ -35,7 +42,6 @@ Text {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: event => event.button === Qt.RightButton ? root.rightClicked() : root.leftClicked()
-        onWheel: event => event.angleDelta.y > 0 ? root.scrolledUp() : root.scrolledDown()
     }
 
     LazyLoader {

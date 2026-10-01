@@ -9,6 +9,7 @@ Column {
     property string label: ""
     property string value: ""
     property real fraction: 0
+    property color barColour: Theme.accent
 
     spacing: 4
 
@@ -38,7 +39,7 @@ Column {
             width: parent.width * Math.max(0, Math.min(1, root.fraction))
             height: parent.height
             radius: parent.radius
-            color: Theme.accent
+            color: root.barColour
 
             Behavior on width {
                 NumberAnimation { duration: Theme.animDuration; easing.type: Easing.OutCubic }

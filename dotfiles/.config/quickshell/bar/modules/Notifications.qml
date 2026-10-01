@@ -11,13 +11,6 @@ BarText {
     readonly property int unread: Notifications.unread
 
     text: Notifications.dnd ? "\u{F009B}" : "\u{F009A}"
-    tooltip: {
-        const lines = [];
-        if (Notifications.dnd)
-            lines.push("Do not disturb");
-        lines.push(unread > 0 ? `${unread} new notification${unread === 1 ? "" : "s"}` : "No new notifications");
-        return lines.join("\n");
-    }
 
     // Unread count; a plain dot past 9
     Rectangle {

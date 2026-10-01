@@ -7,5 +7,4 @@ import qs.services
 BarText {
     visible: Drives.drives.length > 0
     text: "\u{F02CA}"
-    tooltip: Drives.drives.map(drive => `${drive.model} (${drive.size})`).join("\n")
 }

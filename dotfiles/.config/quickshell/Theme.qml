@@ -30,6 +30,9 @@ Singleton {
     readonly property int fontSize: 15
     readonly property int panelFontSize: 14
     readonly property int barHeight: 34
+    // Right-hand icons open one tabbed control centre (true) or their own panels (false)
+    readonly property bool controlCentre: true
+
     // Panels joined to the bottom of the bar (true) or floating below it (false)
     readonly property bool panelsAttached: true
     readonly property int panelGap: panelsAttached ? 0 : 8

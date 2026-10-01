@@ -16,6 +16,22 @@ Column {
     width: 300
     spacing: 10
 
+    // Laptop only
+    PanelSection {
+        visible: Battery.present
+        text: "Battery"
+    }
+
+    StatBar {
+        visible: Battery.present
+        width: parent.width
+        icon: Battery.icon
+        label: Battery.status
+        value: `${Battery.capacity}%`
+        fraction: Battery.capacity / 100
+        barColour: Battery.colour
+    }
+
     PanelSection {
         text: "System"
     }

@@ -30,6 +30,32 @@ PanelWindow {
         openPanel = "";
     }
 
+    // Right-hand icons: their own panel, or (Theme.controlCentre) the control centre at their tab.
+    // The control centre anchors to the whole icon group so it doesn't shift between icons.
+    readonly property var rightPanels: ["apps", "drives", "audio", "connectivity", "display", "notifications"]
+    property string controlTab: "notifications"
+
+    function openRight(name: string, item: Item): void {
+        if (!Theme.controlCentre) {
+            togglePanel(name, item);
+            return;
+        }
+        if (openPanel === "control" && controlTab === name) {
+            openPanel = "";
+            return;
+        }
+        controlTab = name;
+        if (openPanel !== "control") {
+            panelHost.anchorItem = rightGroup;
+            openPanel = "control";
+        }
+    }
+
+    // Whether a right-hand icon's panel or tab is showing
+    function isOpen(name: string): bool {
+        return Theme.controlCentre ? openPanel === "control" && controlTab === name : openPanel === name;
+    }
+
     // For opening a panel without clicking (IPC)
     function togglePanelByName(name: string): void {
         const anchors = {
@@ -42,7 +68,9 @@ PanelWindow {
             "drives": drives,
             "notifications": bell
         };
-        if (anchors[name])
+        if (rightPanels.includes(name))
+            openRight(name, anchors[name]);
+        else if (anchors[name])
             togglePanel(name, anchors[name]);
     }
 
@@ -119,42 +147,48 @@ PanelWindow {
             onLeftClicked: root.togglePanel("calendar", this)
         }
 
-        // Apps, drives, sound, connectivity, display, battery, notifications
+        // Apps, drives, sound, connectivity, display, notifications
         Row {
+            id: rightGroup
             anchors.right: parent.right
             height: parent.height
             rightPadding: 10
 
             Apps {
                 id: apps
-                active: root.openPanel === "apps"
-                onLeftClicked: root.togglePanel("apps", this)
+                slotWidth: 30
+                active: root.isOpen("apps")
+                onLeftClicked: root.openRight("apps", this)
             }
             Drives {
                 id: drives
-                active: root.openPanel === "drives"
-                onLeftClicked: root.togglePanel("drives", this)
+                slotWidth: 30
+                active: root.isOpen("drives")
+                onLeftClicked: root.openRight("drives", this)
             }
             Audio {
                 id: speaker
-                active: root.openPanel === "audio"
-                onLeftClicked: root.togglePanel("audio", this)
+                slotWidth: 30
+                active: root.isOpen("audio")
+                onLeftClicked: root.openRight("audio", this)
             }
             Connectivity {
                 id: connectivity
-                active: root.openPanel === "connectivity"
-                onLeftClicked: root.togglePanel("connectivity", this)
+                slotWidth: 30
+                active: root.isOpen("connectivity")
+                onLeftClicked: root.openRight("connectivity", this)
             }
             Backlight {
                 id: backlight
-                active: root.openPanel === "display"
-                onLeftClicked: root.togglePanel("display", this)
+                slotWidth: 30
+                active: root.isOpen("display")
+                onLeftClicked: root.openRight("display", this)
             }
-            Battery {}
             Notifications {
                 id: bell
-                active: root.openPanel === "notifications"
-                onLeftClicked: root.togglePanel("notifications", this)
+                slotWidth: 30
+                active: root.isOpen("notifications")
+                onLeftClicked: root.openRight("notifications", this)
             }
         }
     }
@@ -170,7 +204,8 @@ PanelWindow {
                 "display": displayPanel,
                 "apps": appsPanel,
                 "drives": drivesPanel,
-                "notifications": notificationsPanel
+                "notifications": notificationsPanel,
+                "control": controlPanel
             })
         onCloseRequested: root.closePanel()
     }
@@ -210,6 +245,16 @@ PanelWindow {
         id: connectivityPanel
 
         ConnectivityPanel {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    Component {
+        id: controlPanel
+
+        ControlCentrePanel {
+            tab: root.controlTab
+            onTabRequested: name => root.controlTab = name
             onCloseRequested: root.closePanel()
         }
     }

@@ -9,10 +9,12 @@ Column {
 
     signal closeRequested
 
-    // Last drive removed while the panel was open
+    // Close when the last drive is removed (off inside the control centre, which switches tab instead)
+    property bool closeWhenEmpty: true
+
     readonly property int driveCount: Drives.drives.length
     onDriveCountChanged: {
-        if (driveCount === 0)
+        if (closeWhenEmpty && driveCount === 0)
             closeRequested();
     }
 

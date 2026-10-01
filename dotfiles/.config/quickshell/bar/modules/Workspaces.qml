@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Widgets
 import qs
-import qs.components
 
 // Workspaces 1-5 are always shown; others appear when they exist on this monitor.
 // Occupied workspaces are pills holding one icon per app; empty ones are dots.
@@ -53,7 +52,6 @@ Row {
                 continue;
             apps.push({
                 appId: appId,
-                name: entry?.name || appId,
                 icon: icon,
                 window: window
             });
@@ -175,15 +173,6 @@ Row {
 
                                 Behavior on implicitSize {
                                     NumberAnimation { duration: 120 }
-                                }
-                            }
-
-                            LazyLoader {
-                                active: app.containsMouse
-
-                                Tooltip {
-                                    target: app
-                                    text: app.modelData.name
                                 }
                             }
                         }

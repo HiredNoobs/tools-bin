@@ -12,8 +12,8 @@ BarText {
     readonly property bool needsAttention: items.some(item => item.status === Status.NeedsAttention)
 
     visible: items.length > 0
-    text: "\u{F107}"
-    tooltip: items.map(item => item.tooltipTitle || item.title || item.id).join("\n")
+    // Same apps icon as the control centre's Apps tab
+    text: "\u{F003B}"
 
     Rectangle {
         visible: root.needsAttention

@@ -2,16 +2,14 @@ import QtQuick
 import Quickshell.Services.Pipewire
 import qs.components
 
-// Speaker icon covering all sound; the tooltip also shows the mic.
-// Left click opens the audio panel (wired up in Bar.qml), right click mutes, scroll changes volume.
+// Speaker icon showing mute and volume level.
+// Left click opens the audio panel (wired up in Bar.qml).
 BarText {
     id: root
 
     readonly property PwNode sink: Pipewire.defaultAudioSink
-    readonly property PwNode source: Pipewire.defaultAudioSource
     readonly property bool muted: sink?.audio?.muted ?? false
-    readonly property real volumeFraction: sink?.audio?.volume ?? 0
-    readonly property int volume: Math.round(volumeFraction * 100)
+    readonly property int volume: Math.round((sink?.audio?.volume ?? 0) * 100)
 
     readonly property string sinkIcon: {
         const formFactors = {
@@ -29,31 +27,11 @@ BarText {
         return formFactors[sink?.properties["device.form-factor"]] ?? levels[level];
     }
 
-    function describe(label: string, node: PwNode): string {
-        if (!node?.audio)
-            return "";
-        const level = `${label} ${Math.round(node.audio.volume * 100)}%`;
-        return node.audio.muted ? `${level} (muted)` : level;
-    }
-
-    function setVolume(value: real): void {
-        if (sink?.audio)
-            sink.audio.volume = Math.max(0, Math.min(1, value));
-    }
-
     visible: sink !== null
     text: muted ? "\u{EEE8}" : sinkIcon
-    tooltip: [describe("Volume", sink), describe("Microphone", source)].filter(line => line !== "").join("\n")
 
-    onRightClicked: {
-        if (sink?.audio)
-            sink.audio.muted = !muted;
-    }
-    onScrolledUp: setVolume(volumeFraction + 0.01)
-    onScrolledDown: setVolume(volumeFraction - 0.01)
-
-    // Needed for the nodes' audio properties to be populated
+    // Needed for the node's audio properties to be populated
     PwObjectTracker {
-        objects: [root.sink, root.source]
+        objects: [root.sink]
     }
 }
