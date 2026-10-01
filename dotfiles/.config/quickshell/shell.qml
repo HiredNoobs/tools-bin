@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.bar
+import qs.overview
 import qs.services
 
 ShellRoot {
@@ -21,6 +22,20 @@ ShellRoot {
 
         Bar {
             visible: root.barVisible
+        }
+    }
+
+    // Super+Tab
+    Overview {
+        id: overview
+    }
+
+    // `qs ipc call overview toggle`
+    IpcHandler {
+        target: "overview"
+
+        function toggle(): void {
+            overview.toggle();
         }
     }
 

@@ -81,6 +81,9 @@ for i = 1, 10 do
     end
 end
 
+-- Overview of every monitor's workspaces (Quickshell)
+hl.bind(mainMod .. " + TAB", hl.dsp.exec_cmd("qs ipc call overview toggle"), { description = "Toggle workspace overview" })
+
 -- Games get a regular workspace rather than a special one, so tearing and direct scanout can kick in
 hl.bind(mainMod .. " + G", function()
     local ws = hl.get_active_workspace()
