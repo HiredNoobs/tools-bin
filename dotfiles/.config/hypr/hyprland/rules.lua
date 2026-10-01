@@ -1,3 +1,5 @@
+local workspaces = require("hyprland.workspaces")
+
 -------------------------------------------------------
 -- Window rules
 -------------------------------------------------------
@@ -5,7 +7,6 @@
 -- Browser
 hl.window_rule({
     match = { class = "firefox" },
-    workspace = "2 silent",
     no_initial_focus = true,
     focus_on_activate = false
 })
@@ -43,7 +44,6 @@ end
 -- Steam
 hl.window_rule({
     match = { class = "steam" },
-    workspace = "1 silent",
     no_initial_focus = true,
     focus_on_activate = false
 })
@@ -78,10 +78,20 @@ hl.window_rule({
 -- Discord
 hl.window_rule({
     match = { class = "discord" },
-    workspace = "3 silent",
     no_initial_focus = true,
     focus_on_activate = false
 })
+
+-------------------------------------------------------
+-- Workspace placement
+-------------------------------------------------------
+
+-- Which monitor (role) and workspace apps open on; with no second screen connected they use
+-- the same workspace on the main one (see workspaces.lua)
+workspaces.place({ class = "steam" }, "main", 1)
+workspaces.place({ class = "firefox" }, "second", 1)
+workspaces.place({ class = "discord" }, "second", 2)
+workspaces.place({ class = "^([Tt]eam[Ss]peak.*|ts3client.*)$" }, "second", 2)
 
 -------------------------------------------------------
 -- Layer rules

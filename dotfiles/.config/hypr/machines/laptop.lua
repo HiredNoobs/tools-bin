@@ -19,10 +19,8 @@ hl.config({
 hl.gesture({fingers = 3, direction = "horizontal", action = "workspace"})
 
 -------------------------------------------------------
--- Workspace rules
+-- Workspaces
 -------------------------------------------------------
 
-hl.workspace_rule({
-    workspace = "name:games",
-    monitor = "eDP-1"
-})
+-- The built-in screen is main; an external one becomes the second (see workspaces.lua)
+require("hyprland.workspaces").roles = { main = "eDP-1" }

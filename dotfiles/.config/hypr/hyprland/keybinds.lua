@@ -49,15 +49,36 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, descr
 -- Workspace control
 -------------------------------------------------------
 
+-- Workspaces are per monitor: N is workspace N on the main monitor, and adding CONTROL means
+-- the second monitor (its workspaces sit on the main one while it's unplugged). See
+-- workspaces.lua
+local workspaces = require("hyprland.workspaces")
+
 for i = 1, 10 do
-	local key = i % 10
+    local key = i % 10
     local kp = "KP_" .. key -- Keypad keys
 
-	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }), { description = "Move focus to workspace N" })
-	hl.bind(mainMod .. " + ALT + " .. key, hl.dsp.window.move({ workspace = i, follow = false }), { description = "Send window to workspace N" })
+    local function send(target)
+        return function()
+            hl.dispatch(hl.dsp.window.move({ workspace = target(i), follow = false }))
+        end
+    end
 
-    hl.bind(mainMod .. " + " .. kp, hl.dsp.focus({ workspace = i }), { description = "Move focus to workspace N" })
-    hl.bind(mainMod .. " + ALT + " .. kp, hl.dsp.window.move({ workspace = i, follow = false }), { description = "Send window to workspace N" })
+    local function show_main()
+        hl.dispatch(hl.dsp.focus({ workspace = workspaces.main(i) }))
+    end
+
+    -- Keeps a focused game focused (see workspaces.lua)
+    local function show_second()
+        workspaces.show_second(i)
+    end
+
+    for _, k in ipairs({ key, kp }) do
+        hl.bind(mainMod .. " + " .. k, show_main, { description = "Show workspace N on the main monitor" })
+        hl.bind(mainMod .. " + ALT + " .. k, send(workspaces.main), { description = "Send window to workspace N on the main monitor" })
+        hl.bind(mainMod .. " + CONTROL + " .. k, show_second, { description = "Show workspace N on the second monitor" })
+        hl.bind(mainMod .. " + CONTROL + ALT + " .. k, send(workspaces.second), { description = "Send window to workspace N on the second monitor" })
+    end
 end
 
 -- Games get a regular workspace rather than a special one, so tearing and direct scanout can kick in

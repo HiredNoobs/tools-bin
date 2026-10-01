@@ -6,10 +6,8 @@ hl.monitor({ output = "DP-1", mode = "2560x1440@165", position = "0x0", scale = 
 hl.monitor({ output = "DP-2", mode = "1920x1080@60", position = "2560x0", scale = 1 })
 
 -------------------------------------------------------
--- Workspace rules
+-- Workspaces
 -------------------------------------------------------
 
-hl.workspace_rule({
-    workspace = "name:games",
-    monitor = "DP-1"
-})
+-- See workspaces.lua
+require("hyprland.workspaces").roles = { main = "DP-1", second = "DP-2" }
