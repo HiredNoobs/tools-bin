@@ -8,7 +8,7 @@ import qs.bar.panels
 import qs.components
 
 // The bar plus the drop-down panel area below it. The window is taller than the bar,
-// but only the bar and the open panel take input (see `mask`).
+// but only the bar, the open panel and notification popups take input (see `mask`).
 PanelWindow {
     id: root
 
@@ -39,7 +39,8 @@ PanelWindow {
             "audio": speaker,
             "connectivity": connectivity,
             "display": backlight,
-            "drives": drives
+            "drives": drives,
+            "notifications": bell
         };
         if (anchors[name])
             togglePanel(name, anchors[name]);
@@ -69,6 +70,10 @@ PanelWindow {
 
         Region {
             item: panelHost
+        }
+
+        Region {
+            item: popups
         }
     }
 
@@ -114,7 +119,7 @@ PanelWindow {
             onLeftClicked: root.togglePanel("calendar", this)
         }
 
-        // Apps, drives, sound, connectivity, display, battery
+        // Apps, drives, sound, connectivity, display, battery, notifications
         Row {
             anchors.right: parent.right
             height: parent.height
@@ -146,6 +151,11 @@ PanelWindow {
                 onLeftClicked: root.togglePanel("display", this)
             }
             Battery {}
+            Notifications {
+                id: bell
+                active: root.openPanel === "notifications"
+                onLeftClicked: root.togglePanel("notifications", this)
+            }
         }
     }
 
@@ -159,9 +169,17 @@ PanelWindow {
                 "connectivity": connectivityPanel,
                 "display": displayPanel,
                 "apps": appsPanel,
-                "drives": drivesPanel
+                "drives": drivesPanel,
+                "notifications": notificationsPanel
             })
         onCloseRequested: root.closePanel()
+    }
+
+    // On the focused monitor only, and waiting while a panel is open since both drop from
+    // the right
+    NotificationPopups {
+        id: popups
+        shown: root.openPanel === "" && Hyprland.focusedMonitor?.name === root.screen.name
     }
 
     Component {
@@ -192,6 +210,14 @@ PanelWindow {
         id: connectivityPanel
 
         ConnectivityPanel {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    Component {
+        id: notificationsPanel
+
+        NotificationsPanel {
             onCloseRequested: root.closePanel()
         }
     }

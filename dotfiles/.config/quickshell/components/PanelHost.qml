@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Shapes
 import qs
 
 // Drop-down panel under the bar. It grows out of the module that opened it and morphs
@@ -86,47 +85,8 @@ Item {
 
     Keys.onEscapePressed: closeRequested()
 
-    // Floating style
-    Rectangle {
-        visible: !root.attached
+    PanelBackground {
         anchors.fill: parent
-        radius: Theme.radius
-        color: Theme.panelBackground
-        // Matches Hyprland's active window border (general.lua)
-        border.width: 2
-        border.color: Theme.accent
-    }
-
-    // Attached style: body with rounded bottom corners, concave fillets up into the bar
-    Shape {
-        id: shape
-
-        readonly property real f: root.fillet
-        readonly property real w: width
-        readonly property real h: height
-        // Bottom corner radius, shrunk while the panel is still growing
-        readonly property real r: Math.max(0, Math.min(Theme.radius, (h - f) / 2))
-
-        visible: root.attached
-        anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
-
-        ShapePath {
-            fillColor: Theme.panelBackground
-            strokeColor: "transparent"
-            strokeWidth: 0
-
-            startX: 0
-            startY: 0
-            PathLine { x: shape.w; y: 0 }
-            PathArc { x: shape.w - shape.f; y: shape.f; radiusX: shape.f; radiusY: shape.f; direction: PathArc.Counterclockwise }
-            PathLine { x: shape.w - shape.f; y: shape.h - shape.r }
-            PathArc { x: shape.w - shape.f - shape.r; y: shape.h; radiusX: shape.r; radiusY: shape.r }
-            PathLine { x: shape.f + shape.r; y: shape.h }
-            PathArc { x: shape.f; y: shape.h - shape.r; radiusX: shape.r; radiusY: shape.r }
-            PathLine { x: shape.f; y: shape.f }
-            PathArc { x: 0; y: 0; radiusX: shape.f; radiusY: shape.f; direction: PathArc.Counterclockwise }
-        }
     }
 
     // Content, clipped to the body while the panel grows

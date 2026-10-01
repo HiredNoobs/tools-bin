@@ -1,0 +1,159 @@
+import QtQuick
+import Quickshell
+import qs
+import qs.components
+import qs.services
+
+// Notification center: notifications grouped by app, Do Not Disturb and Clear all.
+// Self-contained so it can later become a tab of a combined control centre.
+Column {
+    id: root
+
+    signal closeRequested
+
+    // Expanded app groups, by app name. Groups start collapsed, so the center opens as a list
+    // of apps rather than filling the screen
+    property var expanded: ({})
+
+    function toggleGroup(app: string): void {
+        expanded = Object.assign({}, expanded, { [app]: !expanded[app] });
+    }
+
+    function iconFor(group: var): string {
+        for (const name of [group.icon, DesktopEntries.byId(group.desktopEntry)?.icon ?? ""]) {
+            if (!name)
+                continue;
+            if (name.startsWith("/"))
+                return `file://${name}`;
+            const path = Quickshell.iconPath(name, true);
+            if (path)
+                return path;
+        }
+        return "";
+    }
+
+    width: 380
+    spacing: 10
+
+    Component.onCompleted: Notifications.markRead()
+
+    // Heading with Do Not Disturb on the right
+    Item {
+        width: parent.width
+        height: dndRow.implicitHeight
+
+        PanelSection {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Notifications"
+        }
+
+        Row {
+            id: dndRow
+            anchors.right: parent.right
+            spacing: 8
+
+            PanelText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Do not disturb"
+                dim: true
+                font.pixelSize: Theme.panelFontSize - 1
+            }
+
+            Toggle {
+                anchors.verticalCenter: parent.verticalCenter
+                checked: Notifications.dnd
+                onToggled: Notifications.dnd = !Notifications.dnd
+            }
+        }
+    }
+
+    PanelText {
+        visible: Notifications.list.length === 0
+        text: "No notifications"
+        dim: true
+    }
+
+    // Groups, scrolling when long
+    Flickable {
+        visible: Notifications.list.length > 0
+        width: parent.width
+        height: Math.min(groupColumn.implicitHeight, 520)
+        contentHeight: groupColumn.implicitHeight
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+
+        Column {
+            id: groupColumn
+            width: parent.width
+            spacing: 8
+
+            Repeater {
+                model: Notifications.groups
+
+                Column {
+                    id: group
+
+                    required property var modelData
+                    readonly property bool open: root.expanded[modelData.app] ?? false
+
+                    width: groupColumn.width
+                    spacing: 4
+
+                    ListRow {
+                        width: parent.width
+                        iconSource: root.iconFor(group.modelData)
+                        label: group.modelData.app
+                        sublabel: `${group.modelData.notifications.length} notification${group.modelData.notifications.length === 1 ? "" : "s"}`
+                        onClicked: root.toggleGroup(group.modelData.app)
+
+                        Row {
+                            spacing: 10
+
+                            PanelText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: group.open ? "\u{F077}" : "\u{F078}"
+                                color: Theme.subtext
+                                font.pixelSize: Theme.panelFontSize - 3
+                            }
+
+                            // Dismiss the whole group
+                            PanelText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "\u{F00D}"
+                                color: groupDismiss.containsMouse ? Theme.accent : Theme.subtext
+
+                                MouseArea {
+                                    id: groupDismiss
+                                    anchors.fill: parent
+                                    anchors.margins: -4
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: Notifications.dismissGroup(group.modelData.app)
+                                }
+                            }
+                        }
+                    }
+
+                    Repeater {
+                        model: group.open ? group.modelData.notifications : []
+
+                        NotificationCard {
+                            required property var modelData
+                            notification: modelData
+                            x: 12
+                            width: group.width - 12
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    PanelButton {
+        visible: Notifications.list.length > 0
+        width: parent.width
+        icon: "\u{F1F8}"
+        label: "Clear all"
+        onClicked: Notifications.clearAll()
+    }
+}

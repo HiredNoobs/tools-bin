@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.bar
+import qs.services
 
 ShellRoot {
     id: root
@@ -31,6 +32,19 @@ ShellRoot {
         function panel(name: string): void {
             const monitor = Hyprland.focusedMonitor?.name;
             bars.instances.find(bar => bar.screen.name === monitor)?.togglePanelByName(name);
+        }
+    }
+
+    // `qs ipc call notifications dnd` / `qs ipc call notifications clear`
+    IpcHandler {
+        target: "notifications"
+
+        function dnd(): void {
+            Notifications.dnd = !Notifications.dnd;
+        }
+
+        function clear(): void {
+            Notifications.clearAll();
         }
     }
 }
