@@ -7,6 +7,8 @@ Text {
     id: root
 
     property bool hoverable: true
+    // Its panel is open
+    property bool active: false
     property string tooltip: ""
     readonly property alias hovered: mouse.containsMouse
 
@@ -21,7 +23,7 @@ Text {
     verticalAlignment: Text.AlignVCenter
     font.family: Theme.fontFamily
     font.pixelSize: Theme.fontSize
-    color: hoverable && hovered ? Theme.accent : Theme.text
+    color: active || (hoverable && hovered) ? Theme.accent : Theme.text
 
     Behavior on color {
         ColorAnimation { duration: Theme.animDuration }
@@ -37,7 +39,7 @@ Text {
     }
 
     LazyLoader {
-        active: root.tooltip !== "" && root.hovered
+        active: root.tooltip !== "" && root.hovered && !root.active
 
         Tooltip {
             target: root

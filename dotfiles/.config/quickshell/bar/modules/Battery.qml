@@ -14,8 +14,6 @@ BarText {
     readonly property bool plugged: battery.state === UPowerDeviceState.PendingCharge
     readonly property var icons: ["\u{F007B}", "\u{F007C}", "\u{F007E}", "\u{F0080}", "\u{F0082}", "\u{F0079}"]
     readonly property string icon: icons[Math.min(icons.length - 1, Math.floor(capacity / 100 * icons.length))]
-    property bool showTime: false
-
     function formatTime(seconds: real): string {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor(seconds % 3600 / 60);
@@ -23,12 +21,16 @@ BarText {
     }
 
     visible: battery.isLaptopBattery
-    rightPadding: 10
+    tooltip: {
+        if (charging)
+            return `Charging, full in ${formatTime(battery.timeToFull)}`;
+        if (plugged)
+            return "Plugged in, not charging";
+        if (!UPower.onBattery)
+            return "Fully charged";
+        return `${formatTime(battery.timeToEmpty)} remaining`;
+    }
     text: {
-        if (showTime) {
-            const seconds = charging ? battery.timeToFull : battery.timeToEmpty;
-            return `${formatTime(seconds)} ${icon}`;
-        }
         if (charging)
             return `${capacity}% \u{F0084}`;
         if (plugged)
@@ -46,6 +48,4 @@ BarText {
             return Theme.warning;
         return Theme.text;
     }
-
-    onLeftClicked: showTime = !showTime
 }
