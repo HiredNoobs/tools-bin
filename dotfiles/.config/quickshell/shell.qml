@@ -1,3 +1,7 @@
+//@ pragma IconTheme Papirus-Dark
+// Icons from Papirus-Dark (installed by the setup script), so apps' and devices' icon names
+// resolve; without a theme only the basic hicolor set is found
+
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland

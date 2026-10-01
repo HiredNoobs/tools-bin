@@ -26,12 +26,16 @@ Rectangle {
         const n = notification;
         if (!n)
             return "";
-        for (const name of [n.image, n.appIcon, DesktopEntries.byId(n.desktopEntry)?.icon ?? ""]) {
+        for (let name of [n.image, n.appIcon, DesktopEntries.byId(n.desktopEntry)?.icon ?? ""]) {
             if (!name)
                 continue;
             if (name.startsWith("/"))
                 return `file://${name}`;
-            if (name.includes("://"))
+            // Icon names can also arrive as "image://icon/<name>" (udiskie does this); those
+            // still need checking, or a missing one draws the placeholder texture
+            if (name.startsWith("image://icon/"))
+                name = name.slice("image://icon/".length);
+            else if (name.includes("://"))
                 return name;
             const path = Quickshell.iconPath(name, true);
             if (path)
