@@ -22,8 +22,11 @@ BarText {
             "portable": "\u{F095}",
             "car": "\u{F1B9}"
         };
-        const levels = ["\u{F026}", "\u{F027}", "\u{F027}", "\u{F028}"];
-        return formFactors[sink?.properties["device.form-factor"]] ?? levels[Math.min(levels.length - 1, Math.floor(volume / 25))];
+        // 0 waves under 10%, 1 wave under 40%, 2 waves under 80%, 3 waves above.
+        // FontAwesome has no two-wave speaker, so that one is Material Design's.
+        const levels = ["\u{F026}", "\u{F027}", "\u{F057E}", "\u{F028}"];
+        const level = volume < 10 ? 0 : volume < 40 ? 1 : volume < 80 ? 2 : 3;
+        return formFactors[sink?.properties["device.form-factor"]] ?? levels[level];
     }
 
     function describe(label: string, node: PwNode): string {
