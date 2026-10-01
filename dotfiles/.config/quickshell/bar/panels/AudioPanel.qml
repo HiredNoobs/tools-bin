@@ -99,70 +99,6 @@ Column {
         }
     }
 
-    // Devices to switch between, sliding open under a volume row; the current one is ticked
-    component DeviceList: Item {
-        id: deviceList
-
-        property var devices: []
-        // Outputs behind another card profile (AudioCards); choosing one switches the profile
-        property var hiddenDevices: []
-        property PwNode current
-        property bool expanded: false
-        signal chosen(PwNode device)
-        signal hiddenChosen(var device)
-
-        width: root.width
-        height: expanded ? rows.implicitHeight : 0
-        clip: true
-
-        // The panel grows with it
-        Behavior on height {
-            NumberAnimation { duration: Theme.panelAnimDuration; easing.type: Easing.OutCubic }
-        }
-
-        Column {
-            id: rows
-            width: parent.width
-            topPadding: 4
-            spacing: 2
-
-            Repeater {
-                model: deviceList.devices
-
-                ListRow {
-                    id: deviceRow
-
-                    required property PwNode modelData
-
-                    width: rows.width
-                    label: root.nodeName(modelData)
-                    sublabel: root.deviceKind(modelData)
-                    selected: modelData === deviceList.current
-                    onClicked: deviceList.chosen(modelData)
-
-                    PanelText {
-                        visible: deviceRow.selected
-                        text: "\u{F00C}"
-                        color: Theme.accent
-                    }
-                }
-            }
-
-            Repeater {
-                model: deviceList.hiddenDevices
-
-                ListRow {
-                    required property var modelData
-
-                    width: rows.width
-                    label: modelData.label
-                    sublabel: modelData.kind
-                    onClicked: deviceList.hiddenChosen(modelData)
-                }
-            }
-        }
-    }
-
     // Mute button, slider, percentage and (with `devices`) a drop-down of devices to switch to,
     // with an optional name above
     component VolumeRow: Column {
@@ -177,6 +113,20 @@ Column {
         signal deviceChosen(PwNode device)
 
         readonly property bool hasDevices: devices !== null
+        // Drop-down entries: PipeWire devices, then outputs behind another card profile
+        readonly property var deviceItems: [
+            ...(devices ?? []).map(device => ({
+                label: root.nodeName(device),
+                sublabel: root.deviceKind(device),
+                selected: device === node,
+                device: device
+            })),
+            ...hiddenDevices.map(hidden => ({
+                label: hidden.label,
+                sublabel: hidden.kind,
+                hidden: hidden
+            }))
+        ]
         readonly property int dropdownWidth: hasDevices ? 36 + 10 : 0
 
         readonly property bool muted: node?.audio?.muted ?? false
@@ -236,20 +186,12 @@ Column {
             }
         }
 
-        DeviceList {
+        DropdownList {
             id: devicePicker
             visible: volumeRow.hasDevices
-            devices: volumeRow.devices ?? []
-            hiddenDevices: volumeRow.hiddenDevices
-            current: volumeRow.node
-            onChosen: device => {
-                volumeRow.deviceChosen(device);
-                expanded = false;
-            }
-            onHiddenChosen: device => {
-                AudioCards.switchTo(device);
-                expanded = false;
-            }
+            width: parent.width
+            items: volumeRow.deviceItems
+            onChosen: item => item.device ? volumeRow.deviceChosen(item.device) : AudioCards.switchTo(item.hidden)
         }
     }
 }

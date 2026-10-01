@@ -1,0 +1,248 @@
+pragma Singleton
+
+import QtQuick
+import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Io
+
+// Connected monitors and live changes to them through Hyprland's Lua (`hl.monitor`).
+// `save()` writes the live layout to ~/.config/hypr/monitors.lua, which hyprland.lua loads.
+Singleton {
+    id: root
+
+    // [{ name, model, mode, modes, scale, x, y, width, height, logicalWidth, logicalHeight, disabled, mirrorOf }]
+    property var monitors: []
+    readonly property var enabledMonitors: monitors.filter(m => !m.disabled)
+    property string lastError: ""
+
+    readonly property string savedPath: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/hypr/monitors.lua"
+    property bool hasSaved: false
+
+    readonly property var scales: [1, 1.25, 1.5, 2]
+
+    function refresh(): void {
+        query.running = true;
+    }
+
+    function byName(name: string): var {
+        return monitors.find(m => m.name === name) ?? null;
+    }
+
+    // The first other enabled monitor, which arrangement is relative to
+    function otherOf(name: string): var {
+        return enabledMonitors.find(m => m.name !== name) ?? null;
+    }
+
+    // Lua table literal for hl.monitor
+    function luaSpec(spec: var): string {
+        const fields = Object.entries(spec).map(([key, value]) => {
+            const literal = typeof value === "string" ? `"${value.replace(/[\\"]/g, "\\$&")}"` : String(value);
+            return `${key} = ${literal}`;
+        });
+        return `hl.monitor({ ${fields.join(", ")} })`;
+    }
+
+    // Current settings of a monitor as an hl.monitor spec
+    function specOf(monitor: var): var {
+        if (monitor.disabled)
+            return { output: monitor.name, disabled: true };
+        const spec = { output: monitor.name, mode: monitor.mode, position: `${monitor.x}x${monitor.y}`, scale: monitor.scale };
+        if (monitor.mirrorOf !== "")
+            spec.mirror = monitor.mirrorOf;
+        return spec;
+    }
+
+    // hl.monitor merges into the output's existing rule, so live changes state everything
+    // explicitly: a leftover `disabled = true` or `mirror` would otherwise stick
+    function apply(name: string, changes: var): void {
+        const monitor = byName(name);
+        if (!monitor)
+            return;
+        run(luaSpec(Object.assign({
+            output: name,
+            mode: monitor.mode,
+            position: `${monitor.x}x${monitor.y}`,
+            scale: monitor.scale,
+            mirror: monitor.mirrorOf,
+            disabled: false
+        }, changes)));
+    }
+
+    function setEnabled(name: string, on: bool): void {
+        const monitor = byName(name);
+        if (!monitor)
+            return;
+        if (!on) {
+            if (enabledMonitors.length <= 1) {
+                lastError = "Can't turn off the only active screen";
+                return;
+            }
+            run(luaSpec({ output: name, disabled: true }));
+            return;
+        }
+        // Back on: preferred mode, placed automatically
+        run(luaSpec({ output: name, mode: "preferred", position: "auto", scale: 1, mirror: "", disabled: false }));
+    }
+
+    function setMode(name: string, mode: string): void {
+        apply(name, { mode: mode });
+    }
+
+    function setScale(name: string, scale: real): void {
+        apply(name, { scale: scale });
+    }
+
+    // relation: "left", "right", "above", "below" or "mirror", relative to otherOf(name)
+    function arrange(name: string, relation: string): void {
+        const monitor = byName(name);
+        const other = otherOf(name);
+        if (!monitor || !other)
+            return;
+        if (relation === "mirror") {
+            apply(name, { mirror: other.name });
+            return;
+        }
+        const positions = {
+            "right": [other.x + other.logicalWidth, other.y],
+            "left": [other.x - monitor.logicalWidth, other.y],
+            "above": [other.x, other.y - monitor.logicalHeight],
+            "below": [other.x, other.y + other.logicalHeight]
+        };
+        const [x, y] = positions[relation];
+        apply(name, { position: `${Math.round(x)}x${Math.round(y)}`, mirror: "" });
+    }
+
+    // Which arrangement the monitor is currently in, for highlighting
+    function relationOf(name: string): string {
+        const monitor = byName(name);
+        const other = otherOf(name);
+        if (!monitor || !other)
+            return "";
+        if (monitor.mirrorOf === other.name)
+            return "mirror";
+        const near = (a, b) => Math.abs(a - b) < 2;
+        if (near(monitor.x, other.x + other.logicalWidth))
+            return "right";
+        if (near(monitor.x + monitor.logicalWidth, other.x))
+            return "left";
+        if (near(monitor.y + monitor.logicalHeight, other.y))
+            return "above";
+        if (near(monitor.y, other.y + other.logicalHeight))
+            return "below";
+        return "";
+    }
+
+    function save(): void {
+        const lines = [
+            "-- Monitor layout saved from the Quickshell display panel.",
+            "-- Loaded by hyprland.lua after the machine file; kept by the setup script's rsync.",
+            "-- Delete this file (or use \"Use defaults\" in the panel) to go back to the machine config.",
+            "",
+            ...monitors.map(m => luaSpec(specOf(m))),
+            ""
+        ];
+        savedFile.setText(lines.join("\n"));
+        hasSaved = true;
+    }
+
+    function resetSaved(): void {
+        Exec.run(`rm -f '${savedPath}' && hyprctl reload`);
+        hasSaved = false;
+        refreshTimer.restart();
+    }
+
+    function run(lua: string): void {
+        lastError = "";
+        evaluate.command = ["hyprctl", "eval", lua];
+        evaluate.running = true;
+    }
+
+    function parse(json: string): void {
+        const all = JSON.parse(json);
+        // mirrorOf is the mirrored monitor's id ("none" when not mirroring)
+        const nameOfId = id => all.find(m => String(m.id) === String(id))?.name ?? "";
+
+        monitors = all.map(m => {
+            // Rotated by 90/270 degrees swaps width and height
+            const rotated = m.transform % 2 === 1;
+            const width = rotated ? m.height : m.width;
+            const height = rotated ? m.width : m.height;
+            return {
+                name: m.name,
+                model: [m.make, m.model].filter(part => part).join(" "),
+                mode: `${m.width}x${m.height}@${m.refreshRate.toFixed(2)}`,
+                // "1920x1080@59.98Hz" -> "1920x1080@59.98", duplicates removed
+                modes: [...new Set(m.availableModes.map(mode => mode.replace(/Hz$/, "")))],
+                scale: m.scale,
+                x: m.x,
+                y: m.y,
+                width: width,
+                height: height,
+                logicalWidth: width / m.scale,
+                logicalHeight: height / m.scale,
+                disabled: m.disabled,
+                mirrorOf: m.mirrorOf === "none" ? "" : nameOfId(m.mirrorOf)
+            };
+        });
+    }
+
+    Component.onCompleted: refresh()
+
+    Process {
+        id: query
+        command: ["hyprctl", "monitors", "all", "-j"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    root.parse(text);
+                } catch (e) {
+                    root.lastError = "Couldn't read monitors";
+                }
+            }
+        }
+    }
+
+    // hyprctl eval prints "ok", or the Lua error
+    Process {
+        id: evaluate
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const output = text.trim();
+                if (output !== "ok" && output !== "")
+                    root.lastError = output;
+                refreshTimer.restart();
+                repaintTimer.restart();
+            }
+        }
+    }
+
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (["monitoradded", "monitoraddedv2", "monitorremoved", "monitorremovedv2", "configreloaded"].includes(event.name))
+                refreshTimer.restart();
+        }
+    }
+
+    // After a layout change Hyprland can leave the other screen (wallpaper and bar) drawn in its
+    // old place until the next input event; a renderer reload repaints every screen
+    Timer {
+        id: repaintTimer
+        interval: 400
+        onTriggered: Hyprland.dispatch("hl.dsp.force_renderer_reload()")
+    }
+
+    Timer {
+        id: refreshTimer
+        interval: 300
+        onTriggered: root.refresh()
+    }
+
+    FileView {
+        id: savedFile
+        path: root.savedPath
+        printErrors: false
+        onLoaded: root.hasSaved = true
+        onLoadFailed: root.hasSaved = false
+    }
+}

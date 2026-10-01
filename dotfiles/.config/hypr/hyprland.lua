@@ -15,3 +15,10 @@ local ok, err = pcall(require, "machines." .. chassis)
 if not ok and not err:find("module 'machines%.[^']*' not found") then
     error(err)
 end
+
+-- Monitor layout saved from the Quickshell display panel, if there is one. It's per-machine
+-- local state: not in the repo, and the setup script's rsync leaves it in place
+ok, err = pcall(require, "monitors")
+if not ok and not err:find("module 'monitors' not found") then
+    error(err)
+end
