@@ -62,6 +62,7 @@ PanelWindow {
             "apps": apps,
             "calendar": clock,
             "system": arch,
+            "media": nowPlaying,
             "audio": speaker,
             "connectivity": connectivity,
             "display": backlight,
@@ -138,6 +139,12 @@ PanelWindow {
                 height: parent.height
                 screen: root.screen
             }
+
+            NowPlaying {
+                id: nowPlaying
+                active: root.openPanel === "media"
+                onLeftClicked: root.togglePanel("media", this)
+            }
         }
 
         Clock {
@@ -205,7 +212,8 @@ PanelWindow {
                 "apps": appsPanel,
                 "drives": drivesPanel,
                 "notifications": notificationsPanel,
-                "control": controlPanel
+                "control": controlPanel,
+                "media": mediaPanel
             })
         onCloseRequested: root.closePanel()
     }
@@ -245,6 +253,14 @@ PanelWindow {
         id: connectivityPanel
 
         ConnectivityPanel {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    Component {
+        id: mediaPanel
+
+        MediaPanel {
             onCloseRequested: root.closePanel()
         }
     }
