@@ -1,9 +1,12 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import qs
+import qs.components
 
-// Workspaces 1-5 are always shown; others appear when they exist on this monitor
+// Workspaces 1-5 are always shown; others appear when they exist on this monitor.
+// Occupied workspaces are pills holding one icon per app; empty ones are dots.
 Row {
     id: root
 
@@ -26,48 +29,145 @@ Row {
         return shown;
     }
 
-    topPadding: 7
-    bottomPadding: 7
+    // One entry per app in the workspace: its icon and the first of its windows
+    function appsIn(workspace: HyprlandWorkspace): var {
+        // Re-run once desktop entries have loaded, so icons resolve
+        DesktopEntries.applications.values.length;
+
+        const apps = [];
+        for (const window of workspace?.toplevels.values ?? []) {
+            const appId = window.wayland?.appId || window.lastIpcObject.class || "";
+            if (apps.some(app => app.appId === appId))
+                continue;
+            const entry = DesktopEntries.heuristicLookup(appId);
+            apps.push({
+                appId: appId,
+                name: entry?.name || appId,
+                icon: Quickshell.iconPath(entry?.icon || appId, "application-x-executable"),
+                window: window
+            });
+        }
+        return apps;
+    }
+
+    function focusWorkspace(name: string): void {
+        const escaped = name.replace(/["\\]/g, "\\$&");
+        Hyprland.dispatch(`hl.dsp.focus({ workspace = "${escaped}" })`);
+    }
+
+    function focusWindow(window: HyprlandToplevel): void {
+        Hyprland.dispatch(`hl.dsp.focus({ window = "address:0x${window.address}" })`);
+    }
+
     leftPadding: 5
     rightPadding: 5
+    spacing: 4
 
     Repeater {
         model: root.entries
 
-        Text {
-            id: button
+        Item {
+            id: entry
 
             required property var modelData
             readonly property HyprlandWorkspace workspace: modelData.workspace
             readonly property bool active: root.monitor?.activeWorkspace?.name === modelData.name
-            readonly property bool empty: !workspace || workspace.toplevels.values.length === 0
+            readonly property var apps: root.appsIn(workspace)
+            readonly property bool occupied: apps.length > 0
 
-            height: root.height - root.topPadding - root.bottomPadding
-            leftPadding: 5
-            rightPadding: 5
-            verticalAlignment: Text.AlignVCenter
-            text: "\u{F111}"
-            font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontSize
+            width: occupied ? pill.width : dot.width
+            height: root.height
 
-            // Mirrors styles/hypr/workspaces.css: active solid, occupied faded, empty hollow
-            readonly property bool hollow: !active && (empty || mouse.containsMouse)
+            // Empty workspace: a muted grey dot, accent when active, a little brighter on hover
+            Text {
+                id: dot
 
-            color: active ? Theme.accent : hollow ? "transparent" : Qt.alpha(Theme.accent, 0.4)
-            style: hollow ? Text.Outline : Text.Normal
-            styleColor: mouse.containsMouse ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(0, 0, 0, 0.2)
+                visible: !entry.occupied
+                anchors.verticalCenter: parent.verticalCenter
+                leftPadding: 5
+                rightPadding: 5
+                text: "\u{F111}"
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize
+                color: entry.active ? Theme.accent : Qt.alpha(Theme.text, dotMouse.containsMouse ? 0.45 : 0.25)
 
-            Behavior on color {
-                ColorAnimation { duration: 200 }
+                Behavior on color {
+                    ColorAnimation { duration: 200 }
+                }
+
+                MouseArea {
+                    id: dotMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.focusWorkspace(entry.modelData.name)
+                }
             }
 
-            MouseArea {
-                id: mouse
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: {
-                    const name = button.modelData.name.replace(/["\\]/g, "\\$&");
-                    Hyprland.dispatch(`hl.dsp.focus({ workspace = "${name}" })`);
+            // Occupied workspace: pill of app icons, accent-tinted and outlined when active
+            Rectangle {
+                id: pill
+
+                visible: entry.occupied
+                anchors.verticalCenter: parent.verticalCenter
+                width: icons.implicitWidth + 16
+                height: 24
+                radius: height / 2
+                color: entry.active ? Qt.alpha(Theme.accent, 0.25) : pillMouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                border.width: entry.active ? 1.5 : 0
+                border.color: Theme.accent
+
+                Behavior on color {
+                    ColorAnimation { duration: 200 }
+                }
+
+                // Clicking the pill outside an icon switches to the workspace
+                MouseArea {
+                    id: pillMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.focusWorkspace(entry.modelData.name)
+                }
+
+                Row {
+                    id: icons
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    Repeater {
+                        model: entry.apps
+
+                        // Clicking an icon focuses that app's window
+                        MouseArea {
+                            id: app
+
+                            required property var modelData
+
+                            width: 16
+                            height: 16
+                            hoverEnabled: true
+                            onClicked: root.focusWindow(modelData.window)
+
+                            IconImage {
+                                anchors.centerIn: parent
+                                implicitSize: app.containsMouse ? 18 : 16
+                                source: app.modelData.icon
+                                opacity: entry.active || app.containsMouse ? 1 : 0.7
+
+                                Behavior on implicitSize {
+                                    NumberAnimation { duration: 120 }
+                                }
+                            }
+
+                            LazyLoader {
+                                active: app.containsMouse
+
+                                Tooltip {
+                                    target: app
+                                    text: app.modelData.name
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
