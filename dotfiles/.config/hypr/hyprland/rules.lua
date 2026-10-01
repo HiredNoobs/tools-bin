@@ -90,6 +90,3 @@ hl.window_rule({
 -- Rofi
 -- Mainly to avoid the window getting caught by screenshots
 hl.layer_rule({ match = { namespace = "rofi" }, no_anim = true })
-
--- wlogout
-hl.layer_rule({ match = { namespace = "logout_dialog" }, no_anim = true })

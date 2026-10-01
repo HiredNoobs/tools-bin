@@ -24,12 +24,6 @@ function configure_hyprland {
     qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum nwg-look adw-gtk-theme papirus-icon-theme \
     otf-codenewroman-nerd
 
-  if ! command -v yay > /dev/null; then
-    log_error "yay is required to install AUR packages (wlogout). Install it and re-run."
-    return 1
-  fi
-  yay -S --needed wlogout
-
   # hyprpm deps
   sudo pacman -S --needed --noconfirm cmake cpio pkg-config gcc
 
@@ -63,7 +57,6 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/dotfiles/.config/hypr/"     "$XDG_CONFIG_HOME/hypr/"
   rsync -av --delete "$ROOT/dotfiles/.config/waybar/"   "$XDG_CONFIG_HOME/waybar/"
   rsync -av --delete "$ROOT/dotfiles/.config/quickshell/" "$XDG_CONFIG_HOME/quickshell/"
-  rsync -av --delete "$ROOT/dotfiles/.config/wlogout/"  "$XDG_CONFIG_HOME/wlogout/"
   rsync -av --delete "$ROOT/dotfiles/.config/dunst/"    "$XDG_CONFIG_HOME/dunst/"
   rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
