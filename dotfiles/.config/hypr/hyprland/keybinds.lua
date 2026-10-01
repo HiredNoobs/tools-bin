@@ -84,6 +84,39 @@ end
 -- Overview of every monitor's workspaces (Quickshell)
 hl.bind(mainMod .. " + TAB", hl.dsp.exec_cmd("qs ipc call overview toggle"), { description = "Toggle workspace overview" })
 
+-- Alt+Tab workspace switcher (Quickshell): hold Alt, tap Tab / Shift+Tab to step through recently
+-- used workspaces, release Alt to go to the selected one. Each hold of Alt is one numbered
+-- session, so the switcher can match a release that reaches it before the step does. Numbered
+-- from the clock so a config reload doesn't reuse numbers.
+local switcher = { session = os.time(), holding = false }
+
+local function switcher_step(direction)
+    return function()
+        if not switcher.holding then
+            switcher.holding = true
+            switcher.session = switcher.session + 1
+        end
+        hl.dispatch(hl.dsp.exec_cmd("qs ipc call switcher " .. direction .. " " .. switcher.session))
+    end
+end
+
+local function switcher_commit()
+    if switcher.holding then
+        switcher.holding = false
+        hl.dispatch(hl.dsp.exec_cmd("qs ipc call switcher commit " .. switcher.session))
+    end
+end
+
+hl.bind("ALT + TAB", switcher_step("next"), { description = "Switch to the previous workspace (hold Alt to pick)" })
+hl.bind("ALT + SHIFT + TAB", switcher_step("prev"), { description = "Workspace switcher, backwards" })
+-- Releasing Alt, whatever else is held, and still passed on to the app. ignore_mods should cover
+-- every case; the explicit Alt and Alt+Shift ones are a safety net (a second commit does nothing)
+for _, key in ipairs({ "ALT_L", "ALT_R" }) do
+    for _, mods in ipairs({ "", "ALT + ", "ALT + SHIFT + " }) do
+        hl.bind(mods .. key, switcher_commit, { release = true, non_consuming = true, ignore_mods = mods == "" })
+    end
+end
+
 -- Games get a regular workspace rather than a special one, so tearing and direct scanout can kick in
 hl.bind(mainMod .. " + G", function()
     local ws = hl.get_active_workspace()

@@ -9,6 +9,7 @@ import Quickshell.Io
 import qs.bar
 import qs.overview
 import qs.services
+import qs.switcher
 
 ShellRoot {
     id: root
@@ -36,6 +37,32 @@ ShellRoot {
 
         function toggle(): void {
             overview.toggle();
+        }
+    }
+
+    // Alt+Tab
+    AltTab {
+        id: switcher
+    }
+
+    // Driven by the Alt+Tab binds: `qs ipc call switcher next <session>`, `prev`, `commit`
+    IpcHandler {
+        target: "switcher"
+
+        function next(session: int): void {
+            switcher.step(session, 1);
+        }
+
+        function prev(session: int): void {
+            switcher.step(session, -1);
+        }
+
+        function commit(session: int): void {
+            switcher.commit(session);
+        }
+
+        function cancel(): void {
+            switcher.cancel();
         }
     }
 
