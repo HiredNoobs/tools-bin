@@ -29,7 +29,15 @@ Row {
         return shown;
     }
 
-    // One entry per app in the workspace: its icon and the first of its windows
+    // Icon path for an app, or "" when there's no real icon (no placeholder images)
+    function iconFor(name: string): string {
+        if (name.startsWith("/"))
+            return `file://${name}`;
+        return Quickshell.iconPath(name, true);
+    }
+
+    // One entry per app in the workspace that has an icon: the icon and the first of its windows.
+    // Windows without one (e.g. the GPG password prompt) are left out.
     function appsIn(workspace: HyprlandWorkspace): var {
         // Re-run once desktop entries have loaded, so icons resolve
         DesktopEntries.applications.values.length;
@@ -40,10 +48,13 @@ Row {
             if (apps.some(app => app.appId === appId))
                 continue;
             const entry = DesktopEntries.heuristicLookup(appId);
+            const icon = iconFor(entry?.icon || appId);
+            if (icon === "")
+                continue;
             apps.push({
                 appId: appId,
                 name: entry?.name || appId,
-                icon: Quickshell.iconPath(entry?.icon || appId, "application-x-executable"),
+                icon: icon,
                 window: window
             });
         }
@@ -74,11 +85,14 @@ Row {
             readonly property bool active: root.monitor?.activeWorkspace?.name === modelData.name
             readonly property var apps: root.appsIn(workspace)
             readonly property bool occupied: apps.length > 0
+            // Has windows, but none with an icon: shown as a dot that isn't the "empty" grey
+            readonly property bool hasWindows: (workspace?.toplevels.values.length ?? 0) > 0
 
             width: occupied ? pill.width : dot.width
             height: root.height
 
-            // Empty workspace: a muted grey dot, accent when active, a little brighter on hover
+            // No icons to show: accent when active, faded accent when it has windows,
+            // muted grey when empty; a little brighter on hover
             Text {
                 id: dot
 
@@ -89,7 +103,13 @@ Row {
                 text: "\u{F111}"
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
-                color: entry.active ? Theme.accent : Qt.alpha(Theme.text, dotMouse.containsMouse ? 0.45 : 0.25)
+                color: {
+                    if (entry.active)
+                        return Theme.accent;
+                    if (entry.hasWindows)
+                        return Qt.alpha(Theme.accent, dotMouse.containsMouse ? 0.6 : 0.4);
+                    return Qt.alpha(Theme.text, dotMouse.containsMouse ? 0.45 : 0.25);
+                }
 
                 Behavior on color {
                     ColorAnimation { duration: 200 }
