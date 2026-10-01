@@ -1,13 +1,17 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Wayland
 import qs
 import qs.components
 import qs.services
 
 // Super+Tab: every monitor's workspaces as live miniatures (Main row, Second row), shown on the
-// focused monitor. Click a workspace to go there or a window to focus it. Keyboard: arrows move
+// focused monitor. Click a workspace to go there or a window to focus it; drag a window onto
+// another workspace (either row) to move it there, to the left or right of the window it's
+// dropped on, or onto another window of its own workspace to swap them (the overview stays
+// open). Keyboard: arrows move
 // the selection (Tab/Shift+Tab through every workspace in turn), Enter goes there, 1-9/0 jump
 // within the selected row, typing searches windows
 // (then the arrows step through the matches and Enter focuses the selected one), Esc closes.
@@ -38,6 +42,11 @@ PanelWindow {
         return found;
     }
     property int selectedMatch: 0
+
+    // Window being dragged, where the pointer is, and the workspace miniature it's over
+    property HyprlandToplevel dragging: null
+    property point dragPosition
+    property var dropPreview: null
     readonly property var selectedWindow: matches[Math.min(selectedMatch, matches.length - 1)] ?? null
 
     onFilterChanged: selectedMatch = 0
@@ -105,6 +114,82 @@ PanelWindow {
 
     function close(): void {
         open = false;
+        dragging = null;
+    }
+
+    // Moves a dragged window to the workspace it was dropped on, without following it. Next to
+    // another window it goes on the side shown. Dwindle splits the focused window of that
+    // workspace, on the side force_split says (1 = left/top, 2 = right/bottom), so in one Lua
+    // call: focus the target (without warping the cursor), set force_split, move the window in,
+    // then put back force_split, each screen's workspace and the focused window. Dropped on
+    // another window of its own workspace, the two swap places.
+    function drop(toplevel: HyprlandToplevel): void {
+        // Read the drop target before ending the drag, which clears it
+        const preview = dropPreview;
+        const target = preview?.workspaceId;
+        const beside = preview?.dropWindow ?? null;
+        const side = preview?.dropSide ?? "";
+        dragging = null;
+        dropPreview = null;
+        if (!preview)
+            return;
+        const window = `address:0x${toplevel.address}`;
+
+        if (side === "swap") {
+            runLua(keepingView(`hl.dispatch(hl.dsp.window.swap({ window = '${window}', with = 'address:0x${beside.address}' }))`, toplevel));
+        } else if (target !== toplevel.workspace?.id) {
+            const move = `hl.dispatch(hl.dsp.window.move({ workspace = ${target}, window = '${window}', follow = false }))`;
+            if (beside && side !== "") {
+                const split = side === "l" || side === "t" ? 1 : 2;
+                runLua(keepingView(`
+                    local split = hl.get_config('dwindle.force_split')
+                    hl.dispatch(hl.dsp.focus({ window = 'address:0x${beside.address}' }))
+                    hl.config({ dwindle = { force_split = ${split} } })
+                    ${move}
+                    hl.config({ dwindle = { force_split = split } })`, toplevel));
+            } else {
+                runLua(move);
+            }
+        }
+        // Window positions in the miniatures come from Hyprland's window list
+        refreshTimer.restart();
+    }
+
+    // Wraps Lua that moves focus around so that, afterwards, each screen shows the workspace it
+    // did, the same window is focused, and the cursor never warps (moved: the dragged window,
+    // which isn't refocused if it was the focused one)
+    function keepingView(lua: string, moved: HyprlandToplevel): string {
+        return `
+            local prev = hl.get_active_window()
+            local shown, focusedWs = {}, nil
+            for _, m in ipairs(hl.get_monitors()) do
+                if m.active_workspace then
+                    if m.focused then focusedWs = m.active_workspace.id else table.insert(shown, m.active_workspace.id) end
+                end
+            end
+            local warps = hl.get_config('cursor.no_warps')
+            hl.config({ cursor = { no_warps = true } })
+            ${lua}
+            for _, id in ipairs(shown) do hl.dispatch(hl.dsp.focus({ workspace = id })) end
+            if focusedWs then hl.dispatch(hl.dsp.focus({ workspace = focusedWs })) end
+            if prev and prev.address ~= '0x${moved.address}' then hl.dispatch(hl.dsp.focus({ window = 'address:' .. prev.address })) end
+            hl.config({ cursor = { no_warps = warps } })`;
+    }
+
+    function runLua(lua: string): void {
+        luaProcess.command = ["hyprctl", "eval", lua];
+        luaProcess.running = true;
+    }
+
+    Process {
+        id: luaProcess
+        onExited: root.reclaimKeyboard()
+    }
+
+    Timer {
+        id: refreshTimer
+        interval: 250
+        onTriggered: Hyprland.refreshToplevels()
     }
 
     function goToWorkspace(id: int): void {
@@ -166,7 +251,49 @@ PanelWindow {
     color: "transparent"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-overview"
-    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // On demand rather than exclusive: Hyprland only lets the pointer reach an exclusive layer,
+    // which would stop clicks on the other monitors' backdrops. Exclusive for a moment to take
+    // the keyboard back after a drop, whose focus changes hand it to a window.
+    WlrLayershell.keyboardFocus: !open ? WlrKeyboardFocus.None : reclaiming ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
+    property bool reclaiming: false
+
+    function reclaimKeyboard(): void {
+        reclaiming = true;
+        reclaimTimer.restart();
+    }
+
+    Timer {
+        id: reclaimTimer
+        interval: 100
+        onTriggered: root.reclaiming = false
+    }
+
+    // The other monitors are dimmed too; clicking them closes the overview
+    Variants {
+        model: Quickshell.screens.filter(s => s.name !== root.targetScreen)
+
+        PanelWindow {
+            required property ShellScreen modelData
+
+            screen: modelData
+            visible: root.open
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+            exclusionMode: ExclusionMode.Ignore
+            color: Qt.alpha(Theme.background, 0.88)
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.namespace: "quickshell-overview-backdrop"
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.close()
+            }
+        }
+    }
 
     // Backdrop; clicking it closes
     Rectangle {
@@ -317,11 +444,56 @@ PanelWindow {
                                 live: root.open
                                 onClicked: root.goToWorkspace(tile.modelData.id)
                                 onWindowClicked: toplevel => root.focusWindow(toplevel)
+                                onWindowDragged: (toplevel, position) => {
+                                    root.dragging = toplevel;
+                                    root.dragPosition = position;
+                                }
+                                onWindowDropped: toplevel => root.drop(toplevel)
+
+                                // Drop target while a window is dragged over it
+                                dragged: root.dragging
+                                dragPoint: root.dragPosition
+                                dragOver: {
+                                    if (!root.dragging)
+                                        return false;
+                                    const local = mapFromItem(null, root.dragPosition.x, root.dragPosition.y);
+                                    return local.x >= 0 && local.y >= 0 && local.x <= width && local.y <= height;
+                                }
+                                highlighted: dragOver
+                                onDragOverChanged: {
+                                    if (dragOver)
+                                        root.dropPreview = preview;
+                                    else if (root.dropPreview === preview)
+                                        root.dropPreview = null;
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    // Follows the pointer while dragging a window: its live capture, or its icon until that arrives
+    Rectangle {
+        visible: root.dragging !== null
+        x: root.dragPosition.x - width / 2
+        y: root.dragPosition.y - height / 2
+        width: 200
+        height: 120
+        radius: 8
+        color: Theme.panelBackground
+        border.width: 2
+        border.color: Theme.accent
+        opacity: 0.9
+
+        ScreencopyView {
+            id: ghostCapture
+            anchors.fill: parent
+            anchors.margins: 3
+            captureSource: root.dragging?.wayland ?? null
+            live: root.dragging !== null
+            constraintSize: Qt.size(width * 2, height * 2)
         }
     }
 }

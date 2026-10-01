@@ -26,9 +26,59 @@ Rectangle {
     property HyprlandToplevel selectedWindow: null
     // Capture live frames; off when the overlay isn't showing
     property bool live: true
+    // While a window is dragged over this workspace: the pointer in window (scene) coordinates.
+    // dropWindow/dropSide say which window it would land next to and on which side ("l"/"r", or
+    // "t"/"b" for a window taller than wide, as dwindle splits along the longer side), or, for a
+    // window already on this workspace, which window it would swap with ("swap")
+    property bool dragOver: false
+    property point dragPoint
+    property HyprlandToplevel dragged: null
+    readonly property var dropHint: {
+        if (!dragOver)
+            return null;
+        const local = mapFromItem(null, dragPoint.x, dragPoint.y);
+        const inside = r => local.x >= r.x && local.x <= r.x + r.width && local.y >= r.y && local.y <= r.y + r.height;
+
+        // Already on this workspace: swap with the window under the pointer, if it's another one
+        if (dragged && (workspace?.toplevels.values ?? []).includes(dragged)) {
+            const other = (workspace?.toplevels.values ?? []).find(t => t !== dragged && !t.lastIpcObject.floating && inside(windowRect(t)));
+            return other ? { toplevel: other, rect: windowRect(other), side: "swap" } : null;
+        }
+
+        let best = null;
+        for (const t of workspace?.toplevels.values ?? []) {
+            if (t === dragged || t.lastIpcObject.floating)
+                continue;
+            const r = windowRect(t);
+            // The window under the pointer, else the nearest one
+            const distance = inside(r) ? -1 : Math.hypot(local.x - (r.x + r.width / 2), local.y - (r.y + r.height / 2));
+            if (!best || distance < best.distance)
+                best = { toplevel: t, rect: r, distance: distance };
+        }
+        if (!best)
+            return null;
+        const r = best.rect;
+        const sideBySide = r.width >= r.height;
+        return {
+            toplevel: best.toplevel,
+            rect: r,
+            side: sideBySide ? (local.x < r.x + r.width / 2 ? "l" : "r") : (local.y < r.y + r.height / 2 ? "t" : "b")
+        };
+    }
+    readonly property HyprlandToplevel dropWindow: dropHint?.toplevel ?? null
+    readonly property string dropSide: dropHint?.side ?? ""
+
+    // A window's rectangle in this miniature
+    function windowRect(toplevel: HyprlandToplevel): rect {
+        const ipc = toplevel.lastIpcObject;
+        return Qt.rect(((ipc.at?.[0] ?? 0) - (monitor?.x ?? 0)) * scaleFactor, ((ipc.at?.[1] ?? 0) - (monitor?.y ?? 0)) * scaleFactor, (ipc.size?.[0] ?? 0) * scaleFactor, (ipc.size?.[1] ?? 0) * scaleFactor);
+    }
 
     signal clicked
     signal windowClicked(HyprlandToplevel toplevel)
+    // Dragging a window: position in window (scene) coordinates; dropped where released
+    signal windowDragged(HyprlandToplevel toplevel, point position)
+    signal windowDropped(HyprlandToplevel toplevel, point position)
 
     readonly property real monitorWidth: monitor ? monitor.width / monitor.scale : 1920
     readonly property real monitorHeight: monitor ? monitor.height / monitor.scale : 1080
@@ -81,10 +131,12 @@ Rectangle {
             readonly property var ipc: modelData.lastIpcObject
             readonly property bool matching: root.matches(modelData)
 
-            x: ((ipc.at?.[0] ?? 0) - (root.monitor?.x ?? 0)) * root.scaleFactor
-            y: ((ipc.at?.[1] ?? 0) - (root.monitor?.y ?? 0)) * root.scaleFactor
-            width: (ipc.size?.[0] ?? 0) * root.scaleFactor
-            height: (ipc.size?.[1] ?? 0) * root.scaleFactor
+            readonly property rect area: root.windowRect(modelData)
+
+            x: area.x
+            y: area.y
+            width: area.width
+            height: area.height
             opacity: matching ? 1 : 0.25
 
             ClippingRectangle {
@@ -109,10 +161,39 @@ Rectangle {
                 }
             }
 
+            // Click focuses the window; press and drag past a few pixels to move it elsewhere
             MouseArea {
+                id: windowMouse
+
+                property point pressedAt
+                property bool dragging: false
+                property bool dragged: false
+
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.windowClicked(windowItem.modelData)
+                cursorShape: dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                preventStealing: true
+
+                onPressed: event => {
+                    pressedAt = Qt.point(event.x, event.y);
+                    dragging = false;
+                    dragged = false;
+                }
+                onPositionChanged: event => {
+                    if (!dragging && Math.hypot(event.x - pressedAt.x, event.y - pressedAt.y) > 8)
+                        dragging = true;
+                    if (dragging)
+                        root.windowDragged(windowItem.modelData, mapToItem(null, event.x, event.y));
+                }
+                onReleased: event => {
+                    if (dragging)
+                        root.windowDropped(windowItem.modelData, mapToItem(null, event.x, event.y));
+                    dragged = dragging;
+                    dragging = false;
+                }
+                onClicked: {
+                    if (!dragged)
+                        root.windowClicked(windowItem.modelData);
+                }
             }
 
             Rectangle {
@@ -125,6 +206,24 @@ Rectangle {
                 border.color: Theme.accent
             }
         }
+    }
+
+    // Where a dragged window would land: the half of the window it's over, or the whole window
+    // it would swap with
+    Rectangle {
+        readonly property rect area: root.dropHint?.rect ?? Qt.rect(0, 0, 0, 0)
+        readonly property bool halfWidth: root.dropSide === "l" || root.dropSide === "r"
+        readonly property bool halfHeight: root.dropSide === "t" || root.dropSide === "b"
+
+        visible: root.dropHint !== null
+        x: area.x + (root.dropSide === "r" ? area.width / 2 : 0)
+        y: area.y + (root.dropSide === "b" ? area.height / 2 : 0)
+        width: area.width / (halfWidth ? 2 : 1)
+        height: area.height / (halfHeight ? 2 : 1)
+        radius: 4
+        color: Qt.alpha(Theme.accent, 0.35)
+        border.width: 2
+        border.color: Theme.accent
     }
 
     // Number in the corner
