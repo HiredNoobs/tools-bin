@@ -23,5 +23,12 @@ if not ok and not err:find("module 'monitors' not found") then
     error(err)
 end
 
+-- Keyboard, mouse and touchpad settings saved from Quickshell's settings window, if any; also
+-- local state, like monitors.lua
+ok, err = pcall(require, "input")
+if not ok and not err:find("module 'input' not found") then
+    error(err)
+end
+
 -- Per-monitor workspaces and app placement, now the machine file has set the monitor roles
 require("hyprland.workspaces").setup()

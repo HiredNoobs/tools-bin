@@ -13,6 +13,10 @@ Rectangle {
     readonly property alias inputFocus: input.activeFocus
     signal accepted
 
+    function focusInput(): void {
+        input.forceActiveFocus();
+    }
+
     implicitWidth: 260
     implicitHeight: 34
     radius: 8

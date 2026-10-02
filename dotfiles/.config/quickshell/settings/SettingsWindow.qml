@@ -29,6 +29,7 @@ FloatingWindow {
             "network": networkPage,
             "bluetooth": bluetoothPage,
             "displays": displaysPage,
+            "input": inputPage,
             "shell": shellPage
         })
     readonly property var current: sections.find(section => section.name === page) ?? sections[0]
@@ -214,6 +215,12 @@ FloatingWindow {
         id: displaysPage
 
         DisplaysPage {}
+    }
+
+    Component {
+        id: inputPage
+
+        InputPage {}
     }
 
     Component {
