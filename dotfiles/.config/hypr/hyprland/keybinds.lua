@@ -139,7 +139,7 @@ hl.bind(mainMod .. " + CONTROL + L", hl.dsp.exec_cmd("loginctl lock-session"), {
 -- Application shortcuts
 -------------------------------------------------------
 
-hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("pkill rofi || rofi -show drun -theme ~/.config/rofi/launcher.rasi"), { description = "Toggle application launcher" })
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("qs ipc call launcher toggle"), { description = "Toggle application launcher" })
 
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty -1"), { description = "Open Terminal" })
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("kitty bash -c yazi", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }), { description = "Open File Explorer" })

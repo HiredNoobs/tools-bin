@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.bar
+import qs.launcher
 import qs.overview
 import qs.services
 import qs.switcher
@@ -37,6 +38,20 @@ ShellRoot {
 
         function toggle(): void {
             overview.toggle();
+        }
+    }
+
+    // Super+Space
+    Launcher {
+        id: launcher
+    }
+
+    // `qs ipc call launcher toggle`
+    IpcHandler {
+        target: "launcher"
+
+        function toggle(): void {
+            launcher.toggle();
         }
     }
 
