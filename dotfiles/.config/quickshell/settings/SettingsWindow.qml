@@ -26,6 +26,7 @@ FloatingWindow {
     // Pages built so far; the others show what's coming
     readonly property var pages: ({
             "sound": soundPage,
+            "network": networkPage,
             "shell": shellPage
         })
     readonly property var current: sections.find(section => section.name === page) ?? sections[0]
@@ -193,6 +194,12 @@ FloatingWindow {
         id: soundPage
 
         SoundPage {}
+    }
+
+    Component {
+        id: networkPage
+
+        NetworkPage {}
     }
 
     Component {

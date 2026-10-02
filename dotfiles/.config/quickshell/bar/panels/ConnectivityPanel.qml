@@ -209,7 +209,7 @@ Column {
         PanelButton {
             icon: "\u{F013}"
             label: "Network settings"
-            onClicked: root.run(() => Exec.floating("nm-connection-editor", false))
+            onClicked: root.run(() => Exec.run("qs ipc call settings open network"))
         }
     }
 
