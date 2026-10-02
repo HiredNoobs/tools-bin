@@ -20,10 +20,22 @@ ShellRoot {
     property bool barVisible: true
 
     // Singletons are only created when first used; create these at start so update checks run
-    // on schedule and stream titles are remembered before the panels first open
+    // on schedule, stream titles are remembered before the panels first open, and the
+    // Bluetooth pairing agent is there before anything pairs
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
+        BluetoothAgent.ready;
+    }
+
+    // A window for each Bluetooth pairing request, there until answered (or closed, which
+    // rejects) or cancelled by the device
+    LazyLoader {
+        active: BluetoothAgent.request !== null
+
+        PairingWindow {
+            onClosed: BluetoothAgent.answer(false, "")
+        }
     }
 
     // One bar per monitor

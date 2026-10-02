@@ -1,6 +1,5 @@
 import QtQuick
 import qs
-import qs.components
 
 // A one-line text box with a placeholder, like the connectivity panel's password field. With
 // `valid: false` (e.g. a malformed address) its border turns red. Enter emits `accepted`.

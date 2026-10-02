@@ -93,6 +93,16 @@ hl.window_rule({
     size = { 1000, 680 }
 })
 
+-- Quickshell's Bluetooth pairing requests
+hl.window_rule({
+    match = {
+        class = "org.quickshell",
+        title = "Bluetooth pairing"
+    },
+    float = true,
+    center = true
+})
+
 -------------------------------------------------------
 -- Workspace placement
 -------------------------------------------------------

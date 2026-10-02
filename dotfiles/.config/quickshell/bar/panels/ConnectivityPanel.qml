@@ -304,8 +304,8 @@ Column {
     PanelButton {
         visible: root.adapter !== null
         icon: "\u{F013}"
-        label: "Manage Bluetooth"
-        onClicked: root.run(() => Exec.floating("blueman-manager", false))
+        label: "Bluetooth settings"
+        onClicked: root.run(() => Exec.run("qs ipc call settings open bluetooth"))
     }
 
     // Section heading with an on/off switch on the right
