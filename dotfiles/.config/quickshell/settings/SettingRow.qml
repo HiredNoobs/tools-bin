@@ -6,7 +6,8 @@ import qs.components
 // buttons…) on the right. Put inside a SettingsGroup. `sub` indents it under the row above (an
 // option of that one); disabled (`enabled: false`) it's greyed out and ignores clicks.
 // `expandable` adds a chevron, and clicking the row emits expandToggled, for rows with options
-// listed under them only while open (like the panels' sections).
+// listed under them only while open (like the panels' sections). `changed` shows a ↺ button
+// before the control, which emits `reset` (back to the default).
 Item {
     id: root
 
@@ -15,9 +16,11 @@ Item {
     property bool sub: false
     property bool expandable: false
     property bool expanded: false
+    property bool changed: false
     default property alias control: controlArea.data
 
     signal expandToggled
+    signal reset
 
     width: parent?.width ?? 0
     implicitHeight: Math.max(text.implicitHeight, controlArea.childrenRect.height) + (sub ? 20 : 28)
@@ -41,7 +44,7 @@ Item {
         id: text
         anchors.verticalCenter: parent.verticalCenter
         x: root.sub ? 40 : 16
-        width: parent.width - x - 16 - controlArea.width - (controlArea.width > 0 ? 24 : 0) - chevron.width
+        width: parent.width - x - 16 - controlArea.width - (controlArea.width > 0 ? 24 : 0) - chevron.width - (resetButton.visible ? resetButton.width + 8 : 0)
         spacing: 3
 
         PanelText {
@@ -59,6 +62,16 @@ Item {
             dim: true
             font.pixelSize: Theme.panelFontSize - 1
         }
+    }
+
+    PanelButton {
+        id: resetButton
+        visible: root.changed
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.right: controlArea.left
+        anchors.rightMargin: 8
+        icon: "\u{F0E2}"
+        onClicked: root.reset()
     }
 
     Item {

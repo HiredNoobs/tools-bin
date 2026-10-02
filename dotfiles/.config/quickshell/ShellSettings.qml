@@ -10,6 +10,35 @@ import Quickshell.Io
 Singleton {
     id: root
 
+    // Every option's default, for first runs and the settings window's ↺ buttons
+    readonly property var defaults: ({
+            controlCentre: true,
+            attachToBar: true,
+            attachPanels: true,
+            attachLauncher: true,
+            attachPopups: true,
+            popupSeconds: 5,
+            maxPopups: 3,
+            volumeBoost: false,
+            nightlightTemperature: 5000,
+            nightlightSchedule: false,
+            nightlightStart: "21:00",
+            nightlightEnd: "07:00",
+            lidAction: "suspend",
+            lidDocked: "screen-off",
+            batteryWarn: 15,
+            batteryCritical: 5,
+            batteryCriticalAction: "nothing"
+        })
+
+    function isDefault(key: string): bool {
+        return root[key] === defaults[key];
+    }
+
+    function reset(key: string): void {
+        root[key] = defaults[key];
+    }
+
     // Right-hand icons open one tabbed control centre (true) or their own panels (false)
     property alias controlCentre: adapter.controlCentre
     // Drop-downs joined to the bottom of the bar; off, none are (see Theme)
@@ -55,23 +84,23 @@ Singleton {
         JsonAdapter {
             id: adapter
 
-            property bool controlCentre: true
-            property bool attachToBar: true
-            property bool attachPanels: true
-            property bool attachLauncher: true
-            property bool attachPopups: true
-            property int popupSeconds: 5
-            property int maxPopups: 3
-            property bool volumeBoost: false
-            property int nightlightTemperature: 5000
-            property bool nightlightSchedule: false
-            property string nightlightStart: "21:00"
-            property string nightlightEnd: "07:00"
-            property string lidAction: "suspend"
-            property string lidDocked: "screen-off"
-            property int batteryWarn: 15
-            property int batteryCritical: 5
-            property string batteryCriticalAction: "nothing"
+            property bool controlCentre: root.defaults.controlCentre
+            property bool attachToBar: root.defaults.attachToBar
+            property bool attachPanels: root.defaults.attachPanels
+            property bool attachLauncher: root.defaults.attachLauncher
+            property bool attachPopups: root.defaults.attachPopups
+            property int popupSeconds: root.defaults.popupSeconds
+            property int maxPopups: root.defaults.maxPopups
+            property bool volumeBoost: root.defaults.volumeBoost
+            property int nightlightTemperature: root.defaults.nightlightTemperature
+            property bool nightlightSchedule: root.defaults.nightlightSchedule
+            property string nightlightStart: root.defaults.nightlightStart
+            property string nightlightEnd: root.defaults.nightlightEnd
+            property string lidAction: root.defaults.lidAction
+            property string lidDocked: root.defaults.lidDocked
+            property int batteryWarn: root.defaults.batteryWarn
+            property int batteryCritical: root.defaults.batteryCritical
+            property string batteryCriticalAction: root.defaults.batteryCriticalAction
         }
     }
 }

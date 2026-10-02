@@ -16,6 +16,8 @@ Column {
         title: "Bar"
 
         SettingRow {
+            changed: !ShellSettings.isDefault("controlCentre")
+            onReset: ShellSettings.reset("controlCentre")
             label: "Control centre"
             description: "The icons on the right of the bar open one panel with a tab for each. Off, each icon opens its own panel."
 
@@ -32,6 +34,8 @@ Column {
         title: "Attach to the bar"
 
         SettingRow {
+            changed: !ShellSettings.isDefault("attachToBar")
+            onReset: ShellSettings.reset("attachToBar")
             label: "Attach to the bar"
             description: "Drop-downs hang from the bar's bottom edge, joined by curved corners. Off, none of them are."
             expandable: true
@@ -45,6 +49,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("attachPanels")
+            onReset: ShellSettings.reset("attachPanels")
             visible: root.attachExpanded
             sub: true
             enabled: ShellSettings.attachToBar
@@ -58,6 +64,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("attachLauncher")
+            onReset: ShellSettings.reset("attachLauncher")
             visible: root.attachExpanded
             sub: true
             enabled: ShellSettings.attachToBar
@@ -71,6 +79,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("attachPopups")
+            onReset: ShellSettings.reset("attachPopups")
             visible: root.attachExpanded
             sub: true
             enabled: ShellSettings.attachToBar
@@ -88,6 +98,8 @@ Column {
         title: "Notifications"
 
         SettingRow {
+            changed: !ShellSettings.isDefault("popupSeconds")
+            onReset: ShellSettings.reset("popupSeconds")
             label: "Pop-up duration"
             description: "How long a notification stays on screen, unless it asks for longer. Urgent ones stay until dismissed."
 
@@ -100,6 +112,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("maxPopups")
+            onReset: ShellSettings.reset("maxPopups")
             label: "Pop-ups at once"
             description: "More wait their turn."
 

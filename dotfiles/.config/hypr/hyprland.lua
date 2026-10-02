@@ -30,5 +30,11 @@ if not ok and not err:find("module 'input' not found") then
     error(err)
 end
 
+-- The cursor chosen in Quickshell's settings window (Appearance), if any; also local state
+ok, err = pcall(require, "appearance")
+if not ok and not err:find("module 'appearance' not found") then
+    error(err)
+end
+
 -- Per-monitor workspaces and app placement, now the machine file has set the monitor roles
 require("hyprland.workspaces").setup()

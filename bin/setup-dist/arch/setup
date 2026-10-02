@@ -58,7 +58,7 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/dotfiles/.config/wal/"      "$HOME/.cache/wal/"
 
   # monitors.lua is the layout saved from the bar, local to each machine
-  rsync -av --delete --exclude 'monitors.lua' --exclude 'input.lua' --exclude 'hypridle.local.conf' "$ROOT/dotfiles/.config/hypr/" "$XDG_CONFIG_HOME/hypr/"
+  rsync -av --delete --exclude 'monitors.lua' --exclude 'input.lua' --exclude 'hypridle.local.conf' --exclude 'appearance.lua' "$ROOT/dotfiles/.config/hypr/" "$XDG_CONFIG_HOME/hypr/"
   rsync -av --delete "$ROOT/dotfiles/.config/waybar/"   "$XDG_CONFIG_HOME/waybar/"
   rsync -av --delete "$ROOT/dotfiles/.config/quickshell/" "$XDG_CONFIG_HOME/quickshell/"
   rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"

@@ -41,6 +41,8 @@ Column {
         SettingRow {
             label: "Power mode"
             description: "Saver lowers performance for battery life; Performance the opposite."
+            changed: PowerProfiles.profile !== PowerProfile.Balanced
+            onReset: PowerProfiles.profile = PowerProfile.Balanced
 
             ChoiceButtons {
                 choices: [PowerProfile.PowerSaver, PowerProfile.Balanced, ...(PowerProfiles.hasPerformanceProfile ? [PowerProfile.Performance] : [])]
@@ -104,6 +106,8 @@ Column {
         title: "Lid"
 
         SettingRow {
+            changed: !ShellSettings.isDefault("lidAction")
+            onReset: ShellSettings.reset("lidAction")
             label: "When the lid closes"
 
             ChoiceButtons {
@@ -115,6 +119,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("lidDocked")
+            onReset: ShellSettings.reset("lidDocked")
             label: "With another screen connected"
             description: "Screen off keeps working on the other screen with the laptop closed."
 
@@ -132,6 +138,8 @@ Column {
         title: "Low battery"
 
         LevelPicker {
+            changed: !ShellSettings.isDefault("batteryWarn")
+            onReset: ShellSettings.reset("batteryWarn")
             label: "Warn at"
             description: "A notification when the battery gets this low."
             levels: [5, 10, 15, 20, 25, 30, 35, 40]
@@ -140,6 +148,8 @@ Column {
         }
 
         LevelPicker {
+            changed: !ShellSettings.isDefault("batteryCritical")
+            onReset: ShellSettings.reset("batteryCritical")
             label: "Critical at"
             levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
             current: ShellSettings.batteryCritical
@@ -147,6 +157,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("batteryCriticalAction")
+            onReset: ShellSettings.reset("batteryCriticalAction")
             label: "Then"
             description: "What happens at the critical level, before the battery runs out."
 
@@ -227,13 +239,17 @@ Column {
         property string description: ""
         property var levels: []
         property int current
+        property bool changed: false
         signal picked(int level)
+        signal reset
 
         width: parent.width
 
         SettingRow {
             label: levelPicker.label
             description: levelPicker.description
+            changed: levelPicker.changed
+            onReset: levelPicker.reset()
 
             PanelButton {
                 width: 90

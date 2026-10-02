@@ -31,6 +31,7 @@ FloatingWindow {
             "displays": displaysPage,
             "input": inputPage,
             "power": powerPage,
+            "appearance": appearancePage,
             "shell": shellPage
         })
     readonly property var current: sections.find(section => section.name === page) ?? sections[0]
@@ -228,6 +229,12 @@ FloatingWindow {
         id: powerPage
 
         PowerPage {}
+    }
+
+    Component {
+        id: appearancePage
+
+        AppearancePage {}
     }
 
     Component {

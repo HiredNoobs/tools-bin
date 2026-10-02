@@ -190,6 +190,8 @@ Column {
         title: "Options"
 
         SettingRow {
+            changed: !ShellSettings.isDefault("volumeBoost")
+            onReset: ShellSettings.reset("volumeBoost")
             label: "Allow volume above 100%"
             description: "Boosts quiet sound up to 150%, in software. Loud sounds may distort."
 

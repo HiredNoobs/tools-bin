@@ -211,6 +211,8 @@ Column {
 
                 SettingRow {
                     label: "Resolution"
+                    changed: monitorGroup.monitor.mode !== monitorGroup.monitor.modes[0]
+                    onReset: Monitors.setMode(monitorGroup.monitor.name, monitorGroup.monitor.modes[0])
 
                     Picker {
                         label: monitorGroup.resolution.replace("x", " × ")
@@ -250,6 +252,8 @@ Column {
                 visible: !monitorGroup.monitor.disabled
                 label: "Scale"
                 description: "Makes everything bigger; the screen then has less room."
+                changed: Math.abs(monitorGroup.monitor.scale - 1) > 0.01
+                onReset: Monitors.setScale(monitorGroup.monitor.name, 1)
 
                 ChoiceButtons {
                     choices: Monitors.allScales
@@ -262,6 +266,8 @@ Column {
             SettingRow {
                 visible: !monitorGroup.monitor.disabled
                 label: "Rotation"
+                changed: monitorGroup.monitor.transform !== 0
+                onReset: Monitors.setTransform(monitorGroup.monitor.name, 0)
 
                 ChoiceButtons {
                     choices: [0, 1, 2, 3]
@@ -275,6 +281,8 @@ Column {
                 visible: !monitorGroup.monitor.disabled
                 label: "Adaptive sync"
                 description: "Lets the screen match games' frame rate (VRR / FreeSync), if it supports it."
+                changed: monitorGroup.monitor.vrr
+                onReset: Monitors.setVrr(monitorGroup.monitor.name, false)
 
                 Toggle {
                     checked: monitorGroup.monitor.vrr
@@ -286,6 +294,8 @@ Column {
                 visible: !monitorGroup.monitor.disabled && monitorGroup.others.length > 0
                 label: "Mirror"
                 description: "Show the same picture as another screen."
+                changed: monitorGroup.monitor.mirrorOf !== ""
+                onReset: Monitors.setMirror(monitorGroup.monitor.name, "")
 
                 ChoiceButtons {
                     choices: ["", ...monitorGroup.others.map(m => m.name)]
@@ -368,6 +378,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("nightlightTemperature")
+            onReset: ShellSettings.reset("nightlightTemperature")
             label: "Warmth"
             description: `${ShellSettings.nightlightTemperature} K`
 
@@ -380,6 +392,8 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("nightlightSchedule")
+            onReset: ShellSettings.reset("nightlightSchedule")
             label: "On a schedule"
             description: "Switching it by hand still works, until the next start or end."
 
@@ -390,6 +404,11 @@ Column {
         }
 
         SettingRow {
+            changed: !ShellSettings.isDefault("nightlightEnd") || !ShellSettings.isDefault("nightlightStart")
+            onReset: {
+                ShellSettings.reset("nightlightEnd");
+                ShellSettings.reset("nightlightStart");
+            }
             visible: ShellSettings.nightlightSchedule
             sub: true
             label: "From"
