@@ -23,8 +23,16 @@ hl.on("hyprland.start", function()
     -- Authentication agent
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
 
-    -- Idle manager
-    hl.exec_cmd("hypridle")
+    -- Idle manager, with the timeouts set in Quickshell's settings window if there are any
+    -- (hypridle.local.conf, this machine's own); otherwise hypridle.conf
+    local idle = (os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/hypr/hypridle.local.conf"
+    local file = io.open(idle, "r")
+    if file then
+        file:close()
+        hl.exec_cmd("hypridle -c " .. idle)
+    else
+        hl.exec_cmd("hypridle")
+    end
 
     -- Auto mount USB devices
     hl.exec_cmd("udiskie")

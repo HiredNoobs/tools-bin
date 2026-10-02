@@ -30,6 +30,14 @@ Singleton {
     property alias nightlightSchedule: adapter.nightlightSchedule
     property alias nightlightStart: adapter.nightlightStart
     property alias nightlightEnd: adapter.nightlightEnd
+    // Closing the laptop lid: "suspend", "lock" or "nothing"; with another screen connected,
+    // also "screen-off" (just the laptop screen)
+    property alias lidAction: adapter.lidAction
+    property alias lidDocked: adapter.lidDocked
+    // Low battery: a warning at one level, and "nothing", "suspend" or "poweroff" at another
+    property alias batteryWarn: adapter.batteryWarn
+    property alias batteryCritical: adapter.batteryCritical
+    property alias batteryCriticalAction: adapter.batteryCriticalAction
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -59,6 +67,11 @@ Singleton {
             property bool nightlightSchedule: false
             property string nightlightStart: "21:00"
             property string nightlightEnd: "07:00"
+            property string lidAction: "suspend"
+            property string lidDocked: "screen-off"
+            property int batteryWarn: 15
+            property int batteryCritical: 5
+            property string batteryCriticalAction: "nothing"
         }
     }
 }

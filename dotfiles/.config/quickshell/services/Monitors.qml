@@ -128,6 +128,16 @@ Singleton {
         run(pinOthers(name) + "\n" + luaSpec({ output: name, mode: "preferred", position: "auto", scale: 1, mirror: "", disabled: false }));
     }
 
+    // Turning a screen off or back on to a known spec without asking to keep it (the laptop
+    // screen when its lid closes and opens, see Lid)
+    function setOffQuietly(name: string): void {
+        run(pinOthers(name) + "\n" + luaSpec({ output: name, disabled: true }));
+    }
+
+    function restoreQuietly(spec: var): void {
+        run(pinOthers(spec.output) + "\n" + luaSpec(Object.assign({ disabled: false }, spec)));
+    }
+
     function setMode(name: string, mode: string): void {
         guard();
         apply(name, { mode: mode });

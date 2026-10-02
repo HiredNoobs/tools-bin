@@ -21,12 +21,15 @@ ShellRoot {
 
     // Singletons are only created when first used; create these at start so update checks run
     // on schedule, stream titles are remembered before the panels first open, the Bluetooth
-    // pairing agent is there before anything pairs, and nightlight's schedule runs
+    // pairing agent is there before anything pairs, nightlight's schedule runs, and the lid and
+    // low battery are handled
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
         BluetoothAgent.ready;
         Nightlight.enabled;
+        Lid.hasLid;
+        LowBattery.warned;
     }
 
     // A window for each Bluetooth pairing request, there until answered (or closed, which
@@ -133,6 +136,19 @@ ShellRoot {
 
         function close(): void {
             settingsWindow.active = false;
+        }
+    }
+
+    // Hyprland's lid switch binds: `qs ipc call lid closed|opened`
+    IpcHandler {
+        target: "lid"
+
+        function closed(): void {
+            Lid.closed();
+        }
+
+        function opened(): void {
+            Lid.opened();
         }
     }
 

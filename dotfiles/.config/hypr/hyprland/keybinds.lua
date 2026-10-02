@@ -184,6 +184,15 @@ hl.bind("ALT + PRINT", function()
 end, { description = "Screenshot - fullscreen" })
 
 -------------------------------------------------------
+-- Lid
+-------------------------------------------------------
+
+-- Quickshell decides what closing the lid does (Settings › Power and idle), holding systemd's
+-- lid handling off while it runs; locked = works on the lock screen too
+hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("qs ipc call lid closed"), { locked = true })
+hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("qs ipc call lid opened"), { locked = true })
+
+-------------------------------------------------------
 -- Media control
 -------------------------------------------------------
 
