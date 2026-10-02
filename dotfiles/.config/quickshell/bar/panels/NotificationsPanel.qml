@@ -11,12 +11,10 @@ Column {
 
     signal closeRequested
 
-    // Expanded app groups, by app name. Groups start collapsed, so the center opens as a list
-    // of apps rather than filling the screen
-    property var expanded: ({})
-
+    // Expanded app groups (see PanelState). Groups start collapsed, so the center opens as a
+    // list of apps rather than filling the screen, and stay open for the session once opened
     function toggleGroup(app: string): void {
-        expanded = Object.assign({}, expanded, { [app]: !expanded[app] });
+        PanelState.toggle("notifications", app);
     }
 
     function iconFor(group: var): string {
@@ -94,7 +92,7 @@ Column {
                     id: group
 
                     required property var modelData
-                    readonly property bool open: root.expanded[modelData.app] ?? false
+                    readonly property bool open: PanelState.isOpen("notifications", modelData.app)
 
                     width: groupColumn.width
                     spacing: 4

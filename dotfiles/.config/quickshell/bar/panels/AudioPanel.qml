@@ -15,6 +15,29 @@ Column {
     readonly property var inputs: nodes.filter(n => n.type === PwNodeType.AudioSource)
     readonly property var apps: nodes.filter(n => n.type === PwNodeType.AudioOutStream)
 
+    // App streams grouped by app, in order of appearance: [{ name, streams }]. Each Firefox tab
+    // (and the like) is its own stream
+    readonly property var appGroups: {
+        const groups = [];
+        for (const stream of apps) {
+            const name = appName(stream);
+            const group = groups.find(g => g.name === name);
+            if (group)
+                group.streams.push(stream);
+            else
+                groups.push({ name: name, streams: [stream] });
+        }
+        return groups;
+    }
+    function appName(stream: PwNode): string {
+        return stream.properties["application.name"] ?? stream.name;
+    }
+
+    // What a stream is playing, e.g. a browser tab's title
+    function streamTitle(stream: PwNode): string {
+        return StreamTitles.title(stream);
+    }
+
     function nodeName(node: PwNode): string {
         return node.description || node.nickname || node.name;
     }
@@ -51,6 +74,7 @@ Column {
         icon: "\u{F028}"
         mutedIcon: "\u{EEE8}"
         devices: root.outputs
+        devicesKey: "output"
         hiddenDevices: AudioCards.hiddenOutputs
         onDeviceChosen: device => Pipewire.preferredDefaultAudioSink = device
     }
@@ -64,6 +88,7 @@ Column {
         icon: "\u{F130}"
         mutedIcon: "\u{F131}"
         devices: root.inputs
+        devicesKey: "input"
         onDeviceChosen: device => Pipewire.preferredDefaultAudioSource = device
     }
 
@@ -73,14 +98,12 @@ Column {
     }
 
     Repeater {
-        model: root.apps
+        model: root.appGroups
 
-        VolumeRow {
-            required property PwNode modelData
-            node: modelData
-            icon: "\u{F028}"
-            mutedIcon: "\u{EEE8}"
-            label: modelData.properties["application.name"] ?? modelData.name
+        AppVolume {
+            required property var modelData
+            name: modelData.name
+            streams: modelData.streams
         }
     }
 
@@ -99,18 +122,115 @@ Column {
         }
     }
 
+    // An app's volume. With one stream, a row for it (named after what it plays, if anything);
+    // with more, a row for the whole app that can expand to show each stream. PipeWire has no
+    // per-app volume, so the app's row shows its loudest stream and scales them all together,
+    // keeping their balance, and mutes or unmutes them all.
+    component AppVolume: Column {
+        id: appVolume
+
+        property string name
+        property var streams: []
+
+        readonly property bool grouped: streams.length > 1
+        readonly property bool expanded: PanelState.isOpen("audio", name)
+        readonly property real volume: Math.max(0, ...streams.map(s => s.audio?.volume ?? 0))
+        readonly property bool muted: streams.every(s => s.audio?.muted ?? false)
+        // Each stream's share of the loudest, so dragging the app to 0 and back keeps them
+        property var balance: ({})
+
+        function setVolume(value: real): void {
+            if (volume > 0) {
+                const shares = {};
+                for (const stream of streams)
+                    shares[stream.id] = (stream.audio?.volume ?? 0) / volume;
+                balance = shares;
+            }
+            for (const stream of streams) {
+                if (stream.audio)
+                    stream.audio.volume = value * (balance[stream.id] ?? 1);
+            }
+        }
+
+        function setMuted(muted: bool): void {
+            for (const stream of streams) {
+                if (stream.audio)
+                    stream.audio.muted = muted;
+            }
+        }
+
+        width: root.width
+        spacing: 8
+
+        VolumeRow {
+            visible: !appVolume.grouped
+            node: appVolume.streams[0] ?? null
+            icon: "\u{F028}"
+            mutedIcon: "\u{EEE8}"
+            label: appVolume.name
+            sublabel: appVolume.streams[0] ? root.streamTitle(appVolume.streams[0]) : ""
+        }
+
+        VolumeRow {
+            visible: appVolume.grouped
+            icon: "\u{F028}"
+            mutedIcon: "\u{EEE8}"
+            label: appVolume.name
+            sublabel: `${appVolume.streams.length} streams`
+            volume: appVolume.volume
+            muted: appVolume.muted
+            expandable: true
+            expanded: appVolume.expanded
+            onVolumeSet: value => appVolume.setVolume(value)
+            onMuteToggled: appVolume.setMuted(!appVolume.muted)
+            onExpandToggled: PanelState.toggle("audio", appVolume.name)
+        }
+
+        // The streams, indented under the app
+        Column {
+            visible: appVolume.grouped && appVolume.expanded
+            x: 16
+            width: parent.width - x
+            spacing: 8
+
+            Repeater {
+                model: appVolume.grouped ? appVolume.streams : []
+
+                VolumeRow {
+                    required property PwNode modelData
+                    required property int index
+                    width: parent.width
+                    node: modelData
+                    icon: "\u{F028}"
+                    mutedIcon: "\u{EEE8}"
+                    label: root.streamTitle(modelData) || `Stream ${index + 1}`
+                }
+            }
+        }
+    }
+
     // Mute button, slider, percentage and (with `devices`) a drop-down of devices to switch to,
-    // with an optional name above
+    // with an optional name (and dim detail) above. Without a `node`, it shows `volume` and
+    // `muted` as given and emits volumeSet / muteToggled for the owner to apply; with
+    // `expandable`, its chevron emits expandToggled instead of opening a device list.
     component VolumeRow: Column {
         id: volumeRow
 
-        property PwNode node
+        property PwNode node: null
         property string icon
         property string mutedIcon
         property string label: ""
+        property string sublabel: ""
         property var devices: null
         property var hiddenDevices: []
+        // Remembers whether the device list is open (see PanelState's "devices")
+        property string devicesKey: ""
+        property bool expandable: false
+        property bool expanded: false
         signal deviceChosen(PwNode device)
+        signal volumeSet(real value)
+        signal muteToggled
+        signal expandToggled
 
         readonly property bool hasDevices: devices !== null
         // Drop-down entries: PipeWire devices, then outputs behind another card profile
@@ -127,20 +247,35 @@ Column {
                 hidden: hidden
             }))
         ]
-        readonly property int dropdownWidth: hasDevices ? 36 + 10 : 0
+        readonly property int dropdownWidth: hasDevices || expandable ? 36 + 10 : 0
 
-        readonly property bool muted: node?.audio?.muted ?? false
-        readonly property real volume: node?.audio?.volume ?? 0
+        property bool muted: node?.audio?.muted ?? false
+        property real volume: node?.audio?.volume ?? 0
 
         width: root.width
         spacing: 4
 
-        PanelText {
+        Row {
             visible: volumeRow.label !== ""
             width: parent.width
-            text: volumeRow.label
-            elide: Text.ElideRight
-            dim: true
+            spacing: 8
+
+            PanelText {
+                id: labelText
+                width: Math.min(implicitWidth, parent.width)
+                text: volumeRow.label
+                elide: Text.ElideRight
+                dim: true
+            }
+
+            PanelText {
+                visible: volumeRow.sublabel !== ""
+                width: parent.width - labelText.width - parent.spacing
+                text: `·  ${volumeRow.sublabel}`
+                elide: Text.ElideRight
+                dim: true
+                opacity: 0.7
+            }
         }
 
         Row {
@@ -155,6 +290,8 @@ Column {
                 onClicked: {
                     if (volumeRow.node?.audio)
                         volumeRow.node.audio.muted = !volumeRow.muted;
+                    else if (!volumeRow.node)
+                        volumeRow.muteToggled();
                 }
             }
 
@@ -165,6 +302,8 @@ Column {
                 onMoved: value => {
                     if (volumeRow.node?.audio)
                         volumeRow.node.audio.volume = value;
+                    else if (!volumeRow.node)
+                        volumeRow.volumeSet(value);
                 }
             }
 
@@ -177,17 +316,26 @@ Column {
             }
 
             PanelButton {
-                visible: volumeRow.hasDevices
+                readonly property bool open: volumeRow.expandable ? volumeRow.expanded : devicePicker.expanded
+
+                visible: volumeRow.hasDevices || volumeRow.expandable
                 anchors.verticalCenter: parent.verticalCenter
                 width: 36
-                icon: devicePicker.expanded ? "\u{F077}" : "\u{F078}"
-                highlighted: devicePicker.expanded
-                onClicked: devicePicker.expanded = !devicePicker.expanded
+                icon: open ? "\u{F077}" : "\u{F078}"
+                highlighted: open
+                onClicked: {
+                    if (volumeRow.expandable)
+                        volumeRow.expandToggled();
+                    else
+                        devicePicker.toggle();
+                }
             }
         }
 
         DropdownList {
             id: devicePicker
+            stateSection: volumeRow.devicesKey !== "" ? "devices" : ""
+            stateKey: volumeRow.devicesKey
             visible: volumeRow.hasDevices
             width: parent.width
             items: volumeRow.deviceItems

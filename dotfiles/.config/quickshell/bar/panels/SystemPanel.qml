@@ -182,7 +182,8 @@ Column {
             ListRow {
                 id: updatesRow
 
-                property bool expanded: false
+                // Stays open for the session (see PanelState)
+                readonly property bool expanded: PanelState.isOpen("updates", "list")
 
                 visible: Updates.available
                 width: parent.width
@@ -203,7 +204,7 @@ Column {
                     const ago = minutes < 1 ? "just now" : minutes < 60 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`;
                     return Updates.failed ? `Check failed ${ago}` : `Checked ${ago}`;
                 }
-                onClicked: expanded = !expanded
+                onClicked: PanelState.toggle("updates", "list")
 
                 Row {
                     spacing: 6

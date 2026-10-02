@@ -18,9 +18,12 @@ ShellRoot {
 
     property bool barVisible: true
 
-    // Singletons are only created when first used; create this one at start so its update
-    // checks run on schedule rather than from the first time the system panel opens
-    Component.onCompleted: Updates.available
+    // Singletons are only created when first used; create these at start so update checks run
+    // on schedule and stream titles are remembered before the panels first open
+    Component.onCompleted: {
+        Updates.available;
+        StreamTitles.titles;
+    }
 
     // One bar per monitor
     Variants {

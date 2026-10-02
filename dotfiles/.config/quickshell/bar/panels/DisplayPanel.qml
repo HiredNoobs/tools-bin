@@ -9,12 +9,16 @@ Column {
 
     signal closeRequested
 
-    // Which monitors' settings are open, by name. Kept here because every change re-reads the
-    // monitor list, which rebuilds the rows
-    property var expandedMonitors: ({})
+    // Which monitors' settings are open, by name, in PanelState: outside the rows because every
+    // change re-reads the monitor list, which rebuilds them; forgotten once a monitor is gone
+    readonly property var monitorNames: Monitors.monitors.map(monitor => monitor.name)
+    onMonitorNamesChanged: {
+        PanelState.prune("monitors", monitorNames);
+        PanelState.prune("modes", monitorNames);
+    }
 
     function toggleExpanded(name: string): void {
-        expandedMonitors = Object.assign({}, expandedMonitors, { [name]: !expandedMonitors[name] });
+        PanelState.toggle("monitors", name);
     }
 
     // "1920x1080@59.98" -> "1920×1080 · 59.98 Hz"
@@ -125,7 +129,7 @@ Column {
         id: monitorRow
 
         property var monitor
-        readonly property bool expanded: root.expandedMonitors[monitor.name] ?? false
+        readonly property bool expanded: PanelState.isOpen("monitors", monitor.name)
         readonly property bool active: !monitor.disabled
         readonly property var other: Monitors.otherOf(monitor.name)
         readonly property string relation: Monitors.relationOf(monitor.name)
@@ -198,7 +202,7 @@ Column {
                     label: "Resolution"
                     sublabel: root.formatMode(monitorRow.monitor.mode)
                     selected: modeList.expanded
-                    onClicked: modeList.expanded = !modeList.expanded
+                    onClicked: modeList.toggle()
 
                     PanelText {
                         text: modeList.expanded ? "\u{F077}" : "\u{F078}"
@@ -210,6 +214,8 @@ Column {
                 DropdownList {
                     id: modeList
                     width: parent.width
+                    stateSection: "modes"
+                    stateKey: monitorRow.monitor.name
                     items: monitorRow.monitor.modes.map(mode => ({
                         label: root.formatMode(mode),
                         selected: mode === monitorRow.monitor.mode,

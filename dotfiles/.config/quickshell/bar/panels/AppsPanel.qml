@@ -36,7 +36,8 @@ Column {
 
             required property SystemTrayItem modelData
             readonly property bool needsAttention: modelData.status === Status.NeedsAttention
-            property bool expanded: false
+            // The app's menu stays open for the session (see PanelState)
+            readonly property bool expanded: PanelState.isOpen("trayApps", modelData.id)
 
             width: root.width
             spacing: 2
@@ -50,7 +51,7 @@ Column {
                 onClicked: {
                     // Some apps only offer a menu
                     if (app.modelData.onlyMenu) {
-                        app.expanded = !app.expanded;
+                        PanelState.toggle("trayApps", app.modelData.id);
                     } else {
                         TrayApps.open(app.modelData);
                         root.closeRequested();
@@ -61,7 +62,7 @@ Column {
                     visible: app.modelData.hasMenu
                     icon: app.expanded ? "\u{F078}" : "\u{F054}"
                     highlighted: app.expanded
-                    onClicked: app.expanded = !app.expanded
+                    onClicked: PanelState.toggle("trayApps", app.modelData.id)
                 }
             }
 
@@ -73,6 +74,7 @@ Column {
 
                 sourceComponent: TrayMenuLevel {
                     menu: app.modelData.menu
+                    stateKey: app.modelData.id
                     indent: 16
                     afterTrigger: () => root.closeRequested()
                 }

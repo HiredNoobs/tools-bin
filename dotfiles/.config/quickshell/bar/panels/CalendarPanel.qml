@@ -22,11 +22,15 @@ Row {
     // yyyy-MM-dd of the day whose notes are open, "" when closed
     property string selectedDay: ""
     readonly property int notesWidth: 300
-    // Notes whose body is showing, by id
-    property var expandedNotes: ({})
+    // Notes whose body is showing, by id, in PanelState; forgotten once a note is deleted
+    readonly property var noteIds: Todos.items.map(item => String(item.id))
+    onNoteIdsChanged: {
+        if (Todos.loaded)
+            PanelState.prune("notes", noteIds);
+    }
 
     function toggleNote(id: real): void {
-        expandedNotes = Object.assign({}, expandedNotes, { [id]: !expandedNotes[id] });
+        PanelState.toggle("notes", String(id));
     }
 
     function shiftMonth(delta: int): void {
@@ -294,7 +298,7 @@ Row {
         readonly property string title: lines[0]
         readonly property string body: lines.slice(1).join("\n").trim()
         readonly property bool hasBody: body !== ""
-        readonly property bool expanded: hasBody && (root.expandedNotes[note.id] ?? false)
+        readonly property bool expanded: hasBody && PanelState.isOpen("notes", String(note.id))
         readonly property bool overdue: note.date && note.date < Todos.today && !note.done
         // Title and arrow light up together when either is hovered
         readonly property bool toggleHovered: hasBody && (titleHover.hovered || expandMouse.containsMouse)

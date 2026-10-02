@@ -1,15 +1,33 @@
 import QtQuick
 import qs
+import qs.services
 
 // Choices that slide open under a row, with a tick on the selected one. Long lists scroll
 // (e.g. a monitor's 28 resolutions) and open scrolled to the selected choice.
 // items: [{ label, sublabel, selected, ... }] - the whole item is passed back in `chosen`.
+// With `stateSection` and `stateKey`, whether it's open is kept in PanelState, so it stays open
+// across reopening the panel; choosing an item closes it either way.
 Item {
     id: root
 
     property var items: []
-    property bool expanded: false
     property int maxHeight: 240
+    property string stateSection: ""
+    property string stateKey: ""
+
+    property bool localExpanded: false
+    readonly property bool expanded: stateSection !== "" ? PanelState.isOpen(stateSection, stateKey) : localExpanded
+
+    function setExpanded(expanded: bool): void {
+        if (stateSection === "")
+            localExpanded = expanded;
+        else if (expanded !== root.expanded)
+            PanelState.toggle(stateSection, stateKey);
+    }
+
+    function toggle(): void {
+        setExpanded(!expanded);
+    }
 
     signal chosen(var item)
 
@@ -23,7 +41,11 @@ Item {
         NumberAnimation { duration: Theme.panelAnimDuration; easing.type: Easing.OutCubic }
     }
 
-    onExpandedChanged: {
+    onExpandedChanged: scrollToSelected()
+    // Opened already when created (remembered from earlier), so scroll once laid out
+    Component.onCompleted: Qt.callLater(scrollToSelected)
+
+    function scrollToSelected(): void {
         if (!expanded || !scrollable)
             return;
         const selected = repeater.itemAt(items.findIndex(item => item.selected));
@@ -60,7 +82,7 @@ Item {
                     selected: modelData.selected ?? false
                     onClicked: {
                         root.chosen(modelData);
-                        root.expanded = false;
+                        root.setExpanded(false);
                     }
 
                     PanelText {

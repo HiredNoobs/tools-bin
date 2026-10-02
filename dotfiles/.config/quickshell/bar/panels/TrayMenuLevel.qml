@@ -2,12 +2,15 @@ import QtQuick
 import Quickshell
 import qs
 import qs.components
+import qs.services
 
 // One level of a tray app's menu. Submenus expand in place by loading this file again.
 Column {
     id: root
 
     property var menu
+    // Where this level is, as "<app id>/<entry>/…", to remember open submenus (PanelState)
+    property string stateKey: ""
     property int indent: 0
     // Called after an entry is triggered, to close the panel
     property var afterTrigger: () => {}
@@ -41,14 +44,16 @@ Column {
             id: entry
 
             required property QsMenuEntry modelData
-            property bool expanded: false
+            readonly property string stateKey: `${root.stateKey}/${root.cleanLabel(modelData.text)}`
+            readonly property bool expanded: modelData.hasChildren && PanelState.isOpen("trayMenus", stateKey)
 
             width: root.width
 
-            onExpandedChanged: {
+            function loadSubmenu(): void {
                 if (expanded) {
                     submenu.setSource(Qt.resolvedUrl("TrayMenuLevel.qml"), {
                         menu: modelData,
+                        stateKey: stateKey,
                         indent: root.indent + 16,
                         afterTrigger: root.afterTrigger
                     });
@@ -56,6 +61,10 @@ Column {
                     submenu.source = "";
                 }
             }
+
+            onExpandedChanged: loadSubmenu()
+            // Open already when created (remembered from earlier)
+            Component.onCompleted: loadSubmenu()
 
             Rectangle {
                 visible: entry.modelData.isSeparator
@@ -82,7 +91,7 @@ Column {
                 opacity: entry.modelData.enabled ? 1 : 0.4
                 onClicked: {
                     if (entry.modelData.hasChildren) {
-                        entry.expanded = !entry.expanded;
+                        PanelState.toggle("trayMenus", entry.stateKey);
                     } else {
                         entry.modelData.triggered();
                         root.afterTrigger();
