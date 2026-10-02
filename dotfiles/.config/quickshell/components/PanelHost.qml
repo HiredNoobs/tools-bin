@@ -4,7 +4,7 @@ import qs
 // Drop-down panel under the bar. It grows out of the module that opened it and morphs
 // in place when another module's panel is opened.
 //
-// With Theme.panelsAttached the panel hangs off the bar's bottom edge, joined by curved
+// Attached (Theme.panelsAttached by default) the panel hangs off the bar's bottom edge, joined by curved
 // fillets on each side, and slides along the bar when switching modules. It has no accent
 // border then, since the bar doesn't have one.
 Item {
@@ -23,7 +23,7 @@ Item {
 
     property real anchorX: 0
 
-    readonly property bool attached: Theme.panelsAttached
+    property bool attached: Theme.panelsAttached
     // Width of the curve joining the panel to the bar, on each side
     readonly property real fillet: attached ? Theme.radius : 0
 
@@ -70,7 +70,7 @@ Item {
     x: Math.max(edgeInset, Math.min(parent.width - width - edgeInset, anchorX - width / 2))
     // Attached panels start exactly at the bar's bottom edge; any overlap draws the
     // translucent background twice and shows as a darker line
-    y: Theme.barHeight + Theme.panelGap
+    y: Theme.barHeight + (attached ? 0 : Theme.panelGap)
     width: bodyWidth + 2 * fillet
     height: open ? Math.min(targetHeight, Theme.panelMaxHeight) : 0
     opacity: open ? 1 : 0
@@ -87,6 +87,7 @@ Item {
 
     PanelBackground {
         anchors.fill: parent
+        attached: root.attached
     }
 
     // Content, clipped to the body while the panel grows

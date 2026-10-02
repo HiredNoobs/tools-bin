@@ -11,9 +11,10 @@ Item {
     // Set by the bar: the focused monitor's bar, with no panel open
     property bool shown: true
 
-    readonly property real fillet: Theme.panelsAttached ? Theme.radius : 0
+    readonly property bool attached: Theme.popupsAttached
+    readonly property real fillet: attached ? Theme.radius : 0
     // Stays clear of the bar's rounded end so the fillet has a straight edge to join
-    readonly property real edgeInset: Theme.panelsAttached ? Theme.radius : 0
+    readonly property real edgeInset: attached ? Theme.radius : 0
     readonly property bool open: shown && Notifications.popups.length > 0
     readonly property int padding: 10
     // Notification id -> notification for the cards on screen, kept until the stack has
@@ -49,7 +50,7 @@ Item {
     }
 
     x: parent.width - width - edgeInset
-    y: Theme.barHeight + (Theme.panelsAttached ? 0 : Theme.panelGap)
+    y: Theme.barHeight + (attached ? 0 : Theme.panelGap)
     width: 400 + 2 * fillet
     height: open ? list.contentHeight + 2 * padding : 0
     opacity: open ? 1 : 0
@@ -85,6 +86,7 @@ Item {
 
     PanelBackground {
         anchors.fill: parent
+        attached: root.attached
     }
 
     Item {

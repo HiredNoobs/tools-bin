@@ -3,12 +3,12 @@ import QtQuick.Shapes
 import qs
 
 // Background for anything that drops out of the bar (panels, notification popups).
-// Attached (Theme.panelsAttached): body with rounded bottom corners and concave fillets of
+// Attached (set by the owner): body with rounded bottom corners and concave fillets of
 // width `fillet` joining it to the bar. Floating: a rounded rectangle with the accent border.
 Item {
     id: root
 
-    readonly property bool attached: Theme.panelsAttached
+    property bool attached: Theme.panelsAttached
     readonly property real fillet: attached ? Theme.radius : 0
 
     // Floating style

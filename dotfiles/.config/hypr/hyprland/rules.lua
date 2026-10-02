@@ -82,6 +82,17 @@ hl.window_rule({
     focus_on_activate = false
 })
 
+-- Quickshell's settings window (Super+I)
+hl.window_rule({
+    match = {
+        class = "org.quickshell",
+        title = "Settings"
+    },
+    float = true,
+    center = true,
+    size = { 1000, 680 }
+})
+
 -------------------------------------------------------
 -- Workspace placement
 -------------------------------------------------------

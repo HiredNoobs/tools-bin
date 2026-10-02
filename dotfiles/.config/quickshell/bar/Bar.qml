@@ -228,6 +228,9 @@ PanelWindow {
     PanelHost {
         id: panelHost
         current: root.openPanel
+        // The launcher's menus are only here while they're attached; the rest follow the
+        // panels' setting
+        attached: ["launcher", "screenshot", "wallpaper"].includes(current || shown) ? Theme.launcherAttached : Theme.panelsAttached
         panels: ({
                 "calendar": calendarPanel,
                 "system": systemPanel,

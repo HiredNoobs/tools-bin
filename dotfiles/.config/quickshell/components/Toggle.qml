@@ -32,7 +32,8 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+        // Disabled (e.g. a greyed-out setting) it keeps the arrow
+        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.toggled()
     }
 }

@@ -42,7 +42,8 @@ Rectangle {
         id: mouse
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        // Disabled (e.g. a greyed-out setting) it keeps the arrow
+        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
     }
 }

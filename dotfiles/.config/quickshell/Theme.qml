@@ -33,15 +33,16 @@ Singleton {
     readonly property int fontSize: 15
     readonly property int panelFontSize: 14
     readonly property int barHeight: 34
-    // Right-hand icons open one tabbed control centre (true) or their own panels (false)
-    readonly property bool controlCentre: true
-    // Super+Space opens the launcher as a panel under the bar's centre (true) or as a popup in
-    // the middle of the screen (false)
-    readonly property bool launcherAttached: true
-
-    // Panels joined to the bottom of the bar (true) or floating below it (false)
-    readonly property bool panelsAttached: true
-    readonly property int panelGap: panelsAttached ? 0 : 8
+    // Layout switches, set in the settings window (see ShellSettings)
+    readonly property bool controlCentre: ShellSettings.controlCentre
+    // Attaching to the bar: a master switch, then each kind of drop-down. Detached, panels
+    // float just below their icon, the launcher's menus open in the middle of the screen and
+    // notification pop-ups float in the top-right corner.
+    readonly property bool panelsAttached: ShellSettings.attachToBar && ShellSettings.attachPanels
+    readonly property bool launcherAttached: ShellSettings.attachToBar && ShellSettings.attachLauncher
+    readonly property bool popupsAttached: ShellSettings.attachToBar && ShellSettings.attachPopups
+    // Between the bar and anything floating below it
+    readonly property int panelGap: 8
     readonly property int panelMaxHeight: 700
     readonly property int panelPadding: 14
     readonly property int radius: 10

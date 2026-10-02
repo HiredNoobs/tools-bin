@@ -484,6 +484,14 @@ Column {
         Column {
             spacing: 10
 
+            // The settings window (Super+I)
+            PanelButton {
+                width: parent.width
+                icon: "\u{F0493}"
+                label: "All settings"
+                onClicked: root.run(() => Exec.run("qs ipc call settings open ''"))
+            }
+
             PanelSection {
                 text: "Appearance"
             }

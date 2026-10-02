@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
+import qs
 
 // Notification daemon (replaces dunst). Notifications stay in the center until dismissed
 // (this session only); new ones also show as popups unless Do Not Disturb is on.
@@ -13,8 +14,8 @@ Singleton {
     // Received since the center was last opened
     property int unread: 0
 
-    readonly property int maxPopups: 3
-    readonly property int defaultTimeout: 5000
+    readonly property int maxPopups: ShellSettings.maxPopups
+    readonly property int defaultTimeout: ShellSettings.popupSeconds * 1000
 
     // Shown as popups, newest first; extra ones wait in the queue
     property var popups: []

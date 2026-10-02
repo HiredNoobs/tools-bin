@@ -11,6 +11,7 @@ import qs.bar
 import qs.launcher
 import qs.overview
 import qs.services
+import qs.settings
 import qs.switcher
 
 ShellRoot {
@@ -84,6 +85,41 @@ ShellRoot {
 
         function wallpaper(): void {
             show("wallpaper");
+        }
+    }
+
+    // Super+I: the settings window, made when opened and gone once closed
+    property string settingsPage: "shell"
+
+    LazyLoader {
+        id: settingsWindow
+
+        SettingsWindow {
+            page: root.settingsPage
+            onPageRequested: name => root.settingsPage = name
+            onClosed: settingsWindow.active = false
+            onVisibleChanged: {
+                if (!visible)
+                    settingsWindow.active = false;
+            }
+        }
+    }
+
+    // `qs ipc call settings open [section]` (Super+I opens it where it was left), `close`
+    IpcHandler {
+        target: "settings"
+
+        function open(section: string): void {
+            if (section !== "")
+                root.settingsPage = section;
+            if (settingsWindow.active)
+                Windows.focusApp(["org.quickshell"], "Settings");
+            else
+                settingsWindow.active = true;
+        }
+
+        function close(): void {
+            settingsWindow.active = false;
         }
     }
 
