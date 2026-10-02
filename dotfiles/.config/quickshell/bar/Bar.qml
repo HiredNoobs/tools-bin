@@ -6,6 +6,7 @@ import qs
 import qs.bar.modules
 import qs.bar.panels
 import qs.components
+import qs.launcher
 
 // The bar plus the drop-down panel area below it. The window is taller than the bar,
 // but only the bar, the open panel and notification popups take input (see `mask`).
@@ -56,6 +57,23 @@ PanelWindow {
         return Theme.controlCentre ? openPanel === "control" && controlTab === name : openPanel === name;
     }
 
+    // The system panel's tab, kept while the shell runs. The Arch button opens it on the last
+    // tab used, Super+Esc on Power (a second Super+Esc closes it, from another tab it switches
+    // to Power)
+    property string systemTab: "system"
+
+    function openSystem(tab: string, toggle: bool): void {
+        if (openPanel === "system" && (toggle || systemTab === tab)) {
+            openPanel = "";
+            return;
+        }
+        systemTab = tab;
+        if (openPanel !== "system") {
+            panelHost.anchorItem = arch;
+            openPanel = "system";
+        }
+    }
+
     // For opening a panel without clicking (IPC)
     function togglePanelByName(name: string): void {
         const anchors = {
@@ -67,9 +85,16 @@ PanelWindow {
             "connectivity": connectivity,
             "display": backlight,
             "drives": drives,
-            "notifications": bell
+            "notifications": bell,
+            "launcher": clock,
+            "screenshot": clock,
+            "wallpaper": clock
         };
-        if (rightPanels.includes(name))
+        if (name === "system")
+            openSystem(systemTab, true);
+        else if (name === "power" || name === "settings")
+            openSystem(name, false);
+        else if (rightPanels.includes(name))
             openRight(name, anchors[name]);
         else if (anchors[name])
             togglePanel(name, anchors[name]);
@@ -132,7 +157,7 @@ PanelWindow {
             Arch {
                 id: arch
                 active: root.openPanel === "system"
-                onLeftClicked: root.togglePanel("system", this)
+                onLeftClicked: root.openSystem(root.systemTab, true)
             }
 
             Workspaces {
@@ -213,7 +238,10 @@ PanelWindow {
                 "drives": drivesPanel,
                 "notifications": notificationsPanel,
                 "control": controlPanel,
-                "media": mediaPanel
+                "media": mediaPanel,
+                "launcher": launcherPanel,
+                "screenshot": screenshotPanel,
+                "wallpaper": wallpaperPanel
             })
         onCloseRequested: root.closePanel()
     }
@@ -237,6 +265,8 @@ PanelWindow {
         id: systemPanel
 
         SystemPanel {
+            tab: root.systemTab
+            onTabRequested: name => root.systemTab = name
             onCloseRequested: root.closePanel()
         }
     }
@@ -295,6 +325,32 @@ PanelWindow {
         id: appsPanel
 
         AppsPanel {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    // With Theme.launcherAttached, hanging under the clock: Super+Space, Print and the system
+    // panel's Wallpaper button
+    Component {
+        id: launcherPanel
+
+        LauncherContent {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    Component {
+        id: screenshotPanel
+
+        ScreenshotMenu {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    Component {
+        id: wallpaperPanel
+
+        WallpaperPicker {
             onCloseRequested: root.closePanel()
         }
     }

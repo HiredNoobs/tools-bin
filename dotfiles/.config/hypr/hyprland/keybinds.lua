@@ -132,7 +132,7 @@ end, { description = "Toggle games workspace" })
 -- Session control
 -------------------------------------------------------
 
-hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("pkill rofi || ~/.config/rofi/scripts/system-menu.sh"), { description = "Toggle system control menu" })
+hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("qs ipc call bar panel power"), { description = "Toggle system control menu" })
 hl.bind(mainMod .. " + CONTROL + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Lock session" })
 
 -------------------------------------------------------
@@ -158,7 +158,7 @@ hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("qs ipc call bar toggle || qs"), { d
 -------------------------------------------------------
 
 -- Screenshot rofi menu
-hl.bind("PRINT", hl.dsp.exec_cmd("pkill rofi || ~/.config/rofi/scripts/screenshot-menu.sh"), { description = "Toggle screenshot menu" })
+hl.bind("PRINT", hl.dsp.exec_cmd("qs ipc call launcher screenshot"), { description = "Toggle screenshot menu" })
 
 -- Select area, saves unedited file, copies to clipboard, then opens file in swappy
 hl.bind(mainMod .. " + PRINT", function()

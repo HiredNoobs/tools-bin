@@ -6,6 +6,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Wayland
 import qs.bar
 import qs.launcher
 import qs.overview
@@ -17,6 +18,10 @@ ShellRoot {
 
     property bool barVisible: true
 
+    // Singletons are only created when first used; create this one at start so its update
+    // checks run on schedule rather than from the first time the system panel opens
+    Component.onCompleted: Updates.available
+
     // One bar per monitor
     Variants {
         id: bars
@@ -25,6 +30,12 @@ ShellRoot {
         Bar {
             visible: root.barVisible
         }
+    }
+
+    // The system panel's Keep awake: inhibits idle (hypridle) while on, through the first bar
+    IdleInhibitor {
+        window: bars.instances[0] ?? null
+        enabled: KeepAwake.enabled
     }
 
     // Super+Tab
@@ -46,12 +57,30 @@ ShellRoot {
         id: launcher
     }
 
-    // `qs ipc call launcher toggle`
+    // `qs ipc call launcher toggle` (Super+Space), `screenshot` (Print), `wallpaper`
     IpcHandler {
         target: "launcher"
 
+        // Under the focused monitor's bar, or the centred popup
+        function show(name: string): void {
+            if (Theme.launcherAttached) {
+                const monitor = Hyprland.focusedMonitor?.name;
+                bars.instances.find(bar => bar.screen.name === monitor)?.togglePanelByName(name);
+            } else {
+                launcher.toggle(name);
+            }
+        }
+
         function toggle(): void {
-            launcher.toggle();
+            show("launcher");
+        }
+
+        function screenshot(): void {
+            show("screenshot");
+        }
+
+        function wallpaper(): void {
+            show("wallpaper");
         }
     }
 
@@ -93,6 +122,15 @@ ShellRoot {
         function panel(name: string): void {
             const monitor = Hyprland.focusedMonitor?.name;
             bars.instances.find(bar => bar.screen.name === monitor)?.togglePanelByName(name);
+        }
+    }
+
+    // `qs ipc call updates check`, after pacman -Syu from the system panel
+    IpcHandler {
+        target: "updates"
+
+        function check(): void {
+            Updates.check();
         }
     }
 

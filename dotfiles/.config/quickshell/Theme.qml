@@ -35,6 +35,9 @@ Singleton {
     readonly property int barHeight: 34
     // Right-hand icons open one tabbed control centre (true) or their own panels (false)
     readonly property bool controlCentre: true
+    // Super+Space opens the launcher as a panel under the bar's centre (true) or as a popup in
+    // the middle of the screen (false)
+    readonly property bool launcherAttached: true
 
     // Panels joined to the bottom of the bar (true) or floating below it (false)
     readonly property bool panelsAttached: true

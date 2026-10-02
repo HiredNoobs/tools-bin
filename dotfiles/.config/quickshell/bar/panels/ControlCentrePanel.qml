@@ -22,9 +22,8 @@ Column {
         { name: "audio", icon: "\u{F028}", label: "Sound" },
         { name: "connectivity", icon: Theme.wifiIcon(1), label: "Network" },
         { name: "display", icon: "\u{F0379}", label: "Display" },
-        { name: "notifications", icon: Notifications.dnd ? "\u{F009B}" : "\u{F009A}", label: "Notifications" }
+        { name: "notifications", icon: Notifications.dnd ? "\u{F009B}" : "\u{F009A}", label: "Notifications", dot: Notifications.unread > 0 }
     ]
-    readonly property int tabIndex: Math.max(0, tabs.findIndex(t => t.name === tab))
 
     // The open tab went away (e.g. last drive ejected): fall back to Notifications
     onTabsChanged: {
@@ -35,79 +34,11 @@ Column {
     width: 400
     spacing: 12
 
-    // Tab row with a sliding underline
-    Item {
+    TabBar {
         width: parent.width
-        height: tabRow.height + 4
-
-        Row {
-            id: tabRow
-
-            Repeater {
-                model: root.tabs
-
-                MouseArea {
-                    id: tabButton
-
-                    required property var modelData
-                    readonly property bool current: modelData.name === root.tab
-
-                    width: root.width / root.tabs.length
-                    height: 32
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.tabRequested(modelData.name)
-
-                    PanelText {
-                        anchors.centerIn: parent
-                        text: tabButton.modelData.icon
-                        font.pixelSize: Theme.panelFontSize + 3
-                        color: tabButton.current || tabButton.containsMouse ? Theme.accent : Theme.subtext
-
-                        Behavior on color {
-                            ColorAnimation { duration: 150 }
-                        }
-                    }
-
-                    // Unread count on the notifications tab
-                    Rectangle {
-                        visible: tabButton.modelData.name === "notifications" && Notifications.unread > 0 && !tabButton.current
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: 9
-                        y: 4
-                        width: 7
-                        height: 7
-                        radius: 3.5
-                        color: Theme.accent
-                    }
-
-                    LazyLoader {
-                        active: tabButton.containsMouse
-
-                        Tooltip {
-                            target: tabButton
-                            text: tabButton.modelData.label
-                        }
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            anchors.bottom: parent.bottom
-            x: root.tabIndex * (root.width / root.tabs.length) + 12
-            width: root.width / root.tabs.length - 24
-            height: 2
-            radius: 1
-            color: Theme.accent
-
-            Behavior on x {
-                NumberAnimation { duration: Theme.panelAnimDuration; easing.type: Easing.OutCubic }
-            }
-            Behavior on width {
-                NumberAnimation { duration: Theme.panelAnimDuration; easing.type: Easing.OutCubic }
-            }
-        }
+        tabs: root.tabs
+        current: root.tab
+        onTabRequested: name => root.tabRequested(name)
     }
 
     Loader {
