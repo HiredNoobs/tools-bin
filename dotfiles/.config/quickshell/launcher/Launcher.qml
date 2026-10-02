@@ -5,20 +5,22 @@ import Quickshell.Wayland
 import qs
 
 // The launcher's menus in the middle of the focused monitor, when Theme.launcherAttached is off:
-// the app launcher (Super+Space), the screenshot menu (Print) and the wallpaper picker. Esc or
-// a click outside, on any monitor, closes it.
+// the app launcher (Super+Space), the screenshot menu (Print) and the wallpaper picker; and,
+// always here, the keybind cheat sheet (Super+F1). Esc or a click outside, on any monitor,
+// closes it.
 PanelWindow {
     id: root
 
     property bool open: false
     property string targetScreen: ""
-    // "launcher", "screenshot" or "wallpaper"
+    // "launcher", "screenshot", "wallpaper" or "cheatsheet"
     property string page: ""
 
     readonly property var pages: ({
             "launcher": launcherPage,
             "screenshot": screenshotPage,
-            "wallpaper": wallpaperPage
+            "wallpaper": wallpaperPage,
+            "cheatsheet": cheatSheetPage
         })
 
     // Closes it if that menu is already open, otherwise shows it (in place of another)
@@ -128,6 +130,14 @@ PanelWindow {
         id: wallpaperPage
 
         WallpaperPicker {
+            onCloseRequested: root.close()
+        }
+    }
+
+    Component {
+        id: cheatSheetPage
+
+        CheatSheet {
             onCloseRequested: root.close()
         }
     }

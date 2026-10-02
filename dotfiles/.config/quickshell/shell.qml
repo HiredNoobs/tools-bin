@@ -87,6 +87,15 @@ ShellRoot {
         }
     }
 
+    // `qs ipc call cheatsheet toggle` (Super+F1): always the centred popup, too wide for the bar
+    IpcHandler {
+        target: "cheatsheet"
+
+        function toggle(): void {
+            launcher.toggle("cheatsheet");
+        }
+    }
+
     // Alt+Tab
     AltTab {
         id: switcher

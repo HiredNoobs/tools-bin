@@ -140,6 +140,7 @@ hl.bind(mainMod .. " + CONTROL + L", hl.dsp.exec_cmd("loginctl lock-session"), {
 -------------------------------------------------------
 
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("qs ipc call launcher toggle"), { description = "Toggle application launcher" })
+hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle"), { description = "Show keybinds" })
 
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty -1"), { description = "Open Terminal" })
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("kitty bash -c yazi", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }), { description = "Open File Explorer" })
@@ -157,7 +158,7 @@ hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("qs ipc call bar toggle || qs"), { d
 -- Screenshot shortcuts
 -------------------------------------------------------
 
--- Screenshot rofi menu
+-- Screenshot menu
 hl.bind("PRINT", hl.dsp.exec_cmd("qs ipc call launcher screenshot"), { description = "Toggle screenshot menu" })
 
 -- Select area, saves unedited file, copies to clipboard, then opens file in swappy
