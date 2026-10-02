@@ -265,6 +265,11 @@ PanelWindow {
         id: displayConfirm
     }
 
+    // The volume/brightness pop-up, when attached to the bar
+    OsdBar {
+        screenName: root.screen.name
+    }
+
     Component {
         id: calendarPanel
 

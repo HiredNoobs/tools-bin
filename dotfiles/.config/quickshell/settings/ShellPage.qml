@@ -92,6 +92,21 @@ Column {
                 onToggled: ShellSettings.attachPopups = !checked
             }
         }
+
+        SettingRow {
+            visible: root.attachExpanded
+            sub: true
+            enabled: ShellSettings.attachToBar
+            changed: !ShellSettings.isDefault("attachOsd")
+            onReset: ShellSettings.reset("attachOsd")
+            label: "Volume and brightness pop-up"
+            description: "Off, it floats near the bottom of the screen."
+
+            Toggle {
+                checked: ShellSettings.attachOsd
+                onToggled: ShellSettings.attachOsd = !checked
+            }
+        }
     }
 
     SettingsGroup {

@@ -9,6 +9,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.bar
 import qs.launcher
+import qs.osd
 import qs.overview
 import qs.services
 import qs.settings
@@ -136,6 +137,26 @@ ShellRoot {
 
         function close(): void {
             settingsWindow.active = false;
+        }
+    }
+
+    // Volume, mic and brightness keys, when the pop-up isn't attached to the bar (OsdState)
+    Osd {}
+
+    // `qs ipc call osd volume up|down|mute`, `mic`, `brightness up|down` (keybinds.lua)
+    IpcHandler {
+        target: "osd"
+
+        function volume(direction: string): void {
+            OsdState.volume(direction);
+        }
+
+        function mic(): void {
+            OsdState.mic();
+        }
+
+        function brightness(direction: string): void {
+            OsdState.brightness(direction);
         }
     }
 

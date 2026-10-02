@@ -196,11 +196,12 @@ hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("qs ipc call lid opened"), { lo
 -- Media control
 -------------------------------------------------------
 
--- locked = works while the lock screen is active
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("pamixer -i 5"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("pamixer -d 5"), { locked = true, repeating = true })
-hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("pamixer --default-source -t"), { locked = true })
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("pamixer -t"), { locked = true })
+-- locked = works while the lock screen is active. Quickshell makes the change and shows it on
+-- screen; if it isn't running, pamixer / brightnessctl still do the job
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("qs ipc call osd volume up || pamixer -i 5"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("qs ipc call osd volume down || pamixer -d 5"), { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("qs ipc call osd mic || pamixer --default-source -t"), { locked = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("qs ipc call osd volume mute || pamixer -t"), { locked = true })
 
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -211,5 +212,5 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true 
 -- Brightness control
 -------------------------------------------------------
 
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl s +5%"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 5%-"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("qs ipc call osd brightness up || brightnessctl s +5%"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("qs ipc call osd brightness down || brightnessctl s 5%-"), { locked = true, repeating = true })

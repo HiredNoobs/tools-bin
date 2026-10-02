@@ -36,11 +36,13 @@ Singleton {
     // Layout switches, set in the settings window (see ShellSettings)
     readonly property bool controlCentre: ShellSettings.controlCentre
     // Attaching to the bar: a master switch, then each kind of drop-down. Detached, panels
-    // float just below their icon, the launcher's menus open in the middle of the screen and
-    // notification pop-ups float in the top-right corner.
+    // float just below their icon, the launcher's menus open in the middle of the screen,
+    // notification pop-ups float in the top-right corner and the volume/brightness pop-up floats
+    // near the bottom.
     readonly property bool panelsAttached: ShellSettings.attachToBar && ShellSettings.attachPanels
     readonly property bool launcherAttached: ShellSettings.attachToBar && ShellSettings.attachLauncher
     readonly property bool popupsAttached: ShellSettings.attachToBar && ShellSettings.attachPopups
+    readonly property bool osdAttached: ShellSettings.attachToBar && ShellSettings.attachOsd
     // Between the bar and anything floating below it
     readonly property int panelGap: 8
     readonly property int panelMaxHeight: 700

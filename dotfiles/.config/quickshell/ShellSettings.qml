@@ -17,6 +17,7 @@ Singleton {
             attachPanels: true,
             attachLauncher: true,
             attachPopups: true,
+            attachOsd: true,
             popupSeconds: 5,
             maxPopups: 3,
             volumeBoost: false,
@@ -48,6 +49,8 @@ Singleton {
     property alias attachPanels: adapter.attachPanels
     property alias attachLauncher: adapter.attachLauncher
     property alias attachPopups: adapter.attachPopups
+    // The volume and brightness pop-up: under the bar, or floating near the bottom of the screen
+    property alias attachOsd: adapter.attachOsd
     // How long a notification pop-up stays up, unless it asks for longer
     property alias popupSeconds: adapter.popupSeconds
     // Pop-ups on screen at once; more wait their turn
@@ -89,6 +92,7 @@ Singleton {
             property bool attachPanels: root.defaults.attachPanels
             property bool attachLauncher: root.defaults.attachLauncher
             property bool attachPopups: root.defaults.attachPopups
+            property bool attachOsd: root.defaults.attachOsd
             property int popupSeconds: root.defaults.popupSeconds
             property int maxPopups: root.defaults.maxPopups
             property bool volumeBoost: root.defaults.volumeBoost
