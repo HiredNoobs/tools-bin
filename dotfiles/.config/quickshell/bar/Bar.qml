@@ -129,6 +129,10 @@ PanelWindow {
         Region {
             item: popups
         }
+
+        Region {
+            item: displayConfirm
+        }
     }
 
     // Close when clicking outside the bar and panel
@@ -254,6 +258,11 @@ PanelWindow {
     NotificationPopups {
         id: popups
         shown: root.openPanel === "" && Hyprland.focusedMonitor?.name === root.screen.name
+    }
+
+    // After a display change, on every screen in case one has gone blank
+    DisplayConfirm {
+        id: displayConfirm
     }
 
     Component {

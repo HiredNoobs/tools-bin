@@ -20,12 +20,13 @@ ShellRoot {
     property bool barVisible: true
 
     // Singletons are only created when first used; create these at start so update checks run
-    // on schedule, stream titles are remembered before the panels first open, and the
-    // Bluetooth pairing agent is there before anything pairs
+    // on schedule, stream titles are remembered before the panels first open, the Bluetooth
+    // pairing agent is there before anything pairs, and nightlight's schedule runs
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
         BluetoothAgent.ready;
+        Nightlight.enabled;
     }
 
     // A window for each Bluetooth pairing request, there until answered (or closed, which

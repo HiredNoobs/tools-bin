@@ -10,6 +10,7 @@ Rectangle {
     property string placeholder: ""
     property bool password: false
     property bool valid: true
+    readonly property alias inputFocus: input.activeFocus
     signal accepted
 
     implicitWidth: 260

@@ -25,6 +25,11 @@ Singleton {
     property alias maxPopups: adapter.maxPopups
     // Volume sliders in the settings window go up to 150% (software boost, may distort)
     property alias volumeBoost: adapter.volumeBoost
+    // Nightlight's warmth in kelvin, and whether it follows a schedule ("HH:MM" times)
+    property alias nightlightTemperature: adapter.nightlightTemperature
+    property alias nightlightSchedule: adapter.nightlightSchedule
+    property alias nightlightStart: adapter.nightlightStart
+    property alias nightlightEnd: adapter.nightlightEnd
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -50,6 +55,10 @@ Singleton {
             property int popupSeconds: 5
             property int maxPopups: 3
             property bool volumeBoost: false
+            property int nightlightTemperature: 5000
+            property bool nightlightSchedule: false
+            property string nightlightStart: "21:00"
+            property string nightlightEnd: "07:00"
         }
     }
 }

@@ -7,10 +7,13 @@ import Quickshell.Io
 
 // Connected monitors and live changes to them through Hyprland's Lua (`hl.monitor`).
 // `save()` writes the live layout to ~/.config/hypr/monitors.lua, which hyprland.lua loads.
+// Changes that could leave a screen blank (resolution, scale, rotation, on/off, mirroring) are
+// undone after 15 seconds unless kept (`keep()`), like other desktops' "Keep these settings?".
 Singleton {
     id: root
 
-    // [{ name, model, mode, modes, scale, x, y, width, height, logicalWidth, logicalHeight, disabled, mirrorOf }]
+    // [{ name, model, mode, modes, scale, x, y, width, height, logicalWidth, logicalHeight,
+    //    disabled, mirrorOf, transform (0-7, 1/3 = 90°/270°), vrr }]
     property var monitors: []
     readonly property var enabledMonitors: monitors.filter(m => !m.disabled)
     property string lastError: ""
@@ -19,6 +22,37 @@ Singleton {
     property bool hasSaved: false
 
     readonly property var scales: [1, 1.25, 1.5, 2]
+    // Finer steps for the settings window
+    readonly property var allScales: [1, 1.25, 1.5, 1.75, 2, 2.5, 3]
+
+    // The layout to go back to while a risky change waits to be kept, and the seconds left
+    property var revertTo: null
+    property int revertIn: 0
+    readonly property bool confirming: revertTo !== null
+
+    // Before a risky change: remember the layout (unless already waiting) and (re)start the count
+    function guard(): void {
+        if (!revertTo)
+            revertTo = monitors.map(m => specOf(m));
+        revertIn = 15;
+        countdown.restart();
+    }
+
+    function keep(): void {
+        revertTo = null;
+        countdown.stop();
+    }
+
+    function revert(): void {
+        if (!revertTo)
+            return;
+        const specs = revertTo;
+        revertTo = null;
+        countdown.stop();
+        // Turn screens on before any are turned off, so one always stays on
+        const ordered = [...specs.filter(s => !s.disabled), ...specs.filter(s => s.disabled)];
+        run(ordered.map(spec => luaSpec(spec)).join("\n"));
+    }
 
     function refresh(): void {
         query.running = true;
@@ -46,10 +80,16 @@ Singleton {
     function specOf(monitor: var): var {
         if (monitor.disabled)
             return { output: monitor.name, disabled: true };
-        const spec = { output: monitor.name, mode: monitor.mode, position: `${monitor.x}x${monitor.y}`, scale: monitor.scale };
-        if (monitor.mirrorOf !== "")
-            spec.mirror = monitor.mirrorOf;
-        return spec;
+        // Mirror stated even when empty: hl.monitor merges, so leaving it out wouldn't clear one
+        return { output: monitor.name, mode: monitor.mode, position: `${monitor.x}x${monitor.y}`, scale: monitor.scale, transform: monitor.transform, vrr: monitor.vrr ? 1 : 0, mirror: monitor.mirrorOf };
+    }
+
+    // The other enabled screens pinned as they are. Rules with an automatic position (the
+    // laptop's machine file) are placed again whenever any monitor changes, which can move a
+    // screen that wasn't touched. Their full settings are stated: a new rule for one output
+    // with only a position would leave the rest (scale!) to Hyprland's defaults.
+    function pinOthers(name: string): string {
+        return enabledMonitors.filter(m => m.name !== name).map(m => luaSpec(specOf(m))).join("\n");
     }
 
     // hl.monitor merges into the output's existing rule, so live changes state everything
@@ -58,11 +98,13 @@ Singleton {
         const monitor = byName(name);
         if (!monitor)
             return;
-        run(luaSpec(Object.assign({
+        run(pinOthers(name) + "\n" + luaSpec(Object.assign({
             output: name,
             mode: monitor.mode,
             position: `${monitor.x}x${monitor.y}`,
             scale: monitor.scale,
+            transform: monitor.transform,
+            vrr: monitor.vrr ? 1 : 0,
             mirror: monitor.mirrorOf,
             disabled: false
         }, changes)));
@@ -77,19 +119,44 @@ Singleton {
                 lastError = "Can't turn off the only active screen";
                 return;
             }
-            run(luaSpec({ output: name, disabled: true }));
+            guard();
+            run(pinOthers(name) + "\n" + luaSpec({ output: name, disabled: true }));
             return;
         }
         // Back on: preferred mode, placed automatically
-        run(luaSpec({ output: name, mode: "preferred", position: "auto", scale: 1, mirror: "", disabled: false }));
+        guard();
+        run(pinOthers(name) + "\n" + luaSpec({ output: name, mode: "preferred", position: "auto", scale: 1, mirror: "", disabled: false }));
     }
 
     function setMode(name: string, mode: string): void {
+        guard();
         apply(name, { mode: mode });
     }
 
     function setScale(name: string, scale: real): void {
+        guard();
         apply(name, { scale: scale });
+    }
+
+    function setTransform(name: string, transform: int): void {
+        guard();
+        apply(name, { transform: transform });
+    }
+
+    function setVrr(name: string, on: bool): void {
+        apply(name, { vrr: on ? 1 : 0 });
+    }
+
+    // Show the same picture as another screen ("" stops mirroring)
+    function setMirror(name: string, target: string): void {
+        if (target !== "")
+            guard();
+        apply(name, { mirror: target });
+    }
+
+    // Top-left corner in the layout, in logical pixels (from dragging in the settings window)
+    function setPosition(name: string, x: int, y: int): void {
+        apply(name, { position: `${Math.round(x)}x${Math.round(y)}`, mirror: "" });
     }
 
     // relation: "left", "right", "above", "below" or "mirror", relative to otherOf(name)
@@ -99,6 +166,7 @@ Singleton {
         if (!monitor || !other)
             return;
         if (relation === "mirror") {
+            guard();
             apply(name, { mirror: other.name });
             return;
         }
@@ -181,7 +249,9 @@ Singleton {
                 logicalWidth: width / m.scale,
                 logicalHeight: height / m.scale,
                 disabled: m.disabled,
-                mirrorOf: m.mirrorOf === "none" ? "" : nameOfId(m.mirrorOf)
+                mirrorOf: m.mirrorOf === "none" ? "" : nameOfId(m.mirrorOf),
+                transform: m.transform,
+                vrr: m.vrr
             };
         });
     }
@@ -230,6 +300,16 @@ Singleton {
         id: repaintTimer
         interval: 400
         onTriggered: Hyprland.dispatch("hl.dsp.force_renderer_reload()")
+    }
+
+    Timer {
+        id: countdown
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            if (--root.revertIn <= 0)
+                root.revert();
+        }
     }
 
     Timer {
