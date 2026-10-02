@@ -35,6 +35,6 @@ Singleton {
 
     // The title for a stream, or "" if it never had one
     function title(stream: PwNode): string {
-        return titles[stream.id] ?? "";
+        return stream ? titles[stream.id] ?? "" : "";
     }
 }

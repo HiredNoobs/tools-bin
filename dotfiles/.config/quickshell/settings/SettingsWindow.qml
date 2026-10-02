@@ -25,6 +25,7 @@ FloatingWindow {
     ]
     // Pages built so far; the others show what's coming
     readonly property var pages: ({
+            "sound": soundPage,
             "shell": shellPage
         })
     readonly property var current: sections.find(section => section.name === page) ?? sections[0]
@@ -187,6 +188,12 @@ FloatingWindow {
 
     // Back to the top when switching section
     onPageChanged: content.contentY = 0
+
+    Component {
+        id: soundPage
+
+        SoundPage {}
+    }
 
     Component {
         id: shellPage

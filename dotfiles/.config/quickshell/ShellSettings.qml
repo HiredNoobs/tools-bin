@@ -23,6 +23,8 @@ Singleton {
     property alias popupSeconds: adapter.popupSeconds
     // Pop-ups on screen at once; more wait their turn
     property alias maxPopups: adapter.maxPopups
+    // Volume sliders in the settings window go up to 150% (software boost, may distort)
+    property alias volumeBoost: adapter.volumeBoost
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -47,6 +49,7 @@ Singleton {
             property bool attachPopups: true
             property int popupSeconds: 5
             property int maxPopups: 3
+            property bool volumeBoost: false
         }
     }
 }

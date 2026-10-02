@@ -14,6 +14,8 @@ Column {
     readonly property var outputs: nodes.filter(n => n.type === PwNodeType.AudioSink)
     readonly property var inputs: nodes.filter(n => n.type === PwNodeType.AudioSource)
     readonly property var apps: nodes.filter(n => n.type === PwNodeType.AudioOutStream)
+    // Up to 150% when boosting is allowed (Settings › Sound)
+    readonly property real maxVolume: ShellSettings.volumeBoost ? 1.5 : 1
 
     // App streams grouped by app, in order of appearance: [{ name, streams }]. Each Firefox tab
     // (and the like) is its own stream
@@ -112,12 +114,13 @@ Column {
         height: 4
     }
 
+    // The settings window's Sound section: every device, port and card profile
     PanelButton {
         width: parent.width
         icon: "\u{F013}"
-        label: "Open pavucontrol"
+        label: "Sound settings"
         onClicked: {
-            Exec.floating("pavucontrol", false);
+            Exec.run("qs ipc call settings open sound");
             root.closeRequested();
         }
     }
@@ -296,8 +299,10 @@ Column {
             }
 
             Slider {
+                id: slider
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 36 - 38 - 20 - volumeRow.dropdownWidth
+                to: root.maxVolume
                 value: volumeRow.volume
                 onMoved: value => {
                     if (volumeRow.node?.audio)
@@ -305,14 +310,25 @@ Column {
                     else if (!volumeRow.node)
                         volumeRow.volumeSet(value);
                 }
+
+                // 100%, when the slider goes beyond it: above is boosted and may distort
+                Rectangle {
+                    visible: root.maxVolume > 1
+                    x: slider.width / root.maxVolume - 1
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 2
+                    height: 12
+                    radius: 1
+                    color: Theme.subtext
+                }
             }
 
-            // Wide enough for "100%"
+            // Wide enough for "100%"; amber when boosted
             PanelText {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 38
                 text: `${Math.round(volumeRow.volume * 100)}%`
-                dim: true
+                color: volumeRow.volume > 1.005 ? Theme.warning : Theme.subtext
             }
 
             PanelButton {

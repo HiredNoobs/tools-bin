@@ -18,6 +18,9 @@ Column {
     }
 
     Rectangle {
+        // The rows on show: not hidden ones, nor Repeaters (which take no space)
+        readonly property var rows: Array.from(card.children).filter(row => row.visible && row.height > 0)
+
         width: parent.width
         height: card.implicitHeight
         radius: Theme.radius
@@ -30,15 +33,12 @@ Column {
 
         // Lines between the rows
         Repeater {
-            model: Math.max(0, card.children.length - 1)
+            model: Math.max(0, parent.rows.length - 1)
 
             Rectangle {
                 required property int index
-                readonly property Item below: card.children[index + 1] ?? null
-
-                visible: (card.children[index]?.visible ?? false) && (below?.visible ?? false)
                 x: 16
-                y: below ? below.y : 0
+                y: parent.rows[index + 1].y
                 width: parent.width - 32
                 height: 1
                 color: Theme.surface
