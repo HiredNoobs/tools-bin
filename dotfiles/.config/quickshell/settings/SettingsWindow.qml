@@ -20,6 +20,7 @@ FloatingWindow {
         { name: "displays", title: "Displays", icon: "\u{F0379}", keywords: "monitors screens resolution refresh rate scale arrangement nightlight brightness" },
         { name: "input", title: "Keyboard and mouse", icon: "\u{F030C}", keywords: "keyboard layout repeat mouse pointer speed touchpad scrolling tap" },
         { name: "power", title: "Power and idle", icon: "\u{F0425}", keywords: "idle lock screen off suspend sleep lid battery power profile hypridle" },
+        { name: "apps", title: "Default apps", icon: "\u{F003B}", keywords: "default applications open with browser email mail files folders text editor images video music audio pdf mime xdg-open mimeapps" },
         { name: "appearance", title: "Appearance", icon: "\u{F03D8}", keywords: "theme gtk qt kvantum icons cursor fonts wallpaper nwg-look qt6ct" },
         { name: "shell", title: "Shell", icon: "\u{F0493}", keywords: "bar panels launcher attached control centre notifications pop-ups quickshell" }
     ]
@@ -31,6 +32,7 @@ FloatingWindow {
             "displays": displaysPage,
             "input": inputPage,
             "power": powerPage,
+            "apps": defaultAppsPage,
             "appearance": appearancePage,
             "shell": shellPage
         })
@@ -229,6 +231,12 @@ FloatingWindow {
         id: powerPage
 
         PowerPage {}
+    }
+
+    Component {
+        id: defaultAppsPage
+
+        DefaultAppsPage {}
     }
 
     Component {

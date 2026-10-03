@@ -1,5 +1,22 @@
 [Default Applications]
 inode/directory=yazi.desktop
 
-x-scheme-handler/http=firefox.desktop;
-x-scheme-handler/https=firefox.desktop;
+text/plain=vim.desktop
+text/markdown=vim.desktop
+text/x-markdown=vim.desktop
+text/csv=vim.desktop
+text/x-log=vim.desktop
+application/json=vim.desktop
+application/xml=vim.desktop
+application/toml=vim.desktop
+application/x-yaml=vim.desktop
+application/x-shellscript=vim.desktop
+text/x-python=vim.desktop
+text/x-csrc=vim.desktop
+text/x-chdr=vim.desktop
+text/x-c++src=vim.desktop
+text/x-c++hdr=vim.desktop
+application/xhtml+xml=firefox.desktop
+text/html=firefox.desktop
+x-scheme-handler/http=firefox.desktop
+x-scheme-handler/https=firefox.desktop

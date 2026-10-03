@@ -4,7 +4,7 @@ import qs.services
 
 // Choices that slide open under a row, with a tick on the selected one. Long lists scroll
 // (e.g. a monitor's 28 resolutions) and open scrolled to the selected choice.
-// items: [{ label, sublabel, selected, ... }] - the whole item is passed back in `chosen`.
+// items: [{ label, sublabel, iconSource, selected, ... }] - the whole item is passed back in `chosen`.
 // With `stateSection` and `stateKey`, whether it's open is kept in PanelState, so it stays open
 // across reopening the panel; choosing an item closes it either way.
 Item {
@@ -77,6 +77,7 @@ Item {
                     required property var modelData
 
                     width: rows.width
+                    iconSource: modelData.iconSource ?? ""
                     label: modelData.label
                     sublabel: modelData.sublabel ?? ""
                     selected: modelData.selected ?? false
