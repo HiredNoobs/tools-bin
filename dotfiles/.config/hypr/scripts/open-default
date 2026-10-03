@@ -1,0 +1,29 @@
+#!/bin/sh
+# Starts the default app for a MIME type (Settings › Default apps), in kitty if it's a terminal
+# app. The command is exec'd rather than handed to gio or gtk-launch, so the window stays this
+# process's and Hyprland's exec rules (float, size) still apply to it.
+# Usage: open-default <mime type> <fallback command, if there's no default>
+
+id=$(xdg-mime query default "$1")
+file=""
+if [ -n "$id" ]; then
+  for dir in "${XDG_DATA_HOME:-$HOME/.local/share}" $(echo "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" | tr : ' '); do
+    if [ -f "$dir/applications/$id" ]; then
+      file="$dir/applications/$id"
+      break
+    fi
+  done
+fi
+[ -n "$file" ] || exec sh -c "$2"
+
+# From the [Desktop Entry] group (not an action's), without the %f/%u-style field codes
+key() {
+  sed -n '/^\[Desktop Entry\]/,/^\[/{s/^'"$1"'=//p}' "$file" | head -n 1
+}
+command=$(key Exec | sed 's/ *%[fFuUdDnNickvm]//g; s/%%/%/g')
+[ -n "$command" ] || exec sh -c "$2"
+
+if [ "$(key Terminal)" = true ]; then
+  exec kitty sh -c "exec $command"
+fi
+exec sh -c "exec $command"

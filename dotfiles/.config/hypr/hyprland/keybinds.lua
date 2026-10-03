@@ -144,8 +144,9 @@ hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle"), { 
 hl.bind(mainMod .. " + I", hl.dsp.exec_cmd("qs ipc call settings open ''"), { description = "Open settings" })
 
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty -1"), { description = "Open Terminal" })
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("kitty bash -c yazi", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }), { description = "Open File Explorer" })
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("firefox"), { description = "Open web browser" })
+-- The file manager and browser are the ones chosen in Settings › Default apps
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("~/.config/hypr/scripts/open-default inode/directory 'kitty yazi'", { float = true, center = true, size = { "monitor_w*0.5", "monitor_h*0.5" } }), { description = "Open File Explorer" })
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("~/.config/hypr/scripts/open-default x-scheme-handler/https firefox"), { description = "Open web browser" })
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"), { description = "Open Code Editor" })
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("steam"), { description = "Open Steam" })
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("discord"), { description = "Open Discord" })
