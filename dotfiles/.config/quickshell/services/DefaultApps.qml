@@ -12,6 +12,9 @@ import Quickshell.Io
 // and audio, every one of those types the app can open. It removes the category's other entries,
 // so no type is left on the previous app. The value from before a category's first change is
 // kept (in Quickshell's state folder) for the settings window's ↺.
+// Single file types can be set apart from their category (overrides, kept in the state folder
+// too): the category then leaves them alone, until the override is removed and the type goes
+// back to the category's app. Their names and extensions come from the shared MIME database.
 Singleton {
     id: root
 
@@ -35,6 +38,12 @@ Singleton {
     property var handlers: ({})
     // Category key -> its current default's desktop id ("" = none)
     property var defaults: ({})
+    // MIME type -> the desktop id mimeapps.list sets for it
+    property var explicit: ({})
+    // Every known type, as { type, name, globs }: the MIME database's, and link schemes apps open
+    property var fileTypes: []
+    // Types set apart from their category
+    property var overrides: []
 
     function category(key: string): var {
         return categories.find(c => c.key === key);
@@ -56,6 +65,69 @@ Singleton {
             const entry = DesktopEntries.byId(id.replace(/\.desktop$/, ""));
             return { id: id, name: entry?.name || id.replace(/\.desktop$/, ""), icon: entry?.icon ?? "", hidden: entry?.noDisplay ?? false };
         }).filter(app => !app.hidden || app.id === current).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function app(id: string): var {
+        const entry = DesktopEntries.byId(id.replace(/\.desktop$/, ""));
+        return { id: id, name: entry?.name || id.replace(/\.desktop$/, ""), icon: entry?.icon ?? "" };
+    }
+
+    // Apps that say they open `type`, by name
+    function typeApps(type: string): var {
+        return (handlers[type] ?? []).map(id => app(id)).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // Every app with a launcher entry, for opening a type with an app that doesn't list it
+    function allApps(): var {
+        return DesktopEntries.applications.values.filter(entry => !entry.noDisplay).map(entry => app(`${entry.id}.desktop`)).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // The app a type opens with: mimeapps.list's, else the first that says it opens it (as
+    // xdg-open falls back to), with `automatic` set for the latter
+    function typeDefault(type: string): var {
+        if (explicit[type])
+            return { id: explicit[type], automatic: false };
+        return { id: (handlers[type] ?? [])[0] ?? "", automatic: true };
+    }
+
+    function typeInfo(type: string): var {
+        return fileTypes.find(t => t.type === type) ?? { type: type, name: type, globs: [] };
+    }
+
+    function categoryOf(type: string): var {
+        return categories.find(cat => inCategory(cat, type));
+    }
+
+    function overridesIn(key: string): int {
+        const cat = category(key);
+        return overrides.filter(type => inCategory(cat, type)).length;
+    }
+
+    // Types matching a search: an extension ("md", ".md", "*.md"), a name or a MIME type.
+    // Exact extensions first, then those starting with it, then the rest.
+    function findTypes(query: string, limit: int): var {
+        const q = query.trim().toLowerCase().replace(/^\*?\./, "");
+        if (q === "")
+            return [];
+        const scored = [];
+        for (const t of fileTypes) {
+            const exts = t.globs.map(g => g.toLowerCase().replace(/^\*\./, ""));
+            let score = -1;
+            if (exts.includes(q))
+                score = 0;
+            else if (t.type === q)
+                score = 0;
+            else if (exts.some(e => e.startsWith(q)) || t.name.toLowerCase().startsWith(q))
+                score = 1;
+            else if (t.type.includes(q) || t.name.toLowerCase().includes(q))
+                score = 2;
+            if (score >= 0)
+                scored.push({ score: score, t: t });
+        }
+        // Types something opens before the rest (Markdown before the Genesis ROMs that share .md)
+        const opened = t => explicit[t.type] || handlers[t.type] ? 0 : 1;
+        scored.sort((a, b) => a.score - b.score || opened(a.t) - opened(b.t) || a.t.name.localeCompare(b.t.name));
+        return scored.slice(0, limit).map(s => s.t);
     }
 
     function appName(id: string): string {
@@ -106,14 +178,40 @@ Singleton {
             types = cat.types;
         }
 
+        const own = type => inCategory(cat, type) && !overrides.includes(type);
+        writeDefaults(own, types.filter(type => !overrides.includes(type)), id);
+    }
+
+    // One type set apart from its category
+    function setType(type: string, id: string): void {
+        if (!overrides.includes(type))
+            saveOverrides([...overrides, type].sort());
+        writeDefaults(t => t === type, [type], id);
+    }
+
+    // Back to its category's app, or to the system's pick if no category has it
+    function removeOverride(type: string): void {
+        saveOverrides(overrides.filter(t => t !== type));
+        const cat = categoryOf(type);
+        const id = cat ? defaults[cat.key] ?? "" : "";
+        const follows = id !== "" && (!cat.prefix || (handlers[type] ?? []).includes(id));
+        writeDefaults(t => t === type, follows ? [type] : [], id);
+    }
+
+    function saveOverrides(list: var): void {
+        root.overrides = list;
+        overridesFile.setText(JSON.stringify(list, null, 2));
+    }
+
+    function writeDefaults(own: var, types: var, id: string): void {
         mimeapps.reload();
-        mimeapps.setText(withDefaults(mimeapps.text(), cat, types, id));
+        mimeapps.setText(withDefaults(mimeapps.text(), own, types, id));
         refresh();
     }
 
-    // mimeapps.list with the category's [Default Applications] lines replaced by `types` -> `id`.
-    // Other sections and lines are kept as they are.
-    function withDefaults(text: string, cat: var, types: var, id: string): string {
+    // mimeapps.list with the [Default Applications] lines of types `own` accepts replaced by
+    // `types` -> `id`. Other sections and lines are kept as they are.
+    function withDefaults(text: string, own: var, types: var, id: string): string {
         const lines = text.split("\n");
         while (lines.length > 0 && lines[lines.length - 1].trim() === "")
             lines.pop();
@@ -133,7 +231,7 @@ Singleton {
 
         const kept = lines.slice(start + 1, end).filter(line => {
             const eq = line.indexOf("=");
-            return eq < 0 || !inCategory(cat, line.slice(0, eq).trim());
+            return eq < 0 || !own(line.slice(0, eq).trim());
         });
         // New lines go after the section's last entry, before any blank lines ending it
         let at = kept.length;
@@ -147,12 +245,32 @@ Singleton {
     }
 
     function refresh(): void {
+        mimeapps.reload();
+        readExplicit();
         scan.running = true;
+    }
+
+    function readExplicit(): void {
+        const explicit = {};
+        let inSection = false;
+        for (const line of mimeapps.text().split("\n")) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("["))
+                inSection = trimmed === "[Default Applications]";
+            const eq = trimmed.indexOf("=");
+            if (inSection && eq > 0) {
+                const id = trimmed.slice(eq + 1).split(";").find(id => id !== "");
+                if (id)
+                    explicit[trimmed.slice(0, eq).trim()] = id;
+            }
+        }
+        root.explicit = explicit;
     }
 
     Component.onCompleted: refresh()
 
-    // "h<TAB>type<TAB>id;id;" for what each app opens, "d<TAB>key<TAB>id" for the defaults
+    // "h<TAB>type<TAB>id;id;" for what each app opens, "d<TAB>key<TAB>id" for the defaults,
+    // "g<TAB>type<TAB>glob" and "c<TAB>type<TAB>name" from the MIME database
     Process {
         id: scan
         command: ["sh", "-c", `
@@ -165,11 +283,15 @@ Singleton {
                 sed -n 's/^MimeType=//p' "$f" | tr ';' '\\n' | while read -r t; do [ -n "$t" ] && printf 'h\\t%s\\t%s;\\n' "$t" "$id"; done
             done
             ${root.categories.map(c => `printf 'd\\t%s\\t%s\\n' ${c.key} "$(xdg-mime query default ${c.primary})"`).join("\n")}
+            sed -n 's/^[0-9]*:\\([^:]*\\):\\([^:]*\\).*/g\\t\\1\\t\\2/p' /usr/share/mime/globs2
+            grep -m1 -H '<comment>' /usr/share/mime/*/*.xml | sed -n 's|^/usr/share/mime/\\([^:]*\\)\\.xml:.*<comment>\\(.*\\)</comment>.*|c\\t\\1\\t\\2|p'
         `]
         stdout: StdioCollector {
             onStreamFinished: {
                 const handlers = {};
                 const defaults = {};
+                const types = {};
+                const type = name => types[name] ?? (types[name] = { type: name, name: "", globs: [] });
                 for (const line of text.split("\n")) {
                     const [kind, a, b] = line.split("\t");
                     if (kind === "h" && a) {
@@ -179,10 +301,20 @@ Singleton {
                                 ids.push(id);
                     } else if (kind === "d" && a) {
                         defaults[a] = (b ?? "").trim();
+                    } else if (kind === "g" && a && b && !type(a).globs.includes(b)) {
+                        type(a).globs.push(b);
+                    } else if (kind === "c" && a && b) {
+                        type(a).name = b;
                     }
                 }
+                // Link schemes aren't in the MIME database
+                for (const name of Object.keys(handlers))
+                    if (name.startsWith("x-scheme-handler/"))
+                        type(name).name = `${name.slice(17)}: links`;
                 root.handlers = handlers;
                 root.defaults = defaults;
+                // Only types with a file extension or an app that opens them
+                root.fileTypes = Object.values(types).filter(t => t.globs.length > 0 || handlers[t.type]).map(t => Object.assign(t, { name: t.name || t.type }));
             }
         }
     }
@@ -194,6 +326,20 @@ Singleton {
         blockLoading: true
         blockWrites: true
         printErrors: false
+    }
+
+    FileView {
+        id: overridesFile
+        path: Quickshell.statePath("default-apps-overrides.json")
+        blockLoading: true
+        printErrors: false
+        onLoaded: {
+            try {
+                root.overrides = JSON.parse(text());
+            } catch (e) {
+                root.overrides = [];
+            }
+        }
     }
 
     FileView {
