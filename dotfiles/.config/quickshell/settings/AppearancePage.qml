@@ -1,11 +1,13 @@
 import QtQuick
+import Quickshell.Widgets
 import qs
 import qs.components
 import qs.services
 
 // Settings › Appearance, in place of nwg-look, qt6ct and Kvantum Manager: dark or light, the
 // GTK and Qt (Kvantum) styles, icons, cursor, fonts (Qt can have its own), Qt's file chooser
-// and the wallpaper. Applied to every toolkit at once (see Appearance).
+// and the wallpaper. Applied to every toolkit at once (see Appearance). Also the picture on the
+// lock and login screens (see LockShare).
 Column {
     id: root
 
@@ -233,6 +235,113 @@ Column {
                 label: "Choose…"
                 onClicked: Exec.run("qs ipc call launcher wallpaper")
             }
+        }
+    }
+
+    SettingsGroup {
+        title: "Lock and login screens"
+
+        SettingRow {
+            id: faceRow
+            label: "Picture"
+            description: LockShare.shared ? "Pictures from ~/Pictures/profile-pictures. The wallpaper and colours follow too." : "Pictures from ~/Pictures/profile-pictures. The login screen follows once setup has run."
+            expandable: true
+            expanded: PanelState.isOpen("settings", "faces")
+            onExpandToggled: {
+                PanelState.toggle("settings", "faces");
+                LockShare.refresh();
+            }
+
+            Avatar {
+                path: LockShare.face
+                size: 40
+            }
+        }
+
+        Flow {
+            visible: faceRow.expanded
+            x: 16
+            width: parent.width - 32
+            spacing: 12
+            bottomPadding: 16
+
+            Repeater {
+                model: LockShare.faces
+
+                Avatar {
+                    required property string modelData
+
+                    path: modelData
+                    size: 72
+                    selected: modelData === LockShare.face
+                    clickable: true
+                    onClicked: LockShare.setFace(modelData)
+                }
+            }
+
+            PanelText {
+                visible: LockShare.faces.length === 0
+                text: "No pictures there yet."
+                dim: true
+            }
+        }
+
+        SettingRow {
+            label: "Preview"
+            description: "The lock screen in a window, without locking."
+
+            PanelButton {
+                icon: "\u{F033E}"
+                label: "Preview"
+                onClicked: Exec.run("qs ipc call lock preview")
+            }
+        }
+    }
+
+    // A round picture, ringed in the accent colour when it's the one in use
+    component Avatar: Item {
+        id: avatar
+
+        property string path
+        property int size: 40
+        property bool selected: false
+        property bool clickable: false
+        signal clicked
+
+        width: size
+        height: size
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -3
+            radius: width / 2
+            color: "transparent"
+            border.width: 2
+            border.color: avatar.selected ? Theme.accent : mouse.containsMouse ? Theme.subtext : "transparent"
+        }
+
+        ClippingRectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: Theme.surface
+
+            Image {
+                anchors.fill: parent
+                source: avatar.path !== "" ? `file://${avatar.path}` : ""
+                fillMode: Image.PreserveAspectCrop
+                sourceSize.width: avatar.size * 2
+                sourceSize.height: avatar.size * 2
+                asynchronous: true
+            }
+        }
+
+        MouseArea {
+            id: mouse
+            anchors.fill: parent
+            enabled: avatar.clickable
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: avatar.clicked()
         }
     }
 

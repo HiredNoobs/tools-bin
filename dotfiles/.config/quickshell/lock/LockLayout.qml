@@ -202,6 +202,8 @@ Item {
                 property int attempt: 0
                 anchors.fill: parent
                 source: root.avatars[attempt] ?? ""
+                // Changed in Settings at the same path
+                cache: false
                 fillMode: Image.PreserveAspectCrop
                 sourceSize.width: 192
                 sourceSize.height: 192

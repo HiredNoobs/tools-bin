@@ -58,7 +58,8 @@ function configure_hyprland {
 
   rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
-  rsync -av "$ROOT/images/wallpapers/nord_scenary.png"  "$HOME/.cache/current-wallpaper"
+  # Only the first time: after that, the wallpaper picker changes it
+  rsync -av --ignore-existing "$ROOT/images/wallpapers/nord_scenary.png" "$HOME/.cache/current-wallpaper"
   rsync -av --delete "$ROOT/images/wallpapers/"         "$HOME/Pictures/wallpapers/"
   rsync -av --delete "$ROOT/images/profile-pictures/"   "$HOME/Pictures/profile-pictures/"
   mkdir -p "$HOME/Pictures/screenshots"  # Used by the screenshot keybinds and swappy

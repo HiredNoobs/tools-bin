@@ -41,6 +41,8 @@ Item {
         closeRequested();
         const current = "$HOME/.cache/current-wallpaper";
         Exec.run(`old=$(pgrep -x swaybg); cp ${Exec.quote(wallpaper.path)} "${current}" && setsid -f swaybg -i "${current}" -m fill && if [ -n "$old" ]; then sleep 0.5; kill $old; fi`);
+        // And the login screen's
+        LockShare.shareWallpaper(wallpaper.path);
     }
 
     implicitWidth: 612

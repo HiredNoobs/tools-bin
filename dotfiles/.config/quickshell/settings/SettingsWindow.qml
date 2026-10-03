@@ -21,7 +21,7 @@ FloatingWindow {
         { name: "input", title: "Keyboard and mouse", icon: "\u{F030C}", keywords: "keyboard layout repeat mouse pointer speed touchpad scrolling tap" },
         { name: "power", title: "Power and idle", icon: "\u{F0425}", keywords: "idle lock screen off suspend sleep lid battery power profile hypridle" },
         { name: "apps", title: "Default apps", icon: "\u{F003B}", keywords: "default applications open with browser email mail files folders text editor images video music audio pdf mime xdg-open mimeapps" },
-        { name: "appearance", title: "Appearance", icon: "\u{F03D8}", keywords: "theme gtk qt kvantum icons cursor fonts wallpaper nwg-look qt6ct" },
+        { name: "appearance", title: "Appearance", icon: "\u{F03D8}", keywords: "theme gtk qt kvantum icons cursor fonts wallpaper nwg-look qt6ct avatar picture profile lock login sddm" },
         { name: "shell", title: "Shell", icon: "\u{F0493}", keywords: "bar panels launcher attached control centre notifications pop-ups quickshell" }
     ]
     // Pages built so far; the others show what's coming
