@@ -9,6 +9,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.bar
 import qs.launcher
+import qs.lock
 import qs.osd
 import qs.overview
 import qs.services
@@ -70,6 +71,24 @@ ShellRoot {
 
         function toggle(): void {
             overview.toggle();
+        }
+    }
+
+    // The lockscreen (see LockScreen for what happens if the shell dies while locked)
+    LockScreen {
+        id: lockScreen
+    }
+
+    // `qs ipc call lock lock`, or `preview` to see it in a window without locking
+    IpcHandler {
+        target: "lock"
+
+        function lock(): void {
+            lockScreen.lock();
+        }
+
+        function preview(): void {
+            lockScreen.preview();
         }
     }
 

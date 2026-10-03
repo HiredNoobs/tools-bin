@@ -93,6 +93,17 @@ hl.window_rule({
     size = { 1000, 680 }
 })
 
+-- Quickshell's lockscreen preview (`qs ipc call lock preview`)
+hl.window_rule({
+    match = {
+        class = "org.quickshell",
+        title = "Lockscreen preview"
+    },
+    float = true,
+    center = true,
+    size = { 1280, 720 }
+})
+
 -- Quickshell's Bluetooth pairing requests
 hl.window_rule({
     match = {

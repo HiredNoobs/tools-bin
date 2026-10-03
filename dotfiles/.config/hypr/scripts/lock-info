@@ -1,0 +1,89 @@
+#!/bin/bash
+# For hyprlock.conf, so the fallback lockscreen shows what Quickshell's does (lock/LockLayout.qml):
+#   lock-info status          battery and network, as Pango markup
+#   lock-info button <name>   a power button's label: its icon, or "<icon> Reboot?" while armed
+#   lock-info press <name>    a power button's click: Sleep at once; Reboot and Shut down arm
+#                             on the first click and run on a second within 3 seconds
+# Colours and icons match the shell's (Theme.qml, services/Battery.qml).
+
+accent="#fb4934"
+charging="#26A65B"
+warning="#ffbe61"
+critical="#f53c3c"
+armed_dir="${XDG_RUNTIME_DIR:-/tmp}/lock-info"
+
+battery() {
+  local bat capacity status icon colour
+  bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n 1)
+  [ -n "$bat" ] || return
+  capacity=$(cat "$bat/capacity")
+  status=$(cat "$bat/status")
+  if [ "$status" = Charging ] || [ "$status" = "Not charging" ]; then
+    icon=$'\U000F0084'
+  else
+    local icons=($'\U000F007B' $'\U000F007C' $'\U000F007E' $'\U000F0080' $'\U000F0082' $'\U000F0079')
+    local i=$((capacity * 6 / 100))
+    [ "$i" -gt 5 ] && i=5
+    icon=${icons[$i]}
+  fi
+  if [ "$status" = Charging ]; then
+    colour=$charging
+  elif [ "$capacity" -le 20 ]; then
+    colour=$critical
+  elif [ "$capacity" -le 30 ]; then
+    colour=$warning
+  else
+    colour=$accent
+  fi
+  printf '<span foreground="%s">%s %s%%</span>   ' "$colour" "$icon" "$capacity"
+}
+
+network() {
+  local wifi signal ssid
+  wifi=$(nmcli -t -f ACTIVE,SIGNAL,SSID dev wifi 2>/dev/null | grep -m 1 '^yes:')
+  if [ -n "$wifi" ]; then
+    signal=$(echo "$wifi" | cut -d: -f2)
+    ssid=$(echo "$wifi" | cut -d: -f3-)
+    local icons=($'\U000F092F' $'\U000F091F' $'\U000F0922' $'\U000F0925' $'\U000F0928')
+    local i=$((signal * 5 / 100))
+    [ "$i" -gt 4 ] && i=4
+    printf '%s  %s' "${icons[$i]}" "$ssid"
+  elif nmcli -t -f TYPE,STATE dev 2>/dev/null | grep -q '^ethernet:connected'; then
+    printf '%s  Wired' $''
+  else
+    printf '%s  Offline' $''
+  fi
+}
+
+# Armed within the last 3 seconds
+armed() {
+  [ -n "$(find "$armed_dir/$1" -newermt '-3 seconds' 2>/dev/null)" ]
+}
+
+case "$1" in
+  status)
+    battery
+    network
+    ;;
+  button)
+    case "$2" in
+      Sleep) printf '%s' $'⏾' ;;
+      Reboot) armed Reboot && printf '<span foreground="%s">%s Reboot?</span>' "$accent" $'' || printf '%s' $'' ;;
+      Shutdown) armed Shutdown && printf '<span foreground="%s">%s Shut down?</span>' "$accent" $'⏻' || printf '%s' $'⏻' ;;
+    esac
+    ;;
+  press)
+    case "$2" in
+      Sleep) systemctl suspend-then-hibernate || systemctl suspend ;;
+      Reboot | Shutdown)
+        if armed "$2"; then
+          rm -f "$armed_dir/$2"
+          [ "$2" = Reboot ] && systemctl reboot || systemctl poweroff
+        else
+          mkdir -p "$armed_dir"
+          touch "$armed_dir/$2"
+        fi
+        ;;
+    esac
+    ;;
+esac

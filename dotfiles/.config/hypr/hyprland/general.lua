@@ -41,6 +41,10 @@ hl.config({
         disable_hyprland_logo = true,
         force_default_wallpaper = 0,
         focus_on_activate = true,
+        -- A restarted Quickshell (or hyprlock) can take over a lock whose locker died
+        allow_session_lock_restore = true,
+        -- Black, rather than the "lockscreen died" message, while it does (ms)
+        lockdead_screen_delay = 4000,
         vrr = 3 -- Only for fullscreen windows with video or game content
     },
     render = {
