@@ -506,19 +506,11 @@ Column {
                     onClicked: root.run(() => Exec.run("qs ipc call launcher wallpaper"))
                 }
 
+                // Themes, icons, cursor and fonts for GTK and Qt together
                 PanelButton {
-                    label: "GTK"
-                    onClicked: root.run(() => Exec.floating("nwg-look", false))
-                }
-
-                PanelButton {
-                    label: "QT6"
-                    onClicked: root.run(() => Exec.floating("qt6ct", false))
-                }
-
-                PanelButton {
-                    label: "Kvantum"
-                    onClicked: root.run(() => Exec.floating("kvantummanager", false))
+                    icon: "\u{F03D8}"
+                    label: "Appearance settings"
+                    onClicked: root.run(() => Exec.run("qs ipc call settings open appearance"))
                 }
             }
 

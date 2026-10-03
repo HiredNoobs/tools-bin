@@ -28,7 +28,7 @@ function configure_hyprland {
     xdg-desktop-portal-gtk udiskie brightnessctl pamixer playerctl quickshell bluez libnotify wl-clipboard libqalculate pacman-contrib power-profiles-daemon \
     swaybg starship yazi kitty fish firefox grim slurp swappy htop btop nvtop \
     networkmanager unzip python-dbus python-gobject xdg-terminal-exec \
-    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum nwg-look adw-gtk-theme papirus-icon-theme \
+    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme papirus-icon-theme \
     otf-codenewroman-nerd
 
   log_info "Dependencies installed. Starting configuration."
