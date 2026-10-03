@@ -7,7 +7,7 @@ import qs.components
 import qs.services
 
 // The app launcher's search box and results, shown in the centred popup (Launcher) or as a
-// panel attached to the bar (Theme.launcherAttached). Replaces `rofi -show drun`.
+// panel attached to the bar (Theme.launcherAttached).
 // Type to search the installed apps (name first, then generic name, keywords and command); the
 // apps used most and most recently come first. Words matching an app's desktop action (e.g.
 // "private" for Firefox's New Private Window) list that action too. Arrows or Tab/Shift+Tab move
@@ -380,7 +380,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    // Like rofi's hover-select, but only when the pointer actually moves, so
+                    // Hover selects, but only when the pointer actually moves, so
                     // the selection doesn't jump to whatever sits under a still pointer
                     onPositionChanged: mouse => {
                         const point = mapToItem(null, mouse.x, mouse.y);

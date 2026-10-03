@@ -7,7 +7,7 @@ import qs.services
 
 // Opened from the system panel's Wallpaper button: thumbnails of ~/Pictures/wallpapers, with
 // the current one marked. Type to filter by name; arrows or Tab/Shift+Tab move, Enter or a
-// click sets it (swaybg, as the old rofi menu did), Esc closes.
+// click sets it (swaybg), Esc closes.
 Item {
     id: root
 

@@ -113,11 +113,3 @@ workspaces.place({ class = "steam" }, "main", 1)
 workspaces.place({ class = "firefox" }, "second", 1)
 workspaces.place({ class = "discord" }, "second", 2)
 workspaces.place({ class = "^([Tt]eam[Ss]peak.*|ts3client.*)$" }, "second", 2)
-
--------------------------------------------------------
--- Layer rules
--------------------------------------------------------
-
--- Rofi
--- Mainly to avoid the window getting caught by screenshots
-hl.layer_rule({ match = { namespace = "rofi" }, no_anim = true })
