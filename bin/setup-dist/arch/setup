@@ -65,6 +65,21 @@ function configure_hyprland {
 
   rsync -av --delete "$ROOT/dotfiles/.config/wal/"      "$HOME/.cache/wal/"
 
+  # The avatar on the lock and login screens
+  [ -e "$HOME/.face" ] || ln -s Pictures/profile-pictures/alluka.jpg "$HOME/.face"
+
+  # Login screen: an SDDM theme that looks like the lockscreen, being the same LockLayout.qml
+  sudo rsync -av --delete "$ROOT/system/usr/share/sddm/themes/quickshell-lock/" /usr/share/sddm/themes/quickshell-lock/
+  sudo cp "$ROOT/dotfiles/.config/quickshell/lock/LockLayout.qml" /usr/share/sddm/themes/quickshell-lock/
+  sudo install -Dm644 "$ROOT/system/etc/sddm.conf.d/quickshell-lock.conf" /etc/sddm.conf.d/quickshell-lock.conf
+  # Keeps the Wi-Fi network's name where the theme can read it
+  sudo install -Dm755 "$ROOT/system/etc/NetworkManager/dispatcher.d/90-quickshell-lock" /etc/NetworkManager/dispatcher.d/90-quickshell-lock
+  # What it shows of the user (wallpaper, colours, avatar), where the sddm user can read it
+  sudo install -d -o "$USER" -m 755 /var/lib/quickshell-lock /var/lib/quickshell-lock/faces
+  cp -L "$HOME/.cache/current-wallpaper" /var/lib/quickshell-lock/wallpaper
+  cp -L "$HOME/.face" "/var/lib/quickshell-lock/faces/$USER"
+  cp "$HOME/.cache/wal/colors.json" /var/lib/quickshell-lock/colors.json
+
   # monitors.lua is the layout saved from the bar, local to each machine
   rsync -av --delete --exclude 'monitors.lua' --exclude 'input.lua' --exclude 'hypridle.local.conf' --exclude 'appearance.lua' "$ROOT/dotfiles/.config/hypr/" "$XDG_CONFIG_HOME/hypr/"
   rsync -av --delete "$ROOT/dotfiles/.config/quickshell/" "$XDG_CONFIG_HOME/quickshell/"

@@ -1,0 +1,10 @@
+[SddmGreeterTheme]
+Name=quickshell-lock
+Description=Looks like the Quickshell lockscreen (tools-bin)
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=quickshell-lock
+Theme-API=2.0
+QtVersion=6

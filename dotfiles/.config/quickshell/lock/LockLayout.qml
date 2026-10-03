@@ -58,6 +58,13 @@ Item {
     signal mediaToggle
     signal mediaNext
 
+    // Login only (the SDDM theme): clicking the name switches user, and a session button sits
+    // before the power buttons. Off (and empty) on the lockscreen.
+    property bool userSwitchable: false
+    signal userClicked
+    property string sessionName: ""
+    signal sessionClicked
+
     // [{ icon, name, confirm }]; `powerAction(name)` once confirmed
     property var powerActions: []
     signal powerAction(string name)
@@ -83,9 +90,12 @@ Item {
 
     // --- Background
 
+    // Both reach past the screen's edges, so the blur's dark rim (it fades into the nothing beyond
+    // the picture) is off screen
     Image {
         id: wallpaperImage
         anchors.fill: parent
+        anchors.margins: -64
         source: root.wallpaper
         fillMode: Image.PreserveAspectCrop
         cache: false
@@ -95,6 +105,7 @@ Item {
 
     MultiEffect {
         anchors.fill: parent
+        anchors.margins: -64
         source: wallpaperImage
         visible: wallpaperImage.status === Image.Ready
         blurEnabled: true
@@ -234,10 +245,19 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: avatarItem.bottom
             anchors.topMargin: 14
-            text: `Hi, ${root.userName}`
-            color: root.text
+            text: root.userSwitchable ? `Hi, ${root.userName}  \u{F0140}` : `Hi, ${root.userName}`
+            color: greetingMouse.containsMouse ? root.accent : root.text
             font.family: root.fontFamily
             font.pixelSize: 20
+
+            MouseArea {
+                id: greetingMouse
+                anchors.fill: parent
+                enabled: root.userSwitchable
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.userClicked()
+            }
         }
 
         // Password box
@@ -393,7 +413,14 @@ Item {
         }
 
         Pill {
-            visible: root.powerActions.length > 0
+            visible: root.powerActions.length > 0 || root.sessionName !== ""
+
+            RoundButton {
+                visible: root.sessionName !== ""
+                icon: "\u{F0379}"
+                label: root.sessionName
+                onClicked: root.sessionClicked()
+            }
 
             Repeater {
                 model: root.powerActions
@@ -495,7 +522,7 @@ Item {
             Text {
                 visible: button.label !== ""
                 text: button.label
-                color: root.accent
+                color: mouse.containsMouse || button.highlighted ? root.accent : root.text
                 font.family: root.fontFamily
                 font.pixelSize: 14
             }
