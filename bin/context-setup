@@ -24,6 +24,10 @@ TALOS_CONTEXTS="$HOME/.talos/contexts"
 TALOSCTL_VERSION="v1.14.1"
 KUBECTL_VERSION="v1.37.0"
 
+# The version `flux bootstrap` installs in the clusters (iac-k8s), bump it deliberately and
+# re-run the bootstrap to upgrade them.
+FLUX_VERSION="v2.9.6"
+
 # -----------------------------------------------------
 # Contexts
 # -----------------------------------------------------
@@ -235,11 +239,46 @@ function install_kubectl {
     kubectl "$checksum"
 }
 
+# Released as a tarball, so it's verified and extracted here rather than by install_binary.
+function install_flux {
+  local arch version archive url checksum tmp
+  arch=$(linux_arch)
+  version="${FLUX_VERSION#v}"
+  archive="flux_${version}_linux_$arch.tar.gz"
+  url="https://github.com/fluxcd/flux2/releases/download/$FLUX_VERSION"
+
+  if flux version --client 2>/dev/null | grep -q "flux: $FLUX_VERSION$"; then
+    return 0
+  fi
+
+  checksum=$(curl -fsSL "$url/flux_${version}_checksums.txt" \
+             | awk -v file="$archive" '$2 == file { print $1 }')
+
+  tmp=$(mktemp -d)
+  log_info "Installing flux from $url/$archive"
+  if ! curl -fsSL "$url/$archive" -o "$tmp/$archive"; then
+    log_error "Failed to download flux."
+    rm -rf "$tmp"
+    exit 1
+  fi
+
+  if ! echo "$checksum  $tmp/$archive" | sha256sum --check --status; then
+    log_error "Checksum mismatch for flux."
+    rm -rf "$tmp"
+    exit 1
+  fi
+
+  tar -xzf "$tmp/$archive" -C "$tmp" flux
+  install -m 755 "$tmp/flux" "$HERE/flux"
+  rm -rf "$tmp"
+}
+
 function configure_k8s {
   local talosconfig default_context
 
   install_talosctl
   install_kubectl
+  install_flux
 
   if ! command -v jq > /dev/null; then
     log_error "jq is required for k8s contexts."
