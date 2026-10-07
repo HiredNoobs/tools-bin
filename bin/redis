@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+#
+# redis-cli as Redis' admin user, run in redis-0 over TLS with Redis'
+# own certificate. The admin password is labv2/production/redis
+# REDIS_ADMIN_PASSWORD (vsecret get redis REDIS_ADMIN_PASSWORD).
+#
+# Usage:
+#   redis                                       Interactive (exit with ctrl+c).
+#   redis <command> [args ...]                  One command, e.g. redis INFO keyspace,
+#                                               redis ACL LIST, redis --scan --pattern 'x:*'.
+#   redis scan-delete <pattern> [--db N] [--yes]
+#                                               Delete the keys matching a pattern, after
+#                                               showing how many (UNLINK, in batches).
+#
+# Runs against the current kubectl context.
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source "$HERE/lib/logging.sh"
+source "$HERE/lib/confirmation.sh"
+
+set -euo pipefail
+
+NAMESPACE="redis"
+POD="redis-0"
+CONTAINER="redis"
+
+REDIS_CLI=(
+  redis-cli --tls -h localhost -p 6379 --user admin
+  --cacert /etc/redis/secrets/ca.crt
+  --cert /etc/redis/secrets/tls.crt
+  --key /etc/redis/secrets/tls.key
+)
+
+# -----------------------------------------------------
+# Functions
+# -----------------------------------------------------
+
+# The admin password, from Vault. It reaches redis-cli as REDISCLI_AUTH (its environment), not
+# --pass, so it isn't in redis-cli's arguments or its warning.
+function admin_password {
+  local password
+  if ! password=$(vault kv get -mount=labv2 -field=REDIS_ADMIN_PASSWORD production/redis 2> /dev/null); then
+    log_error "Couldn't read REDIS_ADMIN_PASSWORD from labv2/production/redis."
+    exit 1
+  fi
+  echo "$password"
+}
+
+function context {
+  kubectl config current-context 2> /dev/null || echo "?"
+}
+
+# Runs redis-cli in the pod with $@ as its arguments, stdin passed through.
+function redis_cli {
+  kubectl exec -i "$POD" --namespace "$NAMESPACE" -c "$CONTAINER" -- \
+    env REDISCLI_AUTH="$PASSWORD" "${REDIS_CLI[@]}" "$@"
+}
+
+function scan_delete {
+  local pattern="" db=() yes=false keys count
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --db|-n) db=(-n "$2"); shift 2;;
+      --yes|-y) yes=true; shift;;
+      -*) log_error "Unknown option: $1"; exit 1;;
+      *) pattern="$1"; shift;;
+    esac
+  done
+
+  if [[ -z "$pattern" ]]; then
+    log_error "Usage: redis scan-delete <pattern> [--db N] [--yes]"
+    exit 1
+  fi
+
+  keys=$(redis_cli "${db[@]+"${db[@]}"}" --scan --pattern "$pattern" < /dev/null)
+  count=$(grep -c . <<< "$keys" || true)
+
+  if [[ "$count" -eq 0 ]]; then
+    log_info "No keys match '$pattern'."
+    return 0
+  fi
+
+  log_warning "$count key(s) match '$pattern' in redis-0 ($(context)), e.g.:"
+  head -5 <<< "$keys" >&2
+  if [[ "$yes" != true ]]; then
+    confirm_dangerous || exit 1
+  fi
+
+  # One redis-cli reading UNLINKs from stdin, keys quoted so spaces and quotes survive.
+  sed 's/\\/\\\\/g; s/"/\\"/g; s/^/UNLINK "/; s/$/"/' <<< "$keys" \
+    | redis_cli "${db[@]+"${db[@]}"}" > /dev/null
+  log_info "Deleted $count key(s)."
+}
+
+# -----------------------------------------------------
+# Main
+# -----------------------------------------------------
+
+for cmd in kubectl vault; do
+  if ! command -v "$cmd" > /dev/null; then
+    log_error "'$cmd' isn't installed."
+    exit 1
+  fi
+done
+
+case "${1:-}" in
+  -h|--help|help)
+    sed -n '2,/^$/p' "$THIS" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+esac
+
+PASSWORD=$(admin_password)
+
+if [[ $# -eq 0 ]]; then
+  echo
+  log_info "Connecting to $POD in $NAMESPACE ($(context)) as admin."
+  log_warning "This is the live Redis. Exit with ctrl+c."
+  echo
+  kubectl exec -it "$POD" --namespace "$NAMESPACE" -c "$CONTAINER" -- \
+    env REDISCLI_AUTH="$PASSWORD" "${REDIS_CLI[@]}"
+elif [[ "$1" == "scan-delete" ]]; then
+  shift
+  scan_delete "$@"
+else
+  redis_cli "$@" < /dev/null
+fi
