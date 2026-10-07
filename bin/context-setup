@@ -99,7 +99,8 @@ function create_k8s_context {
           | .contexts[0].name = $name
           | .contexts[0].context.cluster = $name
           | .contexts[0].context.user = $name
-          | ."current-context" = $name' > "$config"
+          | ."current-context" = $name
+          | if .contexts[0].context.namespace == "default" then del(.contexts[0].context.namespace) else . end' > "$config"
   )
 
   rm -f "$generated"
