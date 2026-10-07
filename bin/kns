@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+# Shows or sets the namespace of the current kube context.
+#
+# Usage:
+#   kns           The current namespace, then the cluster's namespaces.
+#   kns <name>    Set it.
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source "$HERE/lib/logging.sh"
+
+set -euo pipefail
+
+if ! command -v kubectl > /dev/null; then
+  log_error "'kubectl' isn't installed."
+  exit 1
+fi
+
+case "${1:-}" in
+  -h|--help|help)
+    sed -n '2,/^$/p' "$THIS" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+esac
+
+CONTEXT=$(kubectl config current-context)
+CURRENT=$(kubectl config view --minify -o jsonpath='{..namespace}' 2> /dev/null || true)
+NAMESPACES=$(kubectl get namespaces -o name | sed 's|^namespace/||')
+
+if [[ $# -eq 0 ]]; then
+  log_info "$CONTEXT: ${CURRENT:-default}"
+  echo "$NAMESPACES"
+elif grep -qx -- "$1" <<< "$NAMESPACES"; then
+  kubectl config set-context --current --namespace="$1" > /dev/null
+  log_info "$CONTEXT: $1"
+else
+  log_error "No namespace '$1' on $CONTEXT."
+  exit 1
+fi

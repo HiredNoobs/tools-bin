@@ -6,96 +6,73 @@
 # Prompt
 # -----------------------------------------------------
 
-function color_environment {
-  local color
-  case "$1" in
-    *production*) color='\[\e[31m\]';;
-    *test*)       color='\[\e[33m\]';;
-    *)            color='\[\e[32m\]';;
-  esac
+# Starship (~/.config/starship.toml, shared with fish). Without it, a plain version of the
+# same two lines: the context and git branch, then the venv, the directory and \$.
+if command -v starship > /dev/null; then
+  eval "$(starship init bash)"
+else
+  function parse_git_branch {
+    local ref
+    ref=$(git symbolic-ref --quiet HEAD 2>/dev/null) || return
+    printf "[%s]" "${ref##refs/heads/}"
+  }
 
-  printf '%s%s\[\e[0m\]' "$color" "$1"
-}
+  function parse_venv {
+    [[ -n "${VIRTUAL_ENV:-}" ]] && printf '(%s) ' "$(basename "$VIRTUAL_ENV")"
+  }
 
-function parse_git_branch {
-  local ref
-  ref=$(git symbolic-ref --quiet HEAD 2>/dev/null) || return
-  printf "(%s)" "${ref##refs/heads/}"
-}
+  function color_context {
+    local color
+    case "$1" in
+      *production*) color='\[\e[1;31m\]';;
+      *test*)       color='\[\e[33m\]';;
+      *)            color='\[\e[32m\]';;
+    esac
+    [[ -n "$1" ]] && printf '[%s%s\[\e[0m\]]' "$color" "$1"
+  }
 
-function parse_venv {
-  if [[ -n "$VIRTUAL_ENV" ]]; then
-    printf "(%s)" "$(basename "$VIRTUAL_ENV")"
-  fi
-}
+  function prompt_setter {
+    PS1=$'\n╭─'"$(color_context "$(current_context)")$(parse_git_branch)"$'\n╰─ '"$(parse_venv)\[\e[1;34m\]\W\[\e[0m\] \\$ "
+  }
 
-function prompt_setter {
-  local context venv git_branch
-  context="$(color_environment "$(current_context)")"
-  venv="$(parse_venv)"
-  git_branch="$(parse_git_branch)"
-
-  [ -n "$venv" ] && venv="$venv " 
-  [ -n "$git_branch" ] && git_branch=" $git_branch" 
-
-  if [ -n "$DEPLOYMENT" ]; then
-    PS1=$'\u256d\u2524'"$context $(color_environment $ENVIRONMENT)/\[\e[36m\]${STACK}\[\e[0m\]"$'\u2502'"\n"$'\u2570\u2574'"${venv}"'\W'"${git_branch}"' \$ '
-  else
-    PS1=$"[$context ${venv}\W${git_branch}] \$ "
-  fi
-}
-
-PROMPT_COMMAND=prompt_setter
+  PROMPT_COMMAND=prompt_setter
+fi
 
 # -----------------------------------------------------
-# Extra commands
+# Contexts
 # -----------------------------------------------------
 
-# Contexts depend on the host's ORCHESTRATOR (see context-setup),
-# k8s contexts are kubeconfig/talosconfig files selected with KUBECONFIG/TALOSCONFIG.
+# k8s contexts are one kubeconfig/talosconfig per cluster (see context-setup), selected
+# per shell with KUBECONFIG/TALOSCONFIG.
 function current_context {
-  case "$ORCHESTRATOR" in
-    k8s) [[ -n "$KUBECONFIG" ]] && basename "$KUBECONFIG" .yaml;;
-    *)   echo "${DOCKER_CONTEXT:-default}";;
-  esac
+  [[ -n "${KUBECONFIG:-}" ]] && basename "$KUBECONFIG" .yaml
 }
 
 function list_contexts {
   local config
-  case "$ORCHESTRATOR" in
-    k8s)
-      for config in "$KUBE_CONTEXTS"/*.yaml; do
-        [[ -f "$config" ]] && basename "$config" .yaml
-      done
-      ;;
-    *) docker context ls --format '{{ .Name }}';;
-  esac
+  for config in "${KUBE_CONTEXTS:-$HOME/.kube/contexts}"/*.yaml; do
+    [[ -f "$config" ]] && basename "$config" .yaml
+  done
 }
 
-# `dc` command for viewing and switching docker/kube context
-function dc {
+# `kc` shows or switches the kube (and Talos) context for this shell.
+function kc {
   local contexts
   contexts=$(list_contexts)
-  if [[ -z "$1" ]]; then
+  if [[ -z "${1:-}" ]]; then
     echo "Current context: $(current_context)"
     echo
     echo "$contexts"
+  elif grep -qx -- "$1" <<< "$contexts"; then
+    export KUBECONFIG="${KUBE_CONTEXTS:-$HOME/.kube/contexts}/$1.yaml"
+    export TALOSCONFIG="${TALOS_CONTEXTS:-$HOME/.talos/contexts}/$1.yaml"
   else
-    if echo "$contexts" | grep -q "^$1$"; then
-      case "$ORCHESTRATOR" in
-        k8s)
-          export KUBECONFIG="$KUBE_CONTEXTS/$1.yaml"
-          export TALOSCONFIG="$TALOS_CONTEXTS/$1.yaml"
-          ;;
-        *)   export DOCKER_CONTEXT="$1";;
-      esac
-    else
-      echo "Context $1 does not exist in this environment."
-    fi
+    echo "Context $1 does not exist on this host."
+    return 1
   fi
 }
 
-_dc_completions() {
+_kc_completions() {
   if [[ "${#COMP_WORDS[@]}" != "2" ]]; then
     return
   fi
@@ -103,28 +80,15 @@ _dc_completions() {
   COMPREPLY=($(compgen -W "$(list_contexts)" -- "${COMP_WORDS[1]}"))
 }
 
-complete -F _dc_completions dc
+complete -F _kc_completions kc
 
-# -----------------------------------------------------
-# Allow `deployment` to complete available commands
-# and where command is `tools` it will suggest tools.
-
-_deployment_completions() {
-  local cur prev file_list script_commands
-  cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-  if [[ $prev == "tools" ]]; then
-    if [[ -d "$PWD/tools" ]]; then
-      file_list=$(find $PWD/tools -maxdepth 1 -type f -executable -executable -exec basename {} \;)
-      COMPREPLY=($(compgen -W "$file_list" -- "$cur"))
-    else
-      COMPREPLY=()
-    fi
-  else
-    script_commands=$(deployment help 2>/dev/null | grep '^* ' | sed 's/^* //' | tr '\n' ' ')
-    COMPREPLY=($(compgen -W "$script_commands" -- "$cur"))
+# `kns` (tools-bin) completes the current context's namespaces.
+_kns_completions() {
+  if [[ "${#COMP_WORDS[@]}" != "2" ]]; then
+    return
   fi
+
+  COMPREPLY=($(compgen -W "$(kubectl get namespaces -o name 2> /dev/null | sed 's|^namespace/||')" -- "${COMP_WORDS[1]}"))
 }
 
-complete -F _deployment_completions deployment
+complete -F _kns_completions kns
