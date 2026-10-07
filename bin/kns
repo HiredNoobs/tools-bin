@@ -33,7 +33,12 @@ if [[ $# -eq 0 ]]; then
   log_info "$CONTEXT: ${CURRENT:-default}"
   echo "$NAMESPACES"
 elif grep -qx -- "$1" <<< "$NAMESPACES"; then
-  kubectl config set-context --current --namespace="$1" > /dev/null
+  # default is cleared rather than set: the same to kubectl, and the prompt then leaves it out.
+  if [[ "$1" == "default" ]]; then
+    kubectl config set-context --current --namespace="" > /dev/null
+  else
+    kubectl config set-context --current --namespace="$1" > /dev/null
+  fi
   log_info "$CONTEXT: $1"
 else
   log_error "No namespace '$1' on $CONTEXT."
