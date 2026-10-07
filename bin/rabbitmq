@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# RabbitMQ's CLI tools, run in rabbitmq-0. They authenticate to the
+# node with its Erlang cookie, so no password is needed.
+#
+# Usage:
+#   rabbitmq <rabbitmqctl args>        e.g. rabbitmq list_queues name messages consumers,
+#                                      rabbitmq list_connections user peer_host state
+#   rabbitmq diag <args>               rabbitmq-diagnostics, e.g. rabbitmq diag status,
+#                                      rabbitmq diag check_port_connectivity
+#   rabbitmq plugins <args>            rabbitmq-plugins, e.g. rabbitmq plugins list -e
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source "$HERE/lib/logging.sh"
+
+set -euo pipefail
+
+NAMESPACE="rabbitmq"
+POD="rabbitmq-0"
+CONTAINER="rabbitmq"
+
+if ! command -v kubectl > /dev/null; then
+  log_error "'kubectl' isn't installed."
+  exit 1
+fi
+
+case "${1:-}" in
+  ""|-h|--help|help)
+    sed -n '2,/^$/p' "$THIS" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+  diag) shift; TOOL=rabbitmq-diagnostics;;
+  plugins) shift; TOOL=rabbitmq-plugins;;
+  *) TOOL=rabbitmqctl;;
+esac
+
+exec kubectl exec "$POD" --namespace "$NAMESPACE" -c "$CONTAINER" -- "$TOOL" "$@"
