@@ -25,6 +25,10 @@ function command_bash {
   configure_bash
 }
 
+function command_fish {
+  configure_fish
+}
+
 function command_docker {
   configure_docker
 }

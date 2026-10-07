@@ -1,430 +1,83 @@
-[aws]
-symbol = ' '
-format = '\[[$symbol($profile)(\($region\))(\[$duration\])]($style)\]'
+# The prompt for bash and fish (both run `starship init`), so it's the same in each. Plain text
+# and box drawing characters only, no Nerd Font needed. Two lines:
+#
+#   ╭─[production.core (monitoring)][master][!2][4s][✗ 1]
+#   ╰─ (venv) iac-k8s $
+#
+# Each part of the first line is its own [...] segment, so a part that doesn't apply just isn't
+# there. It only has what applies: the kube context (red for production, yellow for test,
+# with the namespace when one is set, see `kns`), git, slow commands, a failed command's exit
+# code, background jobs. The second is an active Python venv, the directory and $ (# as root).
+# With nothing for the first line, just the second, without the box characters.
+"$schema" = 'https://starship.rs/config-schema.json'
 
-[azure]
-symbol = ' '
-format = '\[[$symbol($subscription)]($style)\]'
+add_newline = true
 
-[battery]
-full_symbol = '󰁹 '
-charging_symbol = '󰂄 '
-discharging_symbol = '󰂃 '
-unknown_symbol = '󰂑 '
-empty_symbol = '󰂎 '
-format = '\[[$symbol$percentage]($style)\]'
-
-[buf]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[bun]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[c]
-symbol = ' '
-format = '\[[$symbol($version(-$name))]($style)\]'
-
-[cpp]
-symbol = ' '
-format = '\[[$symbol($version(-$name))]($style)\]'
-
-[cmake]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[cmd_duration]
-format = '\[[⏱ $duration]($style)\]'
-
-[cobol]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[conda]
-symbol = ' '
-format = '\[[$symbol$environment]($style)\]'
-
-[container]
-symbol = ' '
-format = '\[[$symbol \[$name\]]($style)\]'
-
-[crystal]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[daml]
-format = '\[[$symbol($version)]($style)\]'
-
-[dart]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[deno]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[direnv]
-symbol = ' '
-format = '\[[$symbol$loaded/$allowed]($style)\]'
-
-[directory]
-read_only = ' 󰌾'
-
-[docker_context]
-symbol = ' '
-format = '\[[$symbol$context]($style)\]'
-
-[dotnet]
-symbol = ' '
-format = '\[[$symbol($version)(󰣉 $tfm)]($style)\]'
-
-[elixir]
-symbol = ' '
-format = '\[[$symbol($version \(OTP $otp_version\))]($style)\]'
-
-[elm]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[erlang]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[fennel]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[fortran]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[fossil_branch]
-symbol = ' '
-format = '\[[$symbol$branch]($style)\]'
-
-[fossil_metrics]
-format = '\[[+$added]($added_style)\]\[[-$deleted]($deleted_style)\]'
-
-[gcloud]
-symbol = '󱇶 '
-format = '\[[$symbol$account(@$domain)(\($region\))]($style)\]'
-
-[gleam]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[git_branch]
-symbol = ' '
-format = '\[[$symbol$branch]($style)\]'
-
-[git_commit]
-tag_symbol = '  '
-format = '\[[\($hash$tag\)]($style)\]'
-
-[git_metrics]
-format = '\[[+$added]($added_style)\]\[[-$deleted]($deleted_style)\]'
-
-[git_state]
-format = '\[[$state ($progress_current/$progress_total)]($style)\]'
-
-[git_status]
-format = '([\[$all_status$ahead_behind\]]($style))'
-
-[golang]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[gradle]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[guix_shell]
-symbol = ' '
-format = '\[[$symbol]($style)\]'
-
-[haskell]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[haxe]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[helm]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[hg_branch]
-symbol = ' '
-format = '\[[$symbol$branch]($style)\]'
-
-[hostname]
-ssh_symbol = ' '
-format = '\[[$ssh_symbol($hostname)]($style)\] '
-
-[java]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[jobs]
-format = '\[[$symbol$number]($style)\]'
-
-[julia]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[kotlin]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
+# The group ( ... ) is left out when none of its modules has anything to show, so with nothing
+# to add it's one line: the venv, the directory and $.
+format = """
+(╭─$kubernetes$git_branch$git_status$git_state$cmd_duration$status$jobs
+╰─ )$python$directory${custom.prompt}"""
 
 [kubernetes]
-symbol = '󱃾 '
-format = '\[[$symbol$context( \($namespace\))]($style)\]'
+disabled = false
+format = '\[[$context( \($namespace\))]($style)\]'
+style = 'green'
+contexts = [
+  { context_pattern = '.*production.*', style = 'bold red' },
+  { context_pattern = '.*test.*', style = 'yellow' },
+]
 
-[localip]
-format = '\[[$localipv4]($style)\]'
+[git_branch]
+format = '\[[$branch]($style)\]'
+style = 'purple'
 
-[lua]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
+[git_status]
+format = '(\[[$all_status$ahead_behind]($style)\])'
+style = 'yellow'
 
-[maven]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
+[git_state]
+format = '\[[$state( $progress_current/$progress_total)]($style)\]'
 
-[memory_usage]
-symbol = '󰍛 '
-format = '\[$symbol[$ram( | $swap)]($style)\]'
-
-[meson]
-symbol = '󰔷 '
-format = '\[[$symbol$project]($style)\]'
-
-[mise]
-format = '\[[$symbol$health]($style)\]'
-
-[mojo]
-symbol = '󰈸 '
-format = '\[[$symbol($version)]($style)\]'
-
-[nats]
-symbol = ' '
-format = '\[[$symbol$name]($style)\]'
-
-[netns]
-symbol = '󰛳 '
-format = '\[[$symbol \[$name\]]($style)\]'
-
-[nim]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[nix_shell]
-symbol = ' '
-format = '\[[$symbol$state( \($name\))]($style)\]'
-
-[nodejs]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[ocaml]
-symbol = ' '
-format = '\[[$symbol($version)(\($switch_indicator$switch_name\))]($style)\]'
-
-[odin]
-symbol = '󰟢 '
-format = '\[[$symbol($version )]($style)\]'
-
-[opa]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[openstack]
-symbol = ' '
-format = '\[[$symbol$cloud(\($project\))]($style)\]'
-
-[os]
-format = '\[[$symbol]($style)\]'
-
-[os.symbols]
-AIX = ' '
-AlmaLinux = ' '
-Alpaquita = ' '
-Alpine = ' '
-ALTLinux = ' '
-Amazon = ' '
-Android = ' '
-AOSC = ' '
-Arch = ' '
-Artix = ' '
-Bluefin = ' '
-CachyOS = ' '
-CentOS = ' '
-Debian = ' '
-DragonFly = ' '
-Elementary = ' '
-Emscripten = ' '
-EndeavourOS = ' '
-Fedora = ' '
-FreeBSD = ' '
-Garuda = ' '
-Gentoo = ' '
-HardenedBSD = '󰞌 '
-Illumos = ' '
-InstantOS = ' '
-Ios = '󰀷 '
-Kali = ' '
-Linux = ' '
-Mabox = ' '
-Macos = ' '
-Manjaro = ' '
-Mariner = ' '
-MidnightBSD = ' '
-Mint = ' '
-NetBSD = ' '
-NixOS = ' '
-Nobara = ' '
-OpenBSD = ' '
-OpenCloudOS = ' '
-openEuler = ' '
-openSUSE = ' '
-OracleLinux = '󰺡 '
-PikaOS = ' '
-Pop = ' '
-Raspbian = ' '
-Redhat = '󱄛 '
-RedHatEnterprise = '󱄛 '
-Redox = '󰀘 '
-RockyLinux = ' '
-Solus = ' '
-SUSE = ' '
-Ubuntu = ' '
-Ultramarine = ' '
-Unknown = ' '
-Uos = ' '
-Void = ' '
-Windows = '󰍲 '
-Zorin = ' '
-
-[package]
-symbol = '󰏗 '
-format = '\[[$symbol$version]($style)\]'
-
-[perl]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[php]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[pijul_channel]
-symbol = ' '
-format = '\[[$symbol$channel]($style)\]'
-
-[pixi]
-symbol = '󰏗 '
-format = '\[[$symbol$version( $environment)]($style)\]'
-
-[pulumi]
-symbol = ' '
-format = '\[[$symbol$stack]($style)\]'
-
-[purescript]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
+# Only an active venv, not every directory with Python files in it. On the second line, before
+# the directory, as bash's (venv) was.
 [python]
-symbol = ' '
-format = '\[[${symbol}${pyenv_prefix}(${version})(\($virtualenv\))]($style)\]'
+format = '[\($virtualenv\)]($style) '
+detect_extensions = []
+detect_files = []
+detect_folders = []
+style = 'cyan'
 
-[quarto]
-format = '\[[$symbol($version)]($style)\]'
-
-[raku]
-symbol = '󱖊 '
-format = '\[[$symbol($version-$vm_version)]($style)\]'
-
-[red]
-symbol = '󱍼 '
-format = '\[[$symbol($version)]($style)\]'
-
-[rlang]
-symbol = '󰟔 '
-format = '\[[$symbol($version)]($style)\]'
-
-[ruby]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[rust]
-symbol = '󱘗 '
-format = '\[[$symbol($version)]($style)\]'
-
-[scala]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[shlvl]
-symbol = '󰹍 '
-
-[shell]
-format = '\[[$indicator]($style)\]'
-
-[singularity]
-symbol = ' '
-format = '\[[$symbol\[$env\]]($style)\]'
-
-[solidity]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[spack]
-symbol = ' '
-format = '\[[$symbol$environment]($style)\]'
+[cmd_duration]
+min_time = 2_000
+format = '\[[$duration]($style)\]'
+style = 'yellow'
 
 [status]
-symbol = ' '
-format = '\[[$symbol$status]($style)\]'
+disabled = false
+format = '\[[✗ $status]($style)\]'
+style = 'red'
 
-[sudo]
-symbol = ' '
-format = '\[[as $symbol]($style)\]'
+[jobs]
+symbol = '&'
+# The count even for one job (&1).
+number_threshold = 1
+format = '\[[$symbol$number]($style)\]'
 
-[swift]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
+# The last directory only, like bash's \W.
+[directory]
+truncation_length = 1
+truncate_to_repo = false
+read_only = ' (ro)'
+style = 'bold blue'
+format = '[$path]($style)[$read_only]($read_only_style) '
 
-[terraform]
-symbol = ' '
-format = '\[[$symbol$workspace]($style)\]'
+# $ or # (root), as bash's \$ does. The character module can't tell root apart.
+[character]
+disabled = true
 
-[time]
-format = '\[[$time]($style)\]'
-
-[typst]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[username]
-format = '\[[$user]($style)\]'
-
-[vagrant]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[vcsh]
-format = '\[vcsh [$symbol$repo]($style)\]'
-
-[vlang]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[xmake]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
-
-[zig]
-symbol = ' '
-format = '\[[$symbol($version)]($style)\]'
+[custom.prompt]
+command = '[ "$(id -u)" -eq 0 ] && echo "#" || echo "$"'
+when = true
+shell = ['sh']
+format = '$output '

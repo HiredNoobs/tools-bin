@@ -3,11 +3,56 @@
 # The `setup` in the root directory will use these functions on debian.
 # It doesn't do anything when executed directly.
 
+# Starship (the prompt, bash and fish): a pinned release into tools-bin's bin, checked against
+# the checksums below (from the release's .sha256 files). Bump the version and both together.
+STARSHIP_VERSION="v1.26.0"
+declare -A STARSHIP_SHA256=(
+  [x86_64]="b7c232b0e8249d8e55a40beb79c5c43a7d370f3f9408bd215deb0170daeaadf3"
+  [aarch64]="dc30189378d2f2e287384e8a692d3f95ad1df64cf0e8c36aa9201516028aed6b"
+)
+
+function install_starship {
+  local arch archive tmp
+
+  if starship --version 2> /dev/null | grep -q "^starship ${STARSHIP_VERSION#v}$"; then
+    return 0
+  fi
+
+  arch=$(uname -m)
+  if [[ -z "${STARSHIP_SHA256[$arch]:-}" ]]; then
+    log_error "No starship checksum for $arch."
+    return 1
+  fi
+
+  archive="starship-$arch-unknown-linux-musl.tar.gz"
+  tmp=$(mktemp -d)
+  log_info "Installing starship $STARSHIP_VERSION."
+  curl -fsSL "https://github.com/starship/starship/releases/download/$STARSHIP_VERSION/$archive" -o "$tmp/$archive"
+  if ! echo "${STARSHIP_SHA256[$arch]}  $tmp/$archive" | sha256sum --check --status; then
+    log_error "Checksum mismatch for $archive."
+    rm -rf "$tmp"
+    return 1
+  fi
+  tar -xzf "$tmp/$archive" -C "$tmp" starship
+  install -m 755 "$tmp/starship" "$ROOT/bin/starship"
+  rm -rf "$tmp"
+}
+
 function configure_bash {
   sudo apt-get install -y bash-completion
+  install_starship
   rsync -av "$ROOT/dotfiles/.bashrc" ~/.bashrc
   # 40-host is generated per host by context-setup
   rsync -av --delete --exclude "40-host" "$ROOT/dotfiles/.config/bashrc/" "$XDG_CONFIG_HOME/bashrc/"
+  rsync -av "$ROOT/dotfiles/.config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
+}
+
+function configure_fish {
+  sudo apt-get install -y fish
+  install_starship
+  # conf.d/40-host.fish is generated per host by context-setup
+  rsync -av --delete --exclude "conf.d/40-host.fish" "$ROOT/dotfiles/.config/fish/" "$XDG_CONFIG_HOME/fish/"
+  rsync -av "$ROOT/dotfiles/.config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 }
 
 function configure_docker {

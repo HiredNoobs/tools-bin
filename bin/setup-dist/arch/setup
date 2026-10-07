@@ -4,10 +4,18 @@
 # It doesn't do anything when executed directly.
 
 function configure_bash {
-  sudo pacman -S bash-completion
+  sudo pacman -S --needed bash-completion starship
   rsync -av "$ROOT/dotfiles/.bashrc" ~/.bashrc
   # 40-host is generated per host by context-setup
   rsync -av --delete --exclude "40-host" "$ROOT/dotfiles/.config/bashrc/" "$XDG_CONFIG_HOME/bashrc/"
+  rsync -av "$ROOT/dotfiles/.config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
+}
+
+function configure_fish {
+  sudo pacman -S --needed --noconfirm fish starship
+  # conf.d/40-host.fish is generated per host by context-setup
+  rsync -av --delete --exclude "conf.d/40-host.fish" "$ROOT/dotfiles/.config/fish/" "$XDG_CONFIG_HOME/fish/"
+  rsync -av "$ROOT/dotfiles/.config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 }
 
 function configure_hyprland {
@@ -42,7 +50,6 @@ function configure_hyprland {
   rsync -av "$ROOT/dotfiles/.config/mimeapps.list"      "$HOME/.config/mimeapps.list"
   ln -s ~/.config/mimeapps.list ~/.local/share/applications/mimeapps.list
 
-  rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
   rsync -av "$ROOT/images/wallpapers/nord_scenary.png"  "$HOME/.cache/current-wallpaper"
   rsync -av --delete "$ROOT/images/wallpapers/"         "$HOME/Pictures/wallpapers/"
@@ -57,7 +64,8 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
   rsync -av --delete "$ROOT/dotfiles/.config/swappy/"   "$XDG_CONFIG_HOME/swappy/"
-  rsync -av --delete "$ROOT/dotfiles/.config/fish/"     "$XDG_CONFIG_HOME/fish/"
+
+  configure_fish
 }
 
 function configure_docker {
