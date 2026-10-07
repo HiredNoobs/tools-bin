@@ -1,8 +1,8 @@
 # The prompt for bash and fish (both run `starship init`), so it's the same in each. Plain text
 # and box drawing characters only, no Nerd Font needed. Two lines:
 #
-#   ╭─[production.core (monitoring)][master][!2][4s][✗ 1]
-#   ╰─ (venv) tools-bin $
+#   ╭─[production.core (monitoring)][!2][4s][✗ 1]
+#   ╰─ (venv) tools-bin (master) $
 
 "$schema" = 'https://starship.rs/config-schema.json'
 
@@ -11,8 +11,8 @@ add_newline = true
 # The group ( ... ) is left out when none of its modules has anything to show, so with nothing
 # to add it's one line: the venv, the directory and $.
 format = """
-(╭─$kubernetes$git_branch$git_status$git_state$cmd_duration$status$jobs
-╰─ )$python$directory${custom.prompt}"""
+(╭─$kubernetes$git_status$git_state$cmd_duration$status$jobs
+╰─ )$python$directory$git_branch${custom.prompt}"""
 
 [kubernetes]
 disabled = false
@@ -24,7 +24,7 @@ contexts = [
 ]
 
 [git_branch]
-format = '\[$branch\]'
+format = '\($branch\) '
 
 [git_status]
 format = '(\[[$all_status$ahead_behind]($style)\])'

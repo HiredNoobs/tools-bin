@@ -1,0 +1,162 @@
+# -----------------------------------------------------
+# COMPLETIONS
+# -----------------------------------------------------
+# Tab completion for tools-bin's commands (kc's is with kc in 30-customisation). The fish
+# equivalents are in ~/.config/fish/completions/<command>.fish.
+
+# Completes $1 (a space separated word list) for the current word.
+function _tools_bin_reply {
+  COMPREPLY=($(compgen -W "$1" -- "${COMP_WORDS[COMP_CWORD]}"))
+}
+
+# -----------------------------------------------------
+# kns: the current context's namespaces
+# -----------------------------------------------------
+
+_kns_completions() {
+  [[ "$COMP_CWORD" -eq 1 ]] || return
+  _tools_bin_reply "$(kubectl get namespaces -o name 2> /dev/null | sed 's|^namespace/||')"
+}
+
+complete -F _kns_completions kns
+
+# -----------------------------------------------------
+# vsecret: commands, the secrets in labv2/production and their keys (both read from Vault, so
+# they need a token; nothing is offered without one)
+# -----------------------------------------------------
+
+function _vsecret_paths {
+  vault kv list -format=json -mount=labv2 production 2> /dev/null | jq -r '.[]' 2> /dev/null
+}
+
+function _vsecret_keys {
+  local path="$1"
+  [[ "$path" == */* ]] || path="production/$path"
+  vault kv get -format=json -mount=labv2 "$path" 2> /dev/null | jq -r '.data.data | keys[]' 2> /dev/null
+}
+
+_vsecret_completions() {
+  local cur="${COMP_WORDS[COMP_CWORD]}" prev="${COMP_WORDS[COMP_CWORD-1]}" word skip=false words=()
+
+  # Arguments typed so far, without the options (or --generate's number).
+  for word in "${COMP_WORDS[@]:1:COMP_CWORD-1}"; do
+    if [[ "$skip" == true ]]; then skip=false; continue; fi
+    case "$word" in
+      --generate|-g) skip=true;;
+      -*) ;;
+      *) words+=("$word");;
+    esac
+  done
+
+  [[ "$prev" == --generate || "$prev" == -g ]] && return
+
+  if [[ "$cur" == -* ]]; then
+    case "${words[0]:-}" in
+      get) _tools_bin_reply "--show";;
+      set) _tools_bin_reply "--generate --no-sync";;
+      unset|edit) _tools_bin_reply "--no-sync";;
+    esac
+    return
+  fi
+
+  case "${#words[@]}" in
+    0) _tools_bin_reply "ls get set unset edit help";;
+    1) [[ "${words[0]}" =~ ^(ls|get|set|unset|edit)$ ]] && _tools_bin_reply "$(_vsecret_paths)";;
+    *)
+      case "${words[0]}" in
+        get) [[ "${#words[@]}" -eq 2 ]] && _tools_bin_reply "$(_vsecret_keys "${words[1]}")";;
+        # The secret's keys, less the ones already given.
+        set|unset)
+          local key keys="" given=" ${words[*]:2} "
+          while read -r key; do
+            key="${key%$'\r'}"
+            [[ -z "$key" || "$given" == *" $key "* || "$given" == *" $key="* ]] || keys+="$key "
+          done <<< "$(_vsecret_keys "${words[1]}")"
+          _tools_bin_reply "$keys"
+          ;;
+      esac
+      ;;
+  esac
+}
+
+complete -F _vsecret_completions vsecret
+
+# -----------------------------------------------------
+# redis: its own commands and the common Redis ones
+# -----------------------------------------------------
+
+_redis_completions() {
+  case "$COMP_CWORD" in
+    1) _tools_bin_reply "scan-delete help ACL INFO DBSIZE SCAN KEYS TYPE TTL GET DEL CLIENT CONFIG MEMORY SLOWLOG MONITOR";;
+    *)
+      case "${COMP_WORDS[1]}" in
+        scan-delete) [[ "${COMP_WORDS[COMP_CWORD]}" == -* ]] && _tools_bin_reply "--db --yes";;
+        ACL|acl) [[ "$COMP_CWORD" -eq 2 ]] && _tools_bin_reply "LIST USERS WHOAMI GETUSER CAT LOG";;
+      esac
+      ;;
+  esac
+}
+
+complete -F _redis_completions redis
+
+# -----------------------------------------------------
+# rabbitmq: rabbitmqctl's common commands, diag (rabbitmq-diagnostics) and plugins
+# -----------------------------------------------------
+
+_rabbitmq_completions() {
+  case "$COMP_CWORD" in
+    1) _tools_bin_reply "diag plugins help status cluster_status environment list_queues list_connections list_channels list_consumers list_exchanges list_bindings list_users list_vhosts list_permissions";;
+    2)
+      case "${COMP_WORDS[1]}" in
+        diag) _tools_bin_reply "status ping check_running check_local_alarms check_port_connectivity memory_breakdown listeners log_tail";;
+        plugins) _tools_bin_reply "list enable disable";;
+      esac
+      ;;
+  esac
+}
+
+complete -F _rabbitmq_completions rabbitmq
+
+# -----------------------------------------------------
+# setup: its commands, read from the script (its command_* functions)
+# -----------------------------------------------------
+
+_setup_completions() {
+  [[ "$COMP_CWORD" -eq 1 ]] || return
+  _tools_bin_reply "$(sed -n 's/^function command_\([a-z_]*\) .*/\1/p' "$TOOLS_BIN/setup" 2> /dev/null)"
+}
+
+complete -F _setup_completions setup
+
+# -----------------------------------------------------
+# content-dl: its options and yt-dlp's browsers for --browser
+# -----------------------------------------------------
+
+_content_dl_completions() {
+  if [[ "${COMP_WORDS[COMP_CWORD-1]}" == "--browser" ]]; then
+    _tools_bin_reply "brave chrome chromium edge firefox opera safari vivaldi whale"
+  elif [[ "${COMP_WORDS[COMP_CWORD]}" == -* ]]; then
+    _tools_bin_reply "--audio --browser"
+  fi
+}
+
+complete -F _content_dl_completions content-dl
+
+# -----------------------------------------------------
+# make-*, secret-merge, secret-compare: their options, otherwise file names
+# -----------------------------------------------------
+
+_tools_bin_options() {
+  local options
+  case "$1" in
+    make-ca|make-truststore) options="--outdir";;
+    make-cert|make-keystore) options="--outdir --ca-key --ca-crt";;
+    secret-merge) options="--unset --generate --help";;
+    secret-compare) options="--help";;
+  esac
+  if [[ "${COMP_WORDS[COMP_CWORD]}" == -* ]]; then
+    _tools_bin_reply "$options"
+  fi
+}
+
+complete -o default -F _tools_bin_options make-ca make-cert make-keystore make-truststore secret-merge secret-compare
