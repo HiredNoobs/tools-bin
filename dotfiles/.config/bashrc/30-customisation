@@ -14,7 +14,7 @@ else
   function parse_git_branch {
     local ref
     ref=$(git symbolic-ref --quiet HEAD 2>/dev/null) || return
-    printf "[%s]" "${ref##refs/heads/}"
+    printf "(%s) " "${ref##refs/heads/}"
   }
 
   function parse_venv {
@@ -32,7 +32,7 @@ else
   }
 
   function prompt_setter {
-    PS1=$'\n╭─'"$(color_context "$(current_context)")$(parse_git_branch)"$'\n╰─ '"$(parse_venv)\[\e[1;34m\]\W\[\e[0m\] \\$ "
+    PS1=$'\n╭─'"$(color_context "$(current_context)")"$'\n╰─ '"$(parse_venv)\W $(parse_git_branch)\\$ "
   }
 
   PROMPT_COMMAND=prompt_setter
@@ -81,14 +81,3 @@ _kc_completions() {
 }
 
 complete -F _kc_completions kc
-
-# `kns` (tools-bin) completes the current context's namespaces.
-_kns_completions() {
-  if [[ "${#COMP_WORDS[@]}" != "2" ]]; then
-    return
-  fi
-
-  COMPREPLY=($(compgen -W "$(kubectl get namespaces -o name 2> /dev/null | sed 's|^namespace/||')" -- "${COMP_WORDS[1]}"))
-}
-
-complete -F _kns_completions kns
