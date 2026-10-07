@@ -2,13 +2,8 @@
 # and box drawing characters only, no Nerd Font needed. Two lines:
 #
 #   ╭─[production.core (monitoring)][master][!2][4s][✗ 1]
-#   ╰─ (venv) iac-k8s $
-#
-# Each part of the first line is its own [...] segment, so a part that doesn't apply just isn't
-# there. It only has what applies: the kube context (red for production, yellow for test,
-# with the namespace when one is set, see `kns`), git, slow commands, a failed command's exit
-# code, background jobs. The second is an active Python venv, the directory and $ (# as root).
-# With nothing for the first line, just the second, without the box characters.
+#   ╰─ (venv) tools-bin $
+
 "$schema" = 'https://starship.rs/config-schema.json'
 
 add_newline = true
@@ -21,7 +16,7 @@ format = """
 
 [kubernetes]
 disabled = false
-format = '\[[$context( \($namespace\))]($style)\]'
+format = '\[[$context]($style)( \($namespace\))\]'
 style = 'green'
 contexts = [
   { context_pattern = '.*production.*', style = 'bold red' },
@@ -29,8 +24,7 @@ contexts = [
 ]
 
 [git_branch]
-format = '\[[$branch]($style)\]'
-style = 'purple'
+format = '\[$branch\]'
 
 [git_status]
 format = '(\[[$all_status$ahead_behind]($style)\])'
@@ -42,11 +36,10 @@ format = '\[[$state( $progress_current/$progress_total)]($style)\]'
 # Only an active venv, not every directory with Python files in it. On the second line, before
 # the directory, as bash's (venv) was.
 [python]
-format = '[\($virtualenv\)]($style) '
+format = '\($virtualenv\) '
 detect_extensions = []
 detect_files = []
 detect_folders = []
-style = 'cyan'
 
 [cmd_duration]
 min_time = 2_000
@@ -69,8 +62,7 @@ format = '\[[$symbol$number]($style)\]'
 truncation_length = 1
 truncate_to_repo = false
 read_only = ' (ro)'
-style = 'bold blue'
-format = '[$path]($style)[$read_only]($read_only_style) '
+format = '$path$read_only '
 
 # $ or # (root), as bash's \$ does. The character module can't tell root apart.
 [character]
