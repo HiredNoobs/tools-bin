@@ -3,7 +3,8 @@ import qs
 import qs.components
 import qs.services
 
-// Opened from the display icon: brightness (laptop only), nightlight and monitors
+// Opened from the display icon: brightness (the laptop's, and external monitors' over DDC),
+// nightlight and monitors
 Column {
     id: root
 
@@ -33,10 +34,11 @@ Column {
     Component.onCompleted: {
         Nightlight.refresh();
         Monitors.refresh();
+        ExternalBrightness.detect();
     }
 
     PanelSection {
-        visible: Brightness.available
+        visible: Brightness.available || ExternalBrightness.available
         text: "Brightness"
     }
 
@@ -65,6 +67,53 @@ Column {
             horizontalAlignment: Text.AlignRight
             text: `${Math.round(Brightness.fraction * 100)}%`
             dim: true
+        }
+    }
+
+    // Each external monitor: its name, then its slider
+    Repeater {
+        model: ExternalBrightness.displays
+
+        Column {
+            id: external
+
+            required property var modelData
+
+            width: root.width
+            spacing: 4
+
+            PanelText {
+                text: external.modelData.name
+                dim: true
+                font.pixelSize: Theme.panelFontSize - 2
+            }
+
+            Row {
+                width: parent.width
+                spacing: 10
+
+                PanelText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\u{F0379}"
+                }
+
+                Slider {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 90
+                    value: external.modelData.level
+                    from: 0
+                    to: 1
+                    onMoved: value => ExternalBrightness.set(external.modelData.name, value)
+                }
+
+                PanelText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 40
+                    horizontalAlignment: Text.AlignRight
+                    text: `${Math.round(external.modelData.level * 100)}%`
+                    dim: true
+                }
+            }
         }
     }
 

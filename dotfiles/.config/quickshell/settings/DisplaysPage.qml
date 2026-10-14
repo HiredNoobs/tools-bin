@@ -335,10 +335,11 @@ Column {
     }
 
     SettingsGroup {
-        visible: Brightness.available
+        visible: Brightness.available || ExternalBrightness.available
         title: "Brightness"
 
         SettingRow {
+            visible: Brightness.available
             label: "Built-in display"
 
             Row {
@@ -359,6 +360,41 @@ Column {
                     horizontalAlignment: Text.AlignRight
                     text: `${Math.round(Brightness.fraction * 100)}%`
                     dim: true
+                }
+            }
+        }
+
+        // External monitors, over DDC (ExternalBrightness)
+        Repeater {
+            model: ExternalBrightness.displays
+
+            SettingRow {
+                id: externalRow
+
+                required property var modelData
+
+                label: externalRow.modelData.name
+                description: "Over DDC/CI. Changes reach the monitor once the slider stops."
+
+                Row {
+                    spacing: 10
+
+                    Slider {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 260
+                        value: externalRow.modelData.level
+                        from: 0
+                        to: 1
+                        onMoved: value => ExternalBrightness.set(externalRow.modelData.name, value)
+                    }
+
+                    PanelText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 40
+                        horizontalAlignment: Text.AlignRight
+                        text: `${Math.round(externalRow.modelData.level * 100)}%`
+                        dim: true
+                    }
                 }
             }
         }

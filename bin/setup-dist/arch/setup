@@ -25,7 +25,7 @@ function configure_hyprland {
   # Hyprland + utils (python-dbus and python-gobject are for the Bluetooth pairing agent)
   pacman_install hyprland hyprlock hypridle hyprshutdown hyprsunset \
     sddm pipewire pipewire-audio pipewire-pulse wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland \
-    xdg-desktop-portal-gtk udisks2 brightnessctl pamixer playerctl quickshell bluez libnotify wl-clipboard libqalculate pacman-contrib power-profiles-daemon \
+    xdg-desktop-portal-gtk udisks2 brightnessctl ddcutil pamixer playerctl quickshell bluez libnotify wl-clipboard libqalculate pacman-contrib power-profiles-daemon \
     starship yazi kitty fish firefox grim slurp swappy htop btop nvtop \
     networkmanager unzip python-dbus python-gobject xdg-terminal-exec \
     qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme papirus-icon-theme \
@@ -36,6 +36,10 @@ function configure_hyprland {
   # Bluetooth will start in non-discoverable mode
   sudo sed -i -e 's/^\#AutoEnable=true/AutoEnable=false/' /etc/bluetooth/main.conf
   sudo systemctl enable bluetooth --now
+
+  # External monitors' brightness over DDC (ddcutil needs i2c-dev, loaded from the next boot too)
+  sudo install -Dm644 "$ROOT/system/etc/modules-load.d/i2c-dev.conf" /etc/modules-load.d/i2c-dev.conf
+  sudo modprobe i2c-dev
 
   # Power profiles for the system panel
   sudo systemctl enable power-profiles-daemon --now
