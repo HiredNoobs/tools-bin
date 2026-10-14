@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs
+import qs.services
 
 // A live miniature of one workspace: the wallpaper with each window's live image at its real
 // position, scaled down. Used by the overview and the Alt+Tab switcher.
@@ -106,7 +107,7 @@ Rectangle {
 
     Image {
         anchors.fill: parent
-        source: `file://${Theme.wallpaper}`
+        source: Wallpaper.source
         fillMode: Image.PreserveAspectCrop
         sourceSize.width: 400
         asynchronous: true

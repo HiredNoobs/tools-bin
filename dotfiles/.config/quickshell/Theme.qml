@@ -19,9 +19,6 @@ Singleton {
     readonly property color surfaceHover: Qt.alpha(accent, 0.2)
     readonly property color subtext: Qt.alpha(text, 0.6)
 
-    // Set by the wallpaper menu and shown by swaybg; also the backdrop of workspace previews
-    readonly property string wallpaper: Quickshell.env("HOME") + "/.cache/current-wallpaper"
-
     // Wifi signal icons, weakest to strongest
     readonly property var wifiIcons: ["\u{F092F}", "\u{F091F}", "\u{F0922}", "\u{F0925}", "\u{F0928}"]
 

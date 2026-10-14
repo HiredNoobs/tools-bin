@@ -18,7 +18,7 @@ LockLayout {
     readonly property var wifiNetwork: devices.find(d => d.type === DeviceType.Wifi && d.connected)?.networks.values.find(n => n.connected) ?? null
     readonly property bool wired: devices.some(d => d.type === DeviceType.Wired && d.connected)
 
-    wallpaper: `file://${Theme.wallpaper}`
+    wallpaper: Wallpaper.source
     background: Theme.background
     text: Theme.text
     accent: Theme.accent

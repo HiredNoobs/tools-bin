@@ -15,6 +15,7 @@ import qs.overview
 import qs.services
 import qs.settings
 import qs.switcher
+import qs.wallpaper
 
 ShellRoot {
     id: root
@@ -42,6 +43,22 @@ ShellRoot {
 
         PairingWindow {
             onClosed: BluetoothAgent.answer(false, "")
+        }
+    }
+
+    // The wallpaper, under everything on each monitor
+    Variants {
+        model: Quickshell.screens
+
+        Background {}
+    }
+
+    // `qs ipc call wallpaper set <file>`, as picking it in the wallpaper menu
+    IpcHandler {
+        target: "wallpaper"
+
+        function set(file: string): void {
+            Wallpaper.set(file);
         }
     }
 

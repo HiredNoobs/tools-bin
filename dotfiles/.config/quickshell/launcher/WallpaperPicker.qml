@@ -7,7 +7,7 @@ import qs.services
 
 // Opened from the system panel's Wallpaper button: thumbnails of ~/Pictures/wallpapers, with
 // the current one marked. Type to filter by name; arrows or Tab/Shift+Tab move, Enter or a
-// click sets it (swaybg), Esc closes.
+// click sets it (see Wallpaper), Esc closes.
 Item {
     id: root
 
@@ -34,15 +34,11 @@ Item {
             selected = Math.max(0, Math.min(results.length - 1, selected + delta));
     }
 
-    // Start the new swaybg before stopping the old one, so there's no flash of no wallpaper
     function apply(wallpaper): void {
         if (!wallpaper)
             return;
         closeRequested();
-        const current = "$HOME/.cache/current-wallpaper";
-        Exec.run(`old=$(pgrep -x swaybg); cp ${Exec.quote(wallpaper.path)} "${current}" && setsid -f swaybg -i "${current}" -m fill && if [ -n "$old" ]; then sleep 0.5; kill $old; fi`);
-        // And the login screen's
-        LockShare.shareWallpaper(wallpaper.path);
+        Wallpaper.set(wallpaper.path);
     }
 
     implicitWidth: 612
