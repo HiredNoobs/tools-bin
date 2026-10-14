@@ -140,8 +140,8 @@ Item {
 
         wallpaper: `file://${root.sharedDir}/wallpaper`
         background: root.wal?.special?.background ?? config.background ?? "#282828"
-        text: root.wal?.colors?.color7 ?? config.text ?? "#d5c4a1"
-        accent: root.wal?.colors?.color9 ?? config.accent ?? "#fb4934"
+        text: root.wal?.special?.foreground ?? root.wal?.colors?.color7 ?? config.text ?? "#d5c4a1"
+        accent: root.wal?.special?.accent ?? root.wal?.colors?.color9 ?? config.accent ?? "#fb4934"
         fontFamily: config.font || "CodeNewRoman Nerd Font Propo"
 
         userName: root.user ? root.user.realName || root.user.name : ""

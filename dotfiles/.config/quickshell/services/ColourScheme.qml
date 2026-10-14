@@ -7,23 +7,61 @@ import qs
 
 // The colour scheme, in pywal's files in ~/.cache/wal (pywal itself isn't used): colors.json
 // for the shell (Theme), the lock and login screens and the window borders, colors-kitty.conf
-// for kitty and colors-hyprland.conf for hyprlock. Either the fixed Gruvbox set or one made from
-// the wallpaper (ShellSettings.colourSource), written again when either changes; kitty and the
-// borders are told straight away, the rest watch the files.
+// for kitty and colors-hyprland.conf for hyprlock. One of the named palettes below or one made
+// from the wallpaper (ShellSettings.colourSource), written again when either changes; kitty and
+// the borders are told straight away, the rest watch the files. Besides pywal's keys, colors.json
+// has special.accent: the terminal's 16 colours stay true to their names, and the shell's accent
+// is separate.
 Singleton {
     id: root
 
     readonly property string dir: Quickshell.env("HOME") + "/.cache/wal"
     readonly property bool fromWallpaper: ShellSettings.colourSource === "wallpaper"
 
-    // { background, foreground, colors: [16 hex strings] }
-    readonly property var fixed: ({
-            background: "#282828",
-            foreground: "#d5c4a1",
-            colors: ["#282828", "#fb4934", "#b8bb26", "#fabd2f", "#83a598", "#d3869b", "#8ec07c", "#d5c4a1",
-                "#665c54", "#fb4934", "#b8bb26", "#fabd2f", "#83a598", "#d3869b", "#8ec07c", "#fbf1c7"]
+    // { label, background, foreground, accent, colors: [16 hex strings] }
+    readonly property var palettes: ({
+            "gruvbox": {
+                label: "Gruvbox",
+                background: "#282828",
+                foreground: "#d5c4a1",
+                accent: "#fb4934",
+                colors: ["#282828", "#fb4934", "#b8bb26", "#fabd2f", "#83a598", "#d3869b", "#8ec07c", "#d5c4a1",
+                    "#665c54", "#fb4934", "#b8bb26", "#fabd2f", "#83a598", "#d3869b", "#8ec07c", "#fbf1c7"]
+            },
+            "gruvbox-light": {
+                label: "Gruvbox light",
+                background: "#fbf1c7",
+                foreground: "#3c3836",
+                accent: "#9d0006",
+                colors: ["#fbf1c7", "#cc241d", "#98971a", "#d79921", "#458588", "#b16286", "#689d6a", "#7c6f64",
+                    "#928374", "#9d0006", "#79740e", "#b57614", "#076678", "#8f3f71", "#427b58", "#3c3836"]
+            },
+            "nord": {
+                label: "Nord",
+                background: "#2e3440",
+                foreground: "#d8dee9",
+                accent: "#88c0d0",
+                colors: ["#3b4252", "#bf616a", "#a3be8c", "#ebcb8b", "#81a1c1", "#b48ead", "#88c0d0", "#e5e9f0",
+                    "#4c566a", "#bf616a", "#a3be8c", "#ebcb8b", "#81a1c1", "#b48ead", "#8fbcbb", "#eceff4"]
+            },
+            "catppuccin": {
+                label: "Catppuccin",
+                background: "#1e1e2e",
+                foreground: "#cdd6f4",
+                accent: "#cba6f7",
+                colors: ["#45475a", "#f38ba8", "#a6e3a1", "#f9e2af", "#89b4fa", "#f5c2e7", "#94e2d5", "#bac2de",
+                    "#585b70", "#f38ba8", "#a6e3a1", "#f9e2af", "#89b4fa", "#f5c2e7", "#94e2d5", "#a6adc8"]
+            }
         })
-    readonly property var current: fromWallpaper ? fromColours(quantizer.colors) : fixed
+    // The colourSource values, for the settings window: the palettes, then the wallpaper
+    readonly property var sources: [...Object.keys(palettes), "wallpaper"]
+
+    function label(source: string): string {
+        return source === "wallpaper" ? "From wallpaper" : palettes[source]?.label ?? source;
+    }
+
+    // An unknown source (e.g. the old "fixed") is Gruvbox
+    readonly property var current: fromWallpaper ? fromColours(quantizer.colors) : palettes[ShellSettings.colourSource] ?? palettes.gruvbox
 
     onCurrentChanged: write.restart()
     Component.onCompleted: write.restart()
@@ -81,6 +119,7 @@ Singleton {
         return {
             background: root.hex(background),
             foreground: root.hex(foreground),
+            accent: root.hex(accent),
             colors: [...normal.slice(0, 7), root.hex(foreground), root.hex(Qt.hsla(tint, 0.15, 0.38, 1)), ...normal.slice(1, 7), root.hex(Qt.hsla(tint, 0.3, 0.93, 1))]
         };
     }
@@ -100,7 +139,7 @@ Singleton {
         const json = JSON.stringify({
             wallpaper: root.fromWallpaper ? Wallpaper.path : "None",
             alpha: "100",
-            special: { background: scheme.background, foreground: scheme.foreground, cursor: scheme.foreground },
+            special: { background: scheme.background, foreground: scheme.foreground, cursor: scheme.foreground, accent: scheme.accent },
             colors: colours
         }, null, 4) + "\n";
         // Unchanged: leave the files (and everything watching them) alone
@@ -111,7 +150,7 @@ Singleton {
             `foreground ${scheme.foreground}`, `background ${scheme.background}`, "background_opacity 1.0", `cursor ${scheme.foreground}`, "",
             `active_tab_foreground ${scheme.background}`, `active_tab_background ${scheme.foreground}`,
             `inactive_tab_foreground ${scheme.foreground}`, `inactive_tab_background ${scheme.background}`, "",
-            `active_border_color ${scheme.foreground}`, `inactive_border_color ${scheme.background}`, `bell_border_color ${c[1]}`, "",
+            `active_border_color ${scheme.accent}`, `inactive_border_color ${scheme.background}`, `bell_border_color ${c[1]}`, "",
             ...c.map((value, i) => `color${i} ${value}`)
         ].join("\n") + "\n";
 
@@ -120,7 +159,7 @@ Singleton {
         const hyprland = [
             `$foreground = ${rgba(scheme.foreground, 1.0)}`, `$background = ${rgba(scheme.background, 1.0)}`,
             ...c.map((value, i) => `$color${i} = ${rgba(value, 1.0)}`), "",
-            `$accent = ${rgba(c[9], 1.0)}`, `$card = ${rgba(scheme.background, 0.97)}`,
+            `$accent = ${rgba(scheme.accent, 1.0)}`, `$card = ${rgba(scheme.background, 0.97)}`,
             `$surface = ${rgba(scheme.foreground, 0.08)}`, `$subtext = ${rgba(scheme.foreground, 0.6)}`,
             `$subtextMarkup = ##${scheme.foreground.slice(1)}99`
         ].join("\n") + "\n";
@@ -132,7 +171,7 @@ Singleton {
             printf '%s' "$4" > "$1/.colors.json.new" && mv "$1/.colors.json.new" "$1/colors.json" &&
             pkill -USR1 -x kitty
             hyprctl eval "hl.config({ general = { col = { active_border = \\"$5\\", inactive_border = \\"$6\\" } } })" >/dev/null
-        `, "sh", root.dir, kitty, hyprland, json, rgba(c[9], 1), rgba(c[5], 1)];
+        `, "sh", root.dir, kitty, hyprland, json, rgba(scheme.accent, 1), rgba(c[5], 1)];
         saver.running = true;
     }
 

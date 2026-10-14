@@ -6,7 +6,8 @@ import qs.services
 
 // Settings › Appearance, in place of nwg-look, qt6ct and Kvantum Manager: dark or light, the
 // GTK and Qt (Kvantum) styles, icons, cursor, fonts (Qt can have its own), Qt's file chooser
-// and the wallpaper. Applied to every toolkit at once (see Appearance). Also the picture on the
+// and the wallpaper. Applied to every toolkit at once (see Appearance). Also presets that set
+// several at once (see Presets), the colour scheme (see ColourScheme) and the picture on the
 // lock and login screens (see LockShare).
 Column {
     id: root
@@ -44,6 +45,92 @@ Column {
                 label: "Use everywhere"
                 highlighted: true
                 onClicked: Appearance.applyAll()
+            }
+        }
+    }
+
+    SettingsGroup {
+        title: "Presets"
+
+        Flow {
+            x: 16
+            width: parent.width - 32
+            spacing: 10
+            topPadding: 4
+            bottomPadding: 16
+
+            Repeater {
+                model: Presets.presets
+
+                Rectangle {
+                    id: presetTile
+
+                    required property var modelData
+                    readonly property bool current: Presets.isCurrent(modelData)
+                    // The wallpaper's scheme shows the one in use only while it's in use
+                    readonly property var scheme: modelData.colours === "wallpaper" ? (ShellSettings.colourSource === "wallpaper" ? ColourScheme.current : null) : ColourScheme.palettes[modelData.colours]
+
+                    width: 150
+                    height: 84
+                    radius: Theme.radius
+                    color: presetMouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                    border.width: current ? 2 : 0
+                    border.color: Theme.accent
+
+                    // Background with the text and accent on it, and four of the terminal's colours
+                    Rectangle {
+                        x: 10
+                        y: 10
+                        width: parent.width - 20
+                        height: 38
+                        radius: 6
+                        color: presetTile.scheme?.background ?? Theme.surface
+                        border.width: 1
+                        border.color: Theme.surface
+
+                        PanelText {
+                            visible: !presetTile.scheme
+                            anchors.centerIn: parent
+                            text: "\u{F0E09}"
+                            dim: true
+                        }
+
+                        Row {
+                            visible: !!presetTile.scheme
+                            anchors.centerIn: parent
+                            spacing: 5
+
+                            Repeater {
+                                model: presetTile.scheme ? [presetTile.scheme.foreground, presetTile.scheme.accent, ...[2, 3, 4, 5].map(i => presetTile.scheme.colors[i])] : []
+
+                                Rectangle {
+                                    required property string modelData
+                                    width: 12
+                                    height: 12
+                                    radius: 6
+                                    color: modelData
+                                }
+                            }
+                        }
+                    }
+
+                    PanelText {
+                        x: 10
+                        y: 56
+                        width: parent.width - 20
+                        elide: Text.ElideRight
+                        text: (presetTile.current ? "\u{F012C} " : "") + presetTile.modelData.label
+                        color: presetTile.current ? Theme.accent : Theme.text
+                    }
+
+                    MouseArea {
+                        id: presetMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Presets.apply(presetTile.modelData)
+                    }
+                }
             }
         }
     }
@@ -215,18 +302,14 @@ Column {
     SettingsGroup {
         title: "Colours"
 
-        SettingRow {
+        ListPicker {
             label: "Colour scheme"
             changed: !ShellSettings.isDefault("colourSource")
             onReset: ShellSettings.reset("colourSource")
             description: "Used by the shell, kitty, window borders and the lock and login screens. From the wallpaper, it changes with it."
-
-            ChoiceButtons {
-                choices: ["fixed", "wallpaper"]
-                current: ShellSettings.colourSource
-                format: source => source === "fixed" ? "Gruvbox" : "From wallpaper"
-                onChosen: source => ShellSettings.colourSource = source
-            }
+            choices: ColourScheme.sources.map(source => ColourScheme.label(source))
+            current: ColourScheme.label(ShellSettings.colourSource)
+            onPicked: value => ShellSettings.colourSource = ColourScheme.sources.find(source => ColourScheme.label(source) === value)
         }
 
         // The scheme: background, text, then the terminal's colours
@@ -236,7 +319,7 @@ Column {
             bottomPadding: 16
 
             Repeater {
-                model: ColourScheme.current ? [ColourScheme.current.background, ColourScheme.current.foreground, ...ColourScheme.current.colors.slice(1, 7)] : []
+                model: ColourScheme.current ? [ColourScheme.current.background, ColourScheme.current.foreground, ColourScheme.current.accent, ...ColourScheme.current.colors.slice(1, 7)] : []
 
                 Rectangle {
                     required property string modelData

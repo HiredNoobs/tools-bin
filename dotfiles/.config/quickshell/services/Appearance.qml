@@ -230,10 +230,11 @@ Singleton {
         qt6ct.setText(setIni(qt6ct.text(), "Appearance", "icon_theme", name));
         writeHyprEnv();
         checkMatch();
-        // The shell picks its icons at start: restart it with these (and come back here)
+        // The shell picks its icons at start: restart it with these (and come back here), once
+        // whatever else was changed with them is saved
         if (name !== "" && name !== Quickshell.env("QS_ICON_THEME")) {
             Exec.run(`hyprctl eval 'hl.env("QS_ICON_THEME", "${name}")'`);
-            Exec.viaHyprland("sh -c 'pkill -x qs; while pgrep -x qs >/dev/null; do sleep 0.1; done; qs & sleep 2; qs ipc call settings open appearance'", "");
+            Exec.viaHyprland("sh -c 'sleep 1; pkill -x qs; while pgrep -x qs >/dev/null; do sleep 0.1; done; qs & sleep 2; qs ipc call settings open appearance'", "");
         }
     }
 

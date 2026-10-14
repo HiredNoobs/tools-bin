@@ -21,7 +21,7 @@ hl.config({
         gaps_out = 10,
         border_size = 2,
         col = {
-            active_border = scheme_colour("color9", "rgba(251,73,52,1)"),
+            active_border = scheme_colour("accent", "rgba(251,73,52,1)"),
             inactive_border = scheme_colour("color5", "rgba(211,134,155,1)")
         },
         resize_on_border = true,

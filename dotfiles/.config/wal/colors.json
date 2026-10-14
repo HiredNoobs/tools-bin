@@ -4,7 +4,8 @@
     "special": {
         "background": "#282828",
         "foreground": "#d5c4a1",
-        "cursor": "#d5c4a1"
+        "cursor": "#d5c4a1",
+        "accent": "#fb4934"
     },
     "colors": {
         "color0": "#282828",

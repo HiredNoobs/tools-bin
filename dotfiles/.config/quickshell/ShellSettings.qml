@@ -30,7 +30,7 @@ Singleton {
             batteryWarn: 15,
             batteryCritical: 5,
             batteryCriticalAction: "nothing",
-            colourSource: "fixed",
+            colourSource: "gruvbox",
             clipboardHistory: true
         })
 
@@ -72,7 +72,7 @@ Singleton {
     property alias batteryWarn: adapter.batteryWarn
     property alias batteryCritical: adapter.batteryCritical
     property alias batteryCriticalAction: adapter.batteryCriticalAction
-    // The colour scheme: "fixed" (Gruvbox) or "wallpaper" (made from it; see ColourScheme)
+    // The colour scheme: one of ColourScheme's palettes, or "wallpaper" (made from it)
     property alias colourSource: adapter.colourSource
     // Keep what's copied for the Super+V menu (see Clipboard)
     property alias clipboardHistory: adapter.clipboardHistory

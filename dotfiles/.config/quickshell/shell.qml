@@ -59,6 +59,17 @@ ShellRoot {
         Background {}
     }
 
+    // `qs ipc call appearance preset <name>`, as picking a preset in Settings › Appearance
+    IpcHandler {
+        target: "appearance"
+
+        function preset(name: string): void {
+            const preset = Presets.presets.find(p => p.label.toLowerCase() === name.toLowerCase());
+            if (preset)
+                Presets.apply(preset);
+        }
+    }
+
     // `qs ipc call wallpaper set <file>`, as picking it in the wallpaper menu
     IpcHandler {
         target: "wallpaper"

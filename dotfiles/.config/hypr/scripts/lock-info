@@ -7,7 +7,7 @@
 # Colours and icons match the shell's (Theme.qml, services/Battery.qml).
 
 # The accent from the colour scheme (Quickshell's ColourScheme writes it)
-accent=$(grep -o '"color9": *"#[0-9a-fA-F]\{6\}"' "$HOME/.cache/wal/colors.json" 2>/dev/null | grep -o '#[0-9a-fA-F]\{6\}')
+accent=$(grep -o '"accent": *"#[0-9a-fA-F]\{6\}"' "$HOME/.cache/wal/colors.json" 2>/dev/null | grep -o '#[0-9a-fA-F]\{6\}')
 accent=${accent:-#fb4934}
 charging="#26A65B"
 warning="#ffbe61"
