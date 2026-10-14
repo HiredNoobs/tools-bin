@@ -8,9 +8,9 @@ import QtQuick
 //   (written there by a NetworkManager dispatcher script, as only root can read it)
 // - wallpaper, colours (pywal's colors.json) and avatars (faces/<user>) from `sharedDir`, which
 //   the user owns and setup fills
-// Clicking the name switches user and the session button switches session, when there's more
-// than one of either. Nothing is playing and no notifications are waiting at login, so those stay
-// hidden.
+// Clicking the name switches user, and the session button opens a list of sessions, when there's
+// more than one of either. Nothing is playing and no notifications are waiting at login, so those
+// stay hidden.
 Item {
     id: root
 
@@ -32,7 +32,10 @@ Item {
     // --- Users and sessions (SDDM gives models; these make them indexable)
 
     property int userIndex: Math.max(0, userModel.lastIndex)
+    // The session last logged into, as SDDM remembers it (in its own state file); with none
+    // remembered SDDM says the first, so `defaultSession` from theme.conf is used instead
     property int sessionIndex: Math.max(0, sessionModel.lastIndex)
+    readonly property bool sessionRemembered: /^Session=\S/m.test(read("/var/lib/sddm/state.conf"))
 
     Instantiator {
         id: users
@@ -49,11 +52,21 @@ Item {
         model: sessionModel
         delegate: QtObject {
             property string name: model.name
+            property string file: model.file
+        }
+        onObjectAdded: (index, object) => {
+            if (!root.sessionRemembered && config.defaultSession && object.file.endsWith(config.defaultSession))
+                root.sessionIndex = index;
         }
     }
 
     readonly property var user: users.count > userIndex ? users.objectAt(userIndex) : null
-    readonly property var session: sessions.count > sessionIndex ? sessions.objectAt(sessionIndex) : null
+    readonly property var sessionNames: {
+        const names = [];
+        for (let i = 0; i < sessions.count; i++)
+            names.push(sessions.objectAt(i)?.name ?? "");
+        return names;
+    }
 
     // --- Colours, from the user's pywal colours if setup shared them
 
@@ -139,8 +152,9 @@ Item {
             password = "";
             message = "";
         }
-        sessionName: sessions.count > 1 && root.session ? root.session.name : ""
-        onSessionClicked: root.sessionIndex = (root.sessionIndex + 1) % sessions.count
+        sessions: root.sessionNames
+        sessionIndex: root.sessionIndex
+        onSessionPicked: index => root.sessionIndex = index
 
         capsLock: keyboard.capsLock
         onSubmitted: {

@@ -58,12 +58,14 @@ Item {
     signal mediaToggle
     signal mediaNext
 
-    // Login only (the SDDM theme): clicking the name switches user, and a session button sits
-    // before the power buttons. Off (and empty) on the lockscreen.
+    // Login only (the SDDM theme): clicking the name switches user, and with more than one
+    // session a button before the power buttons opens a list of them upwards. Off (and empty) on
+    // the lockscreen.
     property bool userSwitchable: false
     signal userClicked
-    property string sessionName: ""
-    signal sessionClicked
+    property var sessions: []
+    property int sessionIndex: 0
+    signal sessionPicked(int index)
 
     // [{ icon, name, confirm }]; `powerAction(name)` once confirmed
     property var powerActions: []
@@ -305,7 +307,10 @@ Item {
                 Keys.onPressed: event => {
                     root.keyPressed();
                     if (event.key === Qt.Key_Escape) {
-                        root.password = "";
+                        if (sessionMenu.open)
+                            sessionMenu.open = false;
+                        else
+                            root.password = "";
                         event.accepted = true;
                     }
                 }
@@ -415,13 +420,15 @@ Item {
         }
 
         Pill {
-            visible: root.powerActions.length > 0 || root.sessionName !== ""
+            visible: root.powerActions.length > 0 || root.sessions.length > 1
 
             RoundButton {
-                visible: root.sessionName !== ""
+                id: sessionButton
+                visible: root.sessions.length > 1
                 icon: "\u{F0379}"
-                label: root.sessionName
-                onClicked: root.sessionClicked()
+                label: `${root.sessions[root.sessionIndex] ?? ""}  ${sessionMenu.open ? "\u{F0140}" : "\u{F0143}"}`
+                highlighted: sessionMenu.open
+                onClicked: sessionMenu.open = !sessionMenu.open
             }
 
             Repeater {
@@ -450,6 +457,101 @@ Item {
                         id: disarm
                         interval: 3000
                         onTriggered: action.armed = false
+                    }
+                }
+            }
+        }
+    }
+
+    // --- The session list, above the session button
+
+    // A click anywhere else closes it
+    MouseArea {
+        anchors.fill: parent
+        visible: sessionMenu.open
+        onClicked: sessionMenu.open = false
+    }
+
+    Rectangle {
+        id: sessionMenu
+
+        property bool open: false
+        // Where the button is, found on opening (the bottom row moves as its pills change)
+        property point anchor: Qt.point(0, 0)
+
+        onOpenChanged: {
+            if (open)
+                anchor = sessionButton.mapToItem(root, sessionButton.width / 2, 0);
+            input.forceActiveFocus();
+        }
+
+        // Centred over the button, clear of the pill it sits in, and kept on screen
+        x: Math.max(8, Math.min(root.width - width - 8, anchor.x - width / 2))
+        y: anchor.y - (root.pillHeight - sessionButton.height) / 2 - 10 - height + (open ? 0 : 8)
+        width: Math.max(200, sessionList.implicitWidth + 12)
+        height: sessionList.implicitHeight + 12
+        radius: 16
+        color: root.cardColour
+        border.width: 1
+        border.color: Qt.alpha(root.accent, 0.5)
+        opacity: open ? 1 : 0
+        visible: opacity > 0
+
+        Behavior on opacity { NumberAnimation { duration: 120 } }
+        Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+        Column {
+            id: sessionList
+            anchors.centerIn: parent
+            width: parent.width - 12
+
+            Repeater {
+                model: root.sessions
+
+                Rectangle {
+                    id: sessionItem
+
+                    required property string modelData
+                    required property int index
+                    readonly property bool current: index === root.sessionIndex
+
+                    implicitWidth: sessionLabel.implicitWidth + 56
+                    width: sessionList.width
+                    height: 36
+                    radius: 10
+                    color: itemMouse.containsMouse ? root.surfaceHover : "transparent"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: sessionItem.current
+                        text: "\u{F012C}"
+                        color: root.accent
+                        font.family: root.fontFamily
+                        font.pixelSize: 14
+                    }
+
+                    Text {
+                        id: sessionLabel
+                        anchors.left: parent.left
+                        anchors.leftMargin: 36
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: sessionItem.modelData
+                        color: itemMouse.containsMouse || sessionItem.current ? root.accent : root.text
+                        font.family: root.fontFamily
+                        font.pixelSize: 14
+                    }
+
+                    MouseArea {
+                        id: itemMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.sessionPicked(sessionItem.index);
+                            sessionMenu.open = false;
+                        }
                     }
                 }
             }
