@@ -5,8 +5,9 @@ import qs
 import qs.components
 import qs.services
 
-// One panel with a tab per right-hand bar icon (Theme.controlCentre). Each tab shows that
-// icon's own panel. Fixed width so the tab row stays put; the height fits the tab.
+// One panel with a tab per right-hand bar icon (Theme.controlCentre), under the quick toggles
+// and usage. Each tab shows that icon's own panel. Fixed width so the tab row stays put; the
+// height fits the tab.
 Column {
     id: root
 
@@ -33,6 +34,10 @@ Column {
 
     width: 400
     spacing: 12
+
+    QuickToggles {
+        width: parent.width
+    }
 
     TabBar {
         width: parent.width
