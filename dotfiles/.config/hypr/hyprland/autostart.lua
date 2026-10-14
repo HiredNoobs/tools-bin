@@ -14,11 +14,8 @@ hl.on("hyprland.start", function()
     -- Nightlight
     hl.exec_cmd("hyprsunset --temperature 6500")
 
-    -- Status bar, notifications and wallpaper
+    -- Status bar, notifications, wallpaper and the authentication agent
     hl.exec_cmd("qs")
-
-    -- Authentication agent
-    hl.exec_cmd("systemctl --user start hyprpolkitagent")
 
     -- Idle manager, with the timeouts set in Quickshell's settings window if there are any
     -- (hypridle.local.conf, this machine's own); otherwise hypridle.conf

@@ -12,6 +12,7 @@ import qs.launcher
 import qs.lock
 import qs.osd
 import qs.overview
+import qs.polkit
 import qs.services
 import qs.settings
 import qs.switcher
@@ -80,6 +81,9 @@ ShellRoot {
         window: bars.instances[0] ?? null
         enabled: KeepAwake.enabled
     }
+
+    // Password prompts for admin actions (the authentication agent)
+    PolkitPrompt {}
 
     // Super+Tab
     Overview {

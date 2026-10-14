@@ -23,7 +23,7 @@ function configure_hyprland {
   log_info "Installing dependencies."
 
   # Hyprland + utils (python-dbus and python-gobject are for the Bluetooth pairing agent)
-  pacman_install hyprland hyprlock hypridle hyprshutdown hyprsunset hyprpolkitagent \
+  pacman_install hyprland hyprlock hypridle hyprshutdown hyprsunset \
     sddm pipewire pipewire-audio pipewire-pulse wireplumber xdg-desktop-portal xdg-desktop-portal-hyprland \
     xdg-desktop-portal-gtk udisks2 brightnessctl pamixer playerctl quickshell bluez libnotify wl-clipboard libqalculate pacman-contrib power-profiles-daemon \
     starship yazi kitty fish firefox grim slurp swappy htop btop nvtop \
