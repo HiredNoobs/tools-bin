@@ -213,6 +213,46 @@ Column {
     }
 
     SettingsGroup {
+        title: "Colours"
+
+        SettingRow {
+            label: "Colour scheme"
+            changed: !ShellSettings.isDefault("colourSource")
+            onReset: ShellSettings.reset("colourSource")
+            description: "Used by the shell, kitty, window borders and the lock and login screens. From the wallpaper, it changes with it."
+
+            ChoiceButtons {
+                choices: ["fixed", "wallpaper"]
+                current: ShellSettings.colourSource
+                format: source => source === "fixed" ? "Gruvbox" : "From wallpaper"
+                onChosen: source => ShellSettings.colourSource = source
+            }
+        }
+
+        // The scheme: background, text, then the terminal's colours
+        Row {
+            x: 16
+            spacing: 6
+            bottomPadding: 16
+
+            Repeater {
+                model: ColourScheme.current ? [ColourScheme.current.background, ColourScheme.current.foreground, ...ColourScheme.current.colors.slice(1, 7)] : []
+
+                Rectangle {
+                    required property string modelData
+
+                    width: 28
+                    height: 28
+                    radius: 14
+                    color: modelData
+                    border.width: 1
+                    border.color: Theme.surface
+                }
+            }
+        }
+    }
+
+    SettingsGroup {
         title: "More"
 
         SettingRow {

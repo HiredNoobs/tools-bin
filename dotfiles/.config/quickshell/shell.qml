@@ -25,7 +25,8 @@ ShellRoot {
     // Singletons are only created when first used; create these at start so update checks run
     // on schedule, stream titles are remembered before the panels first open, the Bluetooth
     // pairing agent is there before anything pairs, nightlight's schedule runs, the lid and low
-    // battery are handled, and the login screen gets the current wallpaper, colours and avatar
+    // battery are handled, the login screen gets the current wallpaper, colours and avatar, and
+    // the colour scheme follows the wallpaper if it's set to
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
@@ -34,6 +35,7 @@ ShellRoot {
         Lid.hasLid;
         LowBattery.warned;
         LockShare.shared;
+        ColourScheme.current;
     }
 
     // A window for each Bluetooth pairing request, there until answered (or closed, which

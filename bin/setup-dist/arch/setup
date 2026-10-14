@@ -64,7 +64,8 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/images/profile-pictures/"   "$HOME/Pictures/profile-pictures/"
   mkdir -p "$HOME/Pictures/screenshots"  # Used by the screenshot keybinds and swappy
 
-  rsync -av --delete "$ROOT/dotfiles/.config/wal/"      "$HOME/.cache/wal/"
+  # Only the first time: after that, the shell writes them (Settings › Appearance › Colours)
+  rsync -av --ignore-existing "$ROOT/dotfiles/.config/wal/" "$HOME/.cache/wal/"
 
   # The avatar on the lock and login screens
   [ -e "$HOME/.face" ] || ln -s Pictures/profile-pictures/alluka.jpg "$HOME/.face"

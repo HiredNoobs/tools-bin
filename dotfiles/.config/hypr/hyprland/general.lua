@@ -2,14 +2,27 @@
 -- General config
 -------------------------------------------------------
 
+-- A colour from the colour scheme (Quickshell's ColourScheme writes it, and sets the borders live
+-- when it changes), or `fallback`
+local function scheme_colour(name, fallback)
+    local file = io.open((os.getenv("HOME") or "") .. "/.cache/wal/colors.json", "r")
+    if not file then
+        return fallback
+    end
+    local text = file:read("a")
+    file:close()
+    local hex = text:match('"' .. name .. '":%s*"#(%x%x%x%x%x%x)"')
+    return hex and ("rgb(" .. hex .. ")") or fallback
+end
+
 hl.config({
     general = {
         gaps_in = 2,
         gaps_out = 10,
         border_size = 2,
         col = {
-            active_border = "rgba(251,73,52,1)",
-            inactive_border = "rgba(211,134,155,1)"
+            active_border = scheme_colour("color9", "rgba(251,73,52,1)"),
+            inactive_border = scheme_colour("color5", "rgba(211,134,155,1)")
         },
         resize_on_border = true,
         allow_tearing = true,

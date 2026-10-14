@@ -6,7 +6,9 @@
 #                             on the first click and run on a second within 3 seconds
 # Colours and icons match the shell's (Theme.qml, services/Battery.qml).
 
-accent="#fb4934"
+# The accent from the colour scheme (Quickshell's ColourScheme writes it)
+accent=$(grep -o '"color9": *"#[0-9a-fA-F]\{6\}"' "$HOME/.cache/wal/colors.json" 2>/dev/null | grep -o '#[0-9a-fA-F]\{6\}')
+accent=${accent:-#fb4934}
 charging="#26A65B"
 warning="#ffbe61"
 critical="#f53c3c"

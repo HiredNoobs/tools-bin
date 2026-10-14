@@ -29,7 +29,8 @@ Singleton {
             lidDocked: "screen-off",
             batteryWarn: 15,
             batteryCritical: 5,
-            batteryCriticalAction: "nothing"
+            batteryCriticalAction: "nothing",
+            colourSource: "fixed"
         })
 
     function isDefault(key: string): bool {
@@ -70,6 +71,8 @@ Singleton {
     property alias batteryWarn: adapter.batteryWarn
     property alias batteryCritical: adapter.batteryCritical
     property alias batteryCriticalAction: adapter.batteryCriticalAction
+    // The colour scheme: "fixed" (Gruvbox) or "wallpaper" (made from it; see ColourScheme)
+    property alias colourSource: adapter.colourSource
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -105,6 +108,7 @@ Singleton {
             property int batteryWarn: root.defaults.batteryWarn
             property int batteryCritical: root.defaults.batteryCritical
             property string batteryCriticalAction: root.defaults.batteryCriticalAction
+            property string colourSource: root.defaults.colourSource
         }
     }
 }
