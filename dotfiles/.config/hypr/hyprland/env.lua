@@ -3,6 +3,8 @@
 -------------------------------------------------------
 
 hl.env("TERMINAL", "kitty")
+-- The shell's icons, until Settings › Appearance chooses (appearance.lua, loaded after this)
+hl.env("QS_ICON_THEME", "Papirus-Dark")
 
 -------------------------------------------------------
 -- Compatibility and performance

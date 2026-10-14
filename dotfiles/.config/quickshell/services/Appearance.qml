@@ -12,6 +12,8 @@ import Quickshell.Io
 // - Qt: ~/.config/qt6ct/qt6ct.conf (icons, fonts, file chooser), ~/.config/Kvantum (style)
 // - Hyprland's cursor: `hyprctl setcursor` now, and ~/.config/hypr/appearance.lua (loaded by
 //   hyprland.lua, this machine's own) for the next login
+// - The shell's own icons: QS_ICON_THEME, in appearance.lua and Hyprland's environment, read
+//   when the shell starts, so it restarts (through Hyprland) when the icons change
 // Only the widget style is separate per toolkit (a GTK theme, a Kvantum theme), and Qt can
 // have its own font, as Qt and GTK size fonts differently. Each setting's value from before
 // its first change is kept (in Quickshell's state folder) for the settings window's ↺, and
@@ -226,7 +228,13 @@ Singleton {
         gsettings("icon-theme", name);
         setGtkIni("gtk-icon-theme-name", name);
         qt6ct.setText(setIni(qt6ct.text(), "Appearance", "icon_theme", name));
+        writeHyprEnv();
         checkMatch();
+        // The shell picks its icons at start: restart it with these (and come back here)
+        if (name !== "" && name !== Quickshell.env("QS_ICON_THEME")) {
+            Exec.run(`hyprctl eval 'hl.env("QS_ICON_THEME", "${name}")'`);
+            Exec.viaHyprland("sh -c 'pkill -x qs; while pgrep -x qs >/dev/null; do sleep 0.1; done; qs & sleep 2; qs ipc call settings open appearance'", "");
+        }
     }
 
     function setCursor(name: string, size: int): void {
@@ -238,17 +246,24 @@ Singleton {
         setGtkIni("gtk-cursor-theme-name", name);
         setGtkIni("gtk-cursor-theme-size", String(size));
         Exec.run(`hyprctl setcursor ${Exec.quote(name)} ${size}`);
-        cursorFile.setText([
-            "-- Cursor set in Quickshell's settings window (Appearance), for apps started after login.",
-            "-- Loaded by hyprland.lua after env.lua; this machine's own, kept by the setup script.",
+        writeHyprEnv();
+        checkMatch();
+    }
+
+    // appearance.lua: the cursor and the shell's icons, for what starts after login
+    function writeHyprEnv(): void {
+        hyprEnv.setText([
+            "-- Cursor and the shell's icons set in Quickshell's settings window (Appearance), for apps",
+            "-- started after login. Loaded by hyprland.lua after env.lua; this machine's own, kept by",
+            "-- the setup script.",
             "",
-            `hl.env("HYPRCURSOR_THEME", "${name}")`,
-            `hl.env("HYPRCURSOR_SIZE", "${size}")`,
-            `hl.env("XCURSOR_THEME", "${name}")`,
-            `hl.env("XCURSOR_SIZE", "${size}")`,
+            `hl.env("HYPRCURSOR_THEME", "${cursorTheme}")`,
+            `hl.env("HYPRCURSOR_SIZE", "${cursorSize}")`,
+            `hl.env("XCURSOR_THEME", "${cursorTheme}")`,
+            `hl.env("XCURSOR_SIZE", "${cursorSize}")`,
+            ...(iconTheme !== "" ? [`hl.env("QS_ICON_THEME", "${iconTheme}")`] : []),
             ""
         ].join("\n"));
-        checkMatch();
     }
 
     function setFont(family: string, size: int): void {
@@ -329,6 +344,12 @@ Singleton {
                 root.loaded = true;
                 root.readQtFont();
                 root.checkMatch();
+                // Icons chosen before the shell followed them (or elsewhere): the shell uses them
+                // from its next start
+                if (root.iconTheme !== "" && root.iconTheme !== Quickshell.env("QS_ICON_THEME")) {
+                    root.writeHyprEnv();
+                    Exec.run(`hyprctl eval 'hl.env("QS_ICON_THEME", "${root.iconTheme}")'`);
+                }
             }
         }
     }
@@ -418,7 +439,7 @@ Singleton {
     }
 
     FileView {
-        id: cursorFile
+        id: hyprEnv
         path: `${root.configDir}/hypr/appearance.lua`
         printErrors: false
     }

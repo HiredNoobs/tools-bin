@@ -1,6 +1,5 @@
-//@ pragma IconTheme Papirus-Dark
-// Icons from Papirus-Dark (installed by the setup script), so apps' and devices' icon names
-// resolve; without a theme only the basic hicolor set is found
+// The icon theme comes from QS_ICON_THEME (env.lua's default, then Settings › Appearance's
+// choice in appearance.lua); without one only the basic hicolor set is found
 
 import QtQuick
 import Quickshell
@@ -28,7 +27,7 @@ ShellRoot {
     // pairing agent is there before anything pairs, nightlight's schedule runs, the lid and low
     // battery are handled, the login screen gets the current wallpaper, colours and avatar, and
     // the colour scheme follows the wallpaper if it's set to, drives plugged in are mounted, and
-    // the clipboard history starts
+    // the clipboard history starts, and the shell's icons follow Appearance's
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
@@ -40,6 +39,7 @@ ShellRoot {
         ColourScheme.current;
         Drives.drives;
         Clipboard.entries;
+        Appearance.loaded;
     }
 
     // A window for each Bluetooth pairing request, there until answered (or closed, which
