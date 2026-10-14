@@ -30,7 +30,4 @@ hl.on("hyprland.start", function()
     else
         hl.exec_cmd("hypridle")
     end
-
-    -- Auto mount USB devices
-    hl.exec_cmd("udiskie")
 end)

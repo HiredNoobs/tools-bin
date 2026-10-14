@@ -26,7 +26,7 @@ ShellRoot {
     // on schedule, stream titles are remembered before the panels first open, the Bluetooth
     // pairing agent is there before anything pairs, nightlight's schedule runs, the lid and low
     // battery are handled, the login screen gets the current wallpaper, colours and avatar, and
-    // the colour scheme follows the wallpaper if it's set to
+    // the colour scheme follows the wallpaper if it's set to, and drives plugged in are mounted
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
@@ -36,6 +36,7 @@ ShellRoot {
         LowBattery.warned;
         LockShare.shared;
         ColourScheme.current;
+        Drives.drives;
     }
 
     // A window for each Bluetooth pairing request, there until answered (or closed, which
