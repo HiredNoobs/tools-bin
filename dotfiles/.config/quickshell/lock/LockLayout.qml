@@ -488,7 +488,10 @@ Item {
         // Centred over the button, clear of the pill it sits in, and kept on screen
         x: Math.max(8, Math.min(root.width - width - 8, anchor.x - width / 2))
         y: anchor.y - (root.pillHeight - sessionButton.height) / 2 - 10 - height + (open ? 0 : 8)
-        width: Math.max(200, sessionList.implicitWidth + 12)
+        // The widest name, plus the tick's room and padding (a Column sizes from its rows' widths,
+        // which follow the list's, so it can't say)
+        property real widest: 0
+        width: Math.max(200, widest + 36 + 16 + 12)
         height: sessionList.implicitHeight + 12
         radius: 16
         color: root.cardColour
@@ -515,7 +518,6 @@ Item {
                     required property int index
                     readonly property bool current: index === root.sessionIndex
 
-                    implicitWidth: sessionLabel.implicitWidth + 56
                     width: sessionList.width
                     height: 36
                     radius: 10
@@ -538,6 +540,8 @@ Item {
                         anchors.leftMargin: 36
                         anchors.verticalCenter: parent.verticalCenter
                         text: sessionItem.modelData
+                        onImplicitWidthChanged: sessionMenu.widest = Math.max(sessionMenu.widest, implicitWidth)
+                        Component.onCompleted: sessionMenu.widest = Math.max(sessionMenu.widest, implicitWidth)
                         color: itemMouse.containsMouse || sessionItem.current ? root.accent : root.text
                         font.family: root.fontFamily
                         font.pixelSize: 14
