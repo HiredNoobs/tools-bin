@@ -3,7 +3,8 @@ import qs
 import qs.components
 import qs.services
 
-// Settings › Shell: the control centre, what attaches to the bar, and notification pop-ups.
+// Settings › Shell: the control centre, what attaches to the bar, notification pop-ups and the
+// clipboard history.
 // Saved in ShellSettings and applied straight away.
 Column {
     id: root
@@ -136,6 +137,34 @@ Column {
                 choices: [1, 2, 3, 4, 5]
                 current: ShellSettings.maxPopups
                 onChosen: value => ShellSettings.maxPopups = value
+            }
+        }
+    }
+
+    SettingsGroup {
+        title: "Clipboard"
+
+        SettingRow {
+            changed: !ShellSettings.isDefault("clipboardHistory")
+            onReset: ShellSettings.reset("clipboardHistory")
+            label: "Clipboard history"
+            description: "Super+V lists what you've copied. Kept in memory only, until the shell restarts; copies a password manager marks as secret are never kept."
+
+            Toggle {
+                checked: ShellSettings.clipboardHistory
+                onToggled: ShellSettings.clipboardHistory = !checked
+            }
+        }
+
+        SettingRow {
+            visible: ShellSettings.clipboardHistory
+            label: "Clear the history"
+            description: `${Clipboard.entries.length} kept.`
+
+            PanelButton {
+                icon: "\u{F0A7A}"
+                label: "Clear"
+                onClicked: Clipboard.clear()
             }
         }
     }

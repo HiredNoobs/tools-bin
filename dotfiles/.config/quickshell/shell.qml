@@ -27,7 +27,8 @@ ShellRoot {
     // on schedule, stream titles are remembered before the panels first open, the Bluetooth
     // pairing agent is there before anything pairs, nightlight's schedule runs, the lid and low
     // battery are handled, the login screen gets the current wallpaper, colours and avatar, and
-    // the colour scheme follows the wallpaper if it's set to, and drives plugged in are mounted
+    // the colour scheme follows the wallpaper if it's set to, drives plugged in are mounted, and
+    // the clipboard history starts
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
@@ -38,6 +39,7 @@ ShellRoot {
         LockShare.shared;
         ColourScheme.current;
         Drives.drives;
+        Clipboard.entries;
     }
 
     // A window for each Bluetooth pairing request, there until answered (or closed, which
@@ -122,7 +124,8 @@ ShellRoot {
         id: launcher
     }
 
-    // `qs ipc call launcher toggle` (Super+Space), `screenshot` (Print), `wallpaper`
+    // `qs ipc call launcher toggle` (Super+Space), `screenshot` (Print), `clipboard` (Super+V),
+    // `wallpaper`
     IpcHandler {
         target: "launcher"
 
@@ -146,6 +149,10 @@ ShellRoot {
 
         function wallpaper(): void {
             show("wallpaper");
+        }
+
+        function clipboard(): void {
+            show("clipboard");
         }
     }
 

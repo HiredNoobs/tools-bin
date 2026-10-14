@@ -88,7 +88,8 @@ PanelWindow {
             "notifications": bell,
             "launcher": clock,
             "screenshot": clock,
-            "wallpaper": clock
+            "wallpaper": clock,
+            "clipboard": clock
         };
         if (name === "system")
             openSystem(systemTab, true);
@@ -234,7 +235,7 @@ PanelWindow {
         current: root.openPanel
         // The launcher's menus are only here while they're attached; the rest follow the
         // panels' setting
-        attached: ["launcher", "screenshot", "wallpaper"].includes(current || shown) ? Theme.launcherAttached : Theme.panelsAttached
+        attached: ["launcher", "screenshot", "wallpaper", "clipboard"].includes(current || shown) ? Theme.launcherAttached : Theme.panelsAttached
         panels: ({
                 "calendar": calendarPanel,
                 "system": systemPanel,
@@ -248,7 +249,8 @@ PanelWindow {
                 "media": mediaPanel,
                 "launcher": launcherPanel,
                 "screenshot": screenshotPanel,
-                "wallpaper": wallpaperPanel
+                "wallpaper": wallpaperPanel,
+                "clipboard": clipboardPanel
             })
         onCloseRequested: root.closePanel()
     }
@@ -360,6 +362,14 @@ PanelWindow {
         id: screenshotPanel
 
         ScreenshotMenu {
+            onCloseRequested: root.closePanel()
+        }
+    }
+
+    Component {
+        id: clipboardPanel
+
+        ClipboardMenu {
             onCloseRequested: root.closePanel()
         }
     }

@@ -142,6 +142,7 @@ hl.bind(mainMod .. " + CONTROL + L", hl.dsp.exec_cmd("loginctl lock-session"), {
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("qs ipc call launcher toggle"), { description = "Toggle application launcher" })
 hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle"), { description = "Show keybinds" })
 hl.bind(mainMod .. " + I", hl.dsp.exec_cmd("qs ipc call settings open ''"), { description = "Open settings" })
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("qs ipc call launcher clipboard"), { description = "Clipboard history" })
 
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd("kitty -1"), { description = "Open Terminal" })
 -- The file manager and browser are the ones chosen in Settings › Default apps

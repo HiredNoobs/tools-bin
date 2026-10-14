@@ -30,7 +30,8 @@ Singleton {
             batteryWarn: 15,
             batteryCritical: 5,
             batteryCriticalAction: "nothing",
-            colourSource: "fixed"
+            colourSource: "fixed",
+            clipboardHistory: true
         })
 
     function isDefault(key: string): bool {
@@ -73,6 +74,8 @@ Singleton {
     property alias batteryCriticalAction: adapter.batteryCriticalAction
     // The colour scheme: "fixed" (Gruvbox) or "wallpaper" (made from it; see ColourScheme)
     property alias colourSource: adapter.colourSource
+    // Keep what's copied for the Super+V menu (see Clipboard)
+    property alias clipboardHistory: adapter.clipboardHistory
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -109,6 +112,7 @@ Singleton {
             property int batteryCritical: root.defaults.batteryCritical
             property string batteryCriticalAction: root.defaults.batteryCriticalAction
             property string colourSource: root.defaults.colourSource
+            property bool clipboardHistory: root.defaults.clipboardHistory
         }
     }
 }
