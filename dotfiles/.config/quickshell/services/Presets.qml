@@ -16,7 +16,11 @@ Singleton {
         { label: "Gruvbox", colours: "gruvbox", dark: true, kvantum: "KvDark", icons: "Papirus-Dark", cursor: "capitaine-cursors" },
         { label: "Nord", colours: "nord", dark: true, kvantum: "KvArcDark", icons: "Papirus-Dark", cursor: "catppuccin-frappe-blue-cursors" },
         { label: "Catppuccin", colours: "catppuccin", dark: true, kvantum: "KvDark", icons: "Papirus-Dark", cursor: "catppuccin-mocha-mauve-cursors" },
+        { label: "Tokyo Night", colours: "tokyo-night", dark: true, kvantum: "KvArcDark", icons: "Papirus-Dark", cursor: "catppuccin-frappe-blue-cursors" },
+        { label: "Rosé Pine", colours: "rose-pine", dark: true, kvantum: "KvDark", icons: "Papirus-Dark", cursor: "catppuccin-mocha-mauve-cursors" },
+        { label: "Everforest", colours: "everforest", dark: true, kvantum: "KvDark", icons: "Papirus-Dark", cursor: "capitaine-cursors" },
         { label: "Gruvbox Light", colours: "gruvbox-light", dark: false, kvantum: "KvFlatLight", icons: "Papirus-Light", cursor: "capitaine-cursors-light" },
+        { label: "Catppuccin Latte", colours: "catppuccin-latte", dark: false, kvantum: "KvFlatLight", icons: "Papirus-Light", cursor: "catppuccin-latte-mauve-cursors" },
         { label: "Wallpaper", colours: "wallpaper", dark: true, kvantum: "KvDark", icons: "Papirus-Dark", cursor: "" }
     ]
 

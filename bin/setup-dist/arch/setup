@@ -49,7 +49,7 @@ function configure_hyprland {
 
   # The red one is the default; the others go with Settings › Appearance's presets
   cursor_version=$(get_latest_release "catppuccin/cursors")
-  for cursor in latte-red frappe-blue mocha-mauve; do
+  for cursor in latte-red latte-mauve frappe-blue mocha-mauve; do
     curl -fsSL "https://github.com/catppuccin/cursors/releases/download/$cursor_version/catppuccin-$cursor-cursors.zip" \
       -o "/tmp/catppuccin-$cursor-cursors.zip"
     unzip -o "/tmp/catppuccin-$cursor-cursors.zip" -d "$HOME/.local/share/icons/"

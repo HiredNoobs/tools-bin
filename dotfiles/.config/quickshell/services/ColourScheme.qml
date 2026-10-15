@@ -51,6 +51,38 @@ Singleton {
                 accent: "#cba6f7",
                 colors: ["#45475a", "#f38ba8", "#a6e3a1", "#f9e2af", "#89b4fa", "#f5c2e7", "#94e2d5", "#bac2de",
                     "#585b70", "#f38ba8", "#a6e3a1", "#f9e2af", "#89b4fa", "#f5c2e7", "#94e2d5", "#a6adc8"]
+            },
+            "catppuccin-latte": {
+                label: "Catppuccin latte",
+                background: "#eff1f5",
+                foreground: "#4c4f69",
+                accent: "#8839ef",
+                colors: ["#5c5f77", "#d20f39", "#40a02b", "#df8e1d", "#1e66f5", "#ea76cb", "#179299", "#acb0be",
+                    "#6c6f85", "#d20f39", "#40a02b", "#df8e1d", "#1e66f5", "#ea76cb", "#179299", "#bcc0cc"]
+            },
+            "tokyo-night": {
+                label: "Tokyo Night",
+                background: "#1a1b26",
+                foreground: "#c0caf5",
+                accent: "#7aa2f7",
+                colors: ["#15161e", "#f7768e", "#9ece6a", "#e0af68", "#7aa2f7", "#bb9af7", "#7dcfff", "#a9b1d6",
+                    "#414868", "#f7768e", "#9ece6a", "#e0af68", "#7aa2f7", "#bb9af7", "#7dcfff", "#c0caf5"]
+            },
+            "rose-pine": {
+                label: "Rosé Pine",
+                background: "#191724",
+                foreground: "#e0def4",
+                accent: "#ebbcba",
+                colors: ["#26233a", "#eb6f92", "#31748f", "#f6c177", "#9ccfd8", "#c4a7e7", "#ebbcba", "#e0def4",
+                    "#6e6a86", "#eb6f92", "#31748f", "#f6c177", "#9ccfd8", "#c4a7e7", "#ebbcba", "#e0def4"]
+            },
+            "everforest": {
+                label: "Everforest",
+                background: "#2d353b",
+                foreground: "#d3c6aa",
+                accent: "#a7c080",
+                colors: ["#343f44", "#e67e80", "#a7c080", "#dbbc7f", "#7fbbb3", "#d699b6", "#83c092", "#d3c6aa",
+                    "#7a8478", "#e67e80", "#a7c080", "#dbbc7f", "#7fbbb3", "#d699b6", "#83c092", "#d3c6aa"]
             }
         })
     // The colourSource values, for the settings window: the palettes, then the wallpaper

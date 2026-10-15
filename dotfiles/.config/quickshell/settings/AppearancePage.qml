@@ -64,7 +64,7 @@ Column {
             x: 16
             width: parent.width - 32
             spacing: 10
-            topPadding: 4
+            topPadding: 16
             bottomPadding: 16
 
             Repeater {
