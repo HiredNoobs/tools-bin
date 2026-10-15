@@ -8,27 +8,17 @@ local mainMod = "SUPER"
 -- Window control
 -------------------------------------------------------
 
--- Change focus, arrow keys and vim binds
+-- Change focus
 hl.bind(mainMod .. " + LEFT", hl.dsp.focus({ direction = "left" }), { description = "Move focus to left" })
 hl.bind(mainMod .. " + RIGHT", hl.dsp.focus({ direction = "right" }), { description = "Move focus to right" })
 hl.bind(mainMod .. " + UP", hl.dsp.focus({ direction = "up" }), { description = "Move focus up" })
 hl.bind(mainMod .. " + DOWN", hl.dsp.focus({ direction = "down" }), { description = "Move focus down" })
 
-hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }), { description = "Move focus to left" })
-hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }), { description = "Move focus to right" })
-hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }), { description = "Move focus up" })
-hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }), { description = "Move focus down" })
-
--- Move window (within workspace), arrow keys and vim binds
+-- Move window (within workspace)
 hl.bind(mainMod .. " + SHIFT + LEFT", hl.dsp.window.move({ direction = "left" }), { description = "Move window left" })
 hl.bind(mainMod .. " + SHIFT + RIGHT", hl.dsp.window.move({ direction = "right" }), { description = "Move window right" })
 hl.bind(mainMod .. " + SHIFT + UP", hl.dsp.window.move({ direction = "up" }), { description = "Move window up" })
 hl.bind(mainMod .. " + SHIFT + DOWN", hl.dsp.window.move({ direction = "down" }), { description = "Move window down" })
-
-hl.bind(mainMod .. " + SHIFT + H", hl.dsp.window.move({ direction = "left" }), { description = "Move window left" })
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }), { description = "Move window right" })
-hl.bind(mainMod .. " + SHIFT + K", hl.dsp.window.move({ direction = "up" }), { description = "Move window up" })
-hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ direction = "down" }), { description = "Move window down" })
 
 -- Fullscreen
 hl.bind(mainMod .. " + F11", hl.dsp.window.fullscreen_state({ internal = 1, client = 0, action = "toggle" }), { description = "Toggle maximise window" })
@@ -133,7 +123,7 @@ end, { description = "Toggle games workspace" })
 -------------------------------------------------------
 
 hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("qs ipc call bar panel power"), { description = "Toggle system control menu" })
-hl.bind(mainMod .. " + CONTROL + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Lock session" })
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Lock session" })
 
 -------------------------------------------------------
 -- Application shortcuts
@@ -141,6 +131,7 @@ hl.bind(mainMod .. " + CONTROL + L", hl.dsp.exec_cmd("loginctl lock-session"), {
 
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("qs ipc call launcher toggle"), { description = "Toggle application launcher" })
 hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle"), { description = "Show keybinds" })
+hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("qs ipc call cheatsheet toggle"), { description = "Show keybinds" })
 hl.bind(mainMod .. " + I", hl.dsp.exec_cmd("qs ipc call settings open ''"), { description = "Open settings" })
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("qs ipc call launcher clipboard"), { description = "Clipboard history" })
 

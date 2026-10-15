@@ -10,7 +10,6 @@ import qs.services
 // the control centre:
 // - System: battery, CPU, memory, temperature and disk usage (CPU and memory open htop sorted
 //   by them, temperature opens btop, a disk opens yazi there), and pending updates.
-// - Settings: wallpaper and toolkit themes, reloading Hyprland or the shell.
 // - Power: who and how long up, keep awake, power profile, and the power actions. Keyboard: Left/Right or
 //   Tab/Shift+Tab select an action (the first press selects Lock or Shutdown), Enter runs it
 //   (twice for the ones that confirm).
@@ -25,7 +24,6 @@ Column {
 
     readonly property var tabs: [
         { name: "system", icon: "\u{F0EE0}", label: "System" },
-        { name: "settings", icon: "\u{F0493}", label: "Settings" },
         { name: "power", icon: "\u{23FB}", label: "Power" }
     ]
 
@@ -63,8 +61,7 @@ Column {
         width: parent.width
         sourceComponent: ({
                 "system": systemTab,
-                "power": powerTab,
-                "settings": settingsTab
+                "power": powerTab
             })[root.tab] ?? null
         onLoaded: fadeIn.restart()
     }
@@ -474,65 +471,6 @@ Column {
                             onTriggered: action.armed = false
                         }
                     }
-                }
-            }
-        }
-    }
-
-    Component {
-        id: settingsTab
-
-        Column {
-            spacing: 10
-
-            // The settings window (Super+I)
-            PanelButton {
-                width: parent.width
-                icon: "\u{F0493}"
-                label: "All settings"
-                onClicked: root.run(() => Exec.run("qs ipc call settings open ''"))
-            }
-
-            PanelSection {
-                text: "Appearance"
-            }
-
-            Flow {
-                width: parent.width
-                spacing: 8
-
-                PanelButton {
-                    icon: "\u{F0E09}"
-                    label: "Wallpaper"
-                    onClicked: root.run(() => Exec.run("qs ipc call launcher wallpaper"))
-                }
-
-                // Themes, icons, cursor and fonts for GTK and Qt together
-                PanelButton {
-                    icon: "\u{F03D8}"
-                    label: "Appearance settings"
-                    onClicked: root.run(() => Exec.run("qs ipc call settings open appearance"))
-                }
-            }
-
-            PanelSection {
-                text: "Reload"
-            }
-
-            Row {
-                spacing: 8
-
-                PanelButton {
-                    icon: "\u{F01E}"
-                    label: "Hyprland"
-                    onClicked: root.run(() => Exec.run("hyprctl reload"))
-                }
-
-                // A fresh start rather than a hot reload, which proved unreliable
-                PanelButton {
-                    icon: "\u{F01E}"
-                    label: "Quickshell"
-                    onClicked: root.run(() => Exec.run("pkill -x qs; setsid -f qs"))
                 }
             }
         }

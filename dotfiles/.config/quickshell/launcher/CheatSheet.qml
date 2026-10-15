@@ -4,9 +4,9 @@ import Quickshell.Io
 import qs
 import qs.components
 
-// Super+F1: every Hyprland bind that has a description, read live from `hyprctl binds -j`
-// and grouped under the section headers of keybinds.lua. Binds sharing a description become one
-// entry (Super + ← / H), and the workspace number binds one "1–0" entry. Typing filters by
+// Super+H or Super+F1: every Hyprland bind that has a description, read live from
+// `hyprctl binds -j` and grouped under the section headers of keybinds.lua. Binds sharing a
+// description become one entry (Super + H / F1), and the workspace number binds one "1–0" entry. Typing filters by
 // description or key, Esc clears the search and then closes.
 Item {
     id: root

@@ -55,6 +55,8 @@ The initial confiuration is based on the following repos:
 
 ### Keybinds
 
+`Super` + `H` lists every keybind.
+
 Window control:
 
 - `Super` + `Q` = Kill window

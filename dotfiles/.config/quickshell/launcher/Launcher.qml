@@ -6,8 +6,8 @@ import qs
 
 // The launcher's menus in the middle of the focused monitor, when Theme.launcherAttached is off:
 // the app launcher (Super+Space), the screenshot menu (Print) and the wallpaper picker; and,
-// always here, the keybind cheat sheet (Super+F1). Esc or a click outside, on any monitor,
-// closes it.
+// always here, the keybind cheat sheet (Super+H or Super+F1). Esc or a click outside, on any
+// monitor, closes it.
 PanelWindow {
     id: root
 

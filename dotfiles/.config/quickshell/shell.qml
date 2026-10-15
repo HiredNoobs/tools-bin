@@ -251,7 +251,7 @@ ShellRoot {
         }
     }
 
-    // `qs ipc call cheatsheet toggle` (Super+F1): always the centred popup, too wide for the bar
+    // `qs ipc call cheatsheet toggle` (Super+H, Super+F1): always the centred popup, too wide for the bar
     IpcHandler {
         target: "cheatsheet"
 

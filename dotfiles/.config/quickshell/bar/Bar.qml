@@ -92,7 +92,7 @@ PanelWindow {
         };
         if (name === "system")
             openSystem(systemTab, true);
-        else if (name === "power" || name === "settings")
+        else if (name === "power")
             openSystem(name, false);
         else if (rightPanels.includes(name))
             openRight(name, anchors[name]);
