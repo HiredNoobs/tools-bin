@@ -31,7 +31,8 @@ Singleton {
             batteryCritical: 5,
             batteryCriticalAction: "nothing",
             colourSource: "gruvbox",
-            clipboardHistory: true
+            clipboardHistory: true,
+            keepAwake: false
         })
 
     function isDefault(key: string): bool {
@@ -76,6 +77,8 @@ Singleton {
     property alias colourSource: adapter.colourSource
     // Keep what's copied for the Super+V menu (see Clipboard)
     property alias clipboardHistory: adapter.clipboardHistory
+    // Keep awake (see KeepAwake), kept on through restarts until switched off
+    property alias keepAwake: adapter.keepAwake
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -113,6 +116,7 @@ Singleton {
             property string batteryCriticalAction: root.defaults.batteryCriticalAction
             property string colourSource: root.defaults.colourSource
             property bool clipboardHistory: root.defaults.clipboardHistory
+            property bool keepAwake: root.defaults.keepAwake
         }
     }
 }
