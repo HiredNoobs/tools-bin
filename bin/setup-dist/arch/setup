@@ -17,7 +17,7 @@ function configure_bash {
 }
 
 function configure_hyprland {
-  local cursor_version
+  local cursor_version cursor
 
   log_info "Configuring hyprland."
   log_info "Installing dependencies."
@@ -28,7 +28,7 @@ function configure_hyprland {
     xdg-desktop-portal-gtk udisks2 brightnessctl ddcutil pamixer playerctl quickshell bluez libnotify wl-clipboard libqalculate pacman-contrib power-profiles-daemon \
     starship yazi kitty fish firefox grim slurp swappy htop btop nvtop \
     networkmanager unzip python-dbus python-gobject xdg-terminal-exec \
-    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme papirus-icon-theme \
+    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme papirus-icon-theme capitaine-cursors \
     otf-codenewroman-nerd
 
   log_info "Dependencies installed. Starting configuration."
@@ -47,10 +47,13 @@ function configure_hyprland {
   # Not --now, starting it would take over the current TTY
   sudo systemctl enable sddm
 
+  # The red one is the default; the others go with Settings › Appearance's presets
   cursor_version=$(get_latest_release "catppuccin/cursors")
-  curl -fsSL "https://github.com/catppuccin/cursors/releases/download/$cursor_version/catppuccin-latte-red-cursors.zip" \
-    -o /tmp/catppuccin-latte-red-cursors.zip
-  unzip -o /tmp/catppuccin-latte-red-cursors.zip -d "$HOME/.local/share/icons/"
+  for cursor in latte-red frappe-blue mocha-mauve; do
+    curl -fsSL "https://github.com/catppuccin/cursors/releases/download/$cursor_version/catppuccin-$cursor-cursors.zip" \
+      -o "/tmp/catppuccin-$cursor-cursors.zip"
+    unzip -o "/tmp/catppuccin-$cursor-cursors.zip" -d "$HOME/.local/share/icons/"
+  done
 
   # Only the first time: after that, Settings › Default apps changes it
   rsync -av --ignore-existing "$ROOT/dotfiles/.config/mimeapps.list" "$HOME/.config/mimeapps.list"

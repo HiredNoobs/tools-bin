@@ -38,6 +38,7 @@ ShellRoot {
         LockShare.shared;
         ColourScheme.current;
         Drives.drives;
+        RestartState.restored;
         Clipboard.entries;
         Appearance.loaded;
     }
@@ -199,6 +200,16 @@ ShellRoot {
 
         function close(): void {
             settingsWindow.active = false;
+        }
+
+        // After a restart the shell did itself: the window back as it was, if it was open
+        function restore(): void {
+            const state = RestartState.restored;
+            if (!state?.windowOpen) {
+                RestartState.restored = null;
+                return;
+            }
+            open(state.page ?? "");
         }
     }
 

@@ -32,7 +32,8 @@ Singleton {
             batteryCriticalAction: "nothing",
             colourSource: "gruvbox",
             clipboardHistory: true,
-            keepAwake: false
+            keepAwake: false,
+            presetCursors: false
         })
 
     function isDefault(key: string): bool {
@@ -79,6 +80,8 @@ Singleton {
     property alias clipboardHistory: adapter.clipboardHistory
     // Keep awake (see KeepAwake), kept on through restarts until switched off
     property alias keepAwake: adapter.keepAwake
+    // Appearance presets also switch to a cursor that suits them (see Presets)
+    property alias presetCursors: adapter.presetCursors
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -117,6 +120,7 @@ Singleton {
             property string colourSource: root.defaults.colourSource
             property bool clipboardHistory: root.defaults.clipboardHistory
             property bool keepAwake: root.defaults.keepAwake
+            property bool presetCursors: root.defaults.presetCursors
         }
     }
 }

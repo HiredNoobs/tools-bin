@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs
 import qs.components
+import qs.services
 
 // The settings app (Super+I): an ordinary window Hyprland manages, with a sidebar of sections
 // and a search box that filters them. Opened at a section with `qs ipc call settings open
@@ -156,10 +157,31 @@ FloatingWindow {
 
         Flickable {
             id: content
+
+            // Scroll position to go back to after a restart (RestartState), -1 when none: tried
+            // again as the page grows (lists and pictures arrive after it's built)
+            property real restoreY: -1
+
+            function applyRestore(): void {
+                if (restoreY >= 0)
+                    contentY = Math.max(0, Math.min(restoreY, contentHeight - height));
+            }
+
             anchors.fill: parent
             contentHeight: pageColumn.implicitHeight + 56
             boundsBehavior: Flickable.StopAtBounds
             clip: true
+            onContentYChanged: RestartState.scrollY = contentY
+            onContentHeightChanged: applyRestore()
+
+            Timer {
+                id: restoreTimer
+                interval: 3000
+                onTriggered: {
+                    content.restoreY = -1;
+                    RestartState.restored = null;
+                }
+            }
 
             Column {
                 id: pageColumn
@@ -195,7 +217,22 @@ FloatingWindow {
     }
 
     // Back to the top when switching section
-    onPageChanged: content.contentY = 0
+    onPageChanged: {
+        content.contentY = 0;
+        RestartState.page = page;
+    }
+
+    Component.onCompleted: {
+        RestartState.windowOpen = true;
+        RestartState.page = page;
+        // Reopened after a restart: back where it was, once the page has been built
+        if (RestartState.restored) {
+            content.restoreY = RestartState.restored.scrollY ?? 0;
+            Qt.callLater(content.applyRestore);
+            restoreTimer.start();
+        }
+    }
+    Component.onDestruction: RestartState.windowClosed()
 
     Component {
         id: soundPage

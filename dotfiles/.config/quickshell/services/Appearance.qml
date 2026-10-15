@@ -101,18 +101,49 @@ Singleton {
 
     // GTK 3 or Qt set to something else than the choices above (as nwg-look and qt6ct allow);
     // worked out after reading and after each change (see checkMatch)
-    property bool mismatched: false
+    // Gallery pictures by theme (scripts/theme-previews.py): icons -> [file], cursors ->
+    // { pointer, text, hand } PNGs
+    property var iconPreviews: ({})
+    property var cursorPreviews: ({})
+    property string previewedThemes: ""
+
+    // What's installed, again (while the Appearance page is open, for themes installed meanwhile)
+    function rescan(): void {
+        if (!lists.running)
+            lists.running = true;
+    }
+
+    // What differs, as "GTK 3 cursor: <name>" lines
+    property var mismatches: []
+    readonly property bool mismatched: mismatches.length > 0
     property bool loaded: false
 
+    // Checked once changes settle: a preset writes several files in turn, and halfway through
+    // they'd look mismatched
     function checkMatch(): void {
+        matchTimer.restart();
+    }
+
+    Timer {
+        id: matchTimer
+        interval: 1500
+        onTriggered: root.compareFiles()
+    }
+
+    function compareFiles(): void {
         if (!loaded)
             return;
+        const found = [];
         const gtk = gtk3.text();
-        const qtIcons = ini(qt6ct.text(), "Appearance", "icon_theme");
-        mismatched = (gtk !== "" && (ini(gtk, "Settings", "gtk-icon-theme-name") !== iconTheme
-                    || ini(gtk, "Settings", "gtk-cursor-theme-name") !== cursorTheme
-                    || ini(gtk, "Settings", "gtk-font-name") !== `${font} ${fontSize}`))
-            || (qtIcons !== "" && qtIcons !== iconTheme);
+        const compare = (who, what, theirs, ours) => {
+            if (theirs !== "" && theirs !== ours)
+                found.push(`${who} ${what}: ${theirs}`);
+        };
+        compare("GTK 3", "icons", ini(gtk, "Settings", "gtk-icon-theme-name"), iconTheme);
+        compare("GTK 3", "cursor", ini(gtk, "Settings", "gtk-cursor-theme-name"), cursorTheme);
+        compare("GTK 3", "font", ini(gtk, "Settings", "gtk-font-name"), `${font} ${fontSize}`);
+        compare("Qt", "icons", ini(qt6ct.text(), "Appearance", "icon_theme"), iconTheme);
+        mismatches = found;
     }
 
     // Qt's own interface font, if it isn't the shared one (after both are read)
@@ -171,9 +202,25 @@ Singleton {
         return lines.join("\n").replace(/\n*$/, "\n");
     }
 
+    // Text written this turn of the event loop, by path: a FileView's text() only shows a write
+    // from the next turn, so several edits in a row (a preset, "Use everywhere") must build on
+    // this, or each would undo the one before
+    property var written: ({})
+
+    function editIni(file: var, section: string, key: string, value: string): void {
+        const text = setIni(written[file.path] ?? file.text(), section, key, value);
+        written[file.path] = text;
+        file.setText(text);
+        Qt.callLater(root.forgetWritten);
+    }
+
+    function forgetWritten(): void {
+        written = {};
+    }
+
     function setGtkIni(key: string, value: string): void {
         for (const file of [gtk3, gtk4])
-            file.setText(setIni(file.text(), "Settings", key, value));
+            editIni(file, "Settings", key, value);
     }
 
     function gsettings(key: string, value: string): void {
@@ -219,7 +266,7 @@ Singleton {
     function setKvantumTheme(name: string): void {
         track("kvantumTheme", kvantumTheme, name);
         kvantumTheme = name;
-        kvantum.setText(setIni(kvantum.text(), "General", "theme", name));
+        editIni(kvantum, "General", "theme", name);
     }
 
     function setIconTheme(name: string): void {
@@ -227,14 +274,16 @@ Singleton {
         iconTheme = name;
         gsettings("icon-theme", name);
         setGtkIni("gtk-icon-theme-name", name);
-        qt6ct.setText(setIni(qt6ct.text(), "Appearance", "icon_theme", name));
+        editIni(qt6ct, "Appearance", "icon_theme", name);
         writeHyprEnv();
         checkMatch();
         // The shell picks its icons at start: restart it with these (and come back here), once
         // whatever else was changed with them is saved
         if (name !== "" && name !== Quickshell.env("QS_ICON_THEME")) {
             Exec.run(`hyprctl eval 'hl.env("QS_ICON_THEME", "${name}")'`);
-            Exec.viaHyprland("sh -c 'sleep 1; pkill -x qs; while pgrep -x qs >/dev/null; do sleep 0.1; done; qs & sleep 2; qs ipc call settings open appearance'", "");
+            // The settings window comes back as it was (RestartState), once the new shell answers
+            RestartState.save();
+            Exec.viaHyprland(`sh -c 'sleep 1; pkill -x qs; while pgrep -x qs >/dev/null; do sleep 0.1; done; qs & sleep 1; for try in $(seq 40); do [ -z "$(qs ipc call settings restore 2>&1)" ] && break; sleep 0.25; done'`, "");
         }
     }
 
@@ -274,7 +323,7 @@ Singleton {
         gsettings("font-name", `${family} ${size}`);
         setGtkIni("gtk-font-name", `${family} ${size}`);
         if (qtFont === "")
-            qt6ct.setText(setIni(qt6ct.text(), "Fonts", "general", qtFontString(family, size)));
+            editIni(qt6ct, "Fonts", "general", qtFontString(family, size));
         checkMatch();
     }
 
@@ -283,7 +332,7 @@ Singleton {
         monoFont = family;
         monoSize = size;
         gsettings("monospace-font-name", `${family} ${size}`);
-        qt6ct.setText(setIni(qt6ct.text(), "Fonts", "fixed", qtFontString(family, size)));
+        editIni(qt6ct, "Fonts", "fixed", qtFontString(family, size));
     }
 
     // Qt's own interface font; "" goes back to the shared one
@@ -291,13 +340,13 @@ Singleton {
         track("qtFont", { family: qtFont, size: qtFontSize }, { family: family, size: family === "" ? 0 : size });
         qtFont = family;
         qtFontSize = family === "" ? 0 : size;
-        qt6ct.setText(setIni(qt6ct.text(), "Fonts", "general", family === "" ? qtFontString(font, fontSize) : qtFontString(family, size)));
+        editIni(qt6ct, "Fonts", "general", family === "" ? qtFontString(font, fontSize) : qtFontString(family, size));
     }
 
     function setPortalDialogs(on: bool): void {
         track("portalDialogs", portalDialogs, on);
         portalDialogs = on;
-        qt6ct.setText(setIni(qt6ct.text(), "Appearance", "standard_dialogs", on ? "xdgdesktopportal" : "default"));
+        editIni(qt6ct, "Appearance", "standard_dialogs", on ? "xdgdesktopportal" : "default");
     }
 
     // Writes the current choices everywhere, fixing toolkits that disagree
@@ -384,6 +433,27 @@ Singleton {
                 root.kvantumThemes = sort(found.kvantum);
                 root.fonts = found.font;
                 root.monoFonts = found.mono;
+                // Pictures only for new themes' sake (the script takes a couple of seconds)
+                const themes = JSON.stringify([root.iconThemes, root.cursorThemes]);
+                if (themes !== root.previewedThemes) {
+                    root.previewedThemes = themes;
+                    previewer.running = true;
+                }
+            }
+        }
+    }
+
+    // After the lists, as it takes a couple of seconds
+    Process {
+        id: previewer
+        command: ["python3", "-I", Quickshell.shellPath("scripts/theme-previews.py"), root.iconThemes.join(","), root.cursorThemes.join(",")]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const previews = JSON.parse(text);
+                    root.iconPreviews = previews.icons ?? {};
+                    root.cursorPreviews = previews.cursors ?? {};
+                } catch (e) {}
             }
         }
     }

@@ -16,6 +16,14 @@ Column {
 
     Component.onCompleted: Appearance.refresh()
 
+    // Themes installed while it's open show up
+    Timer {
+        interval: 10000
+        running: true
+        repeat: true
+        onTriggered: Appearance.rescan()
+    }
+
     // Toolkits set apart by other tools (nwg-look, qt6ct)
     Rectangle {
         visible: Appearance.mismatched
@@ -34,7 +42,7 @@ Column {
             PanelText {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - fixButton.width - parent.spacing
-                text: "Some apps use different icons, cursor or fonts than below (set by another tool). Use these everywhere?"
+                text: `Some apps don't use the choices below (another tool or an older change set them):\n${Appearance.mismatches.map(m => `• ${m}`).join("\n")}\n"Use everywhere" gives them the choices below too.`
                 wrapMode: Text.WordWrap
                 color: Theme.warning
             }
@@ -133,6 +141,18 @@ Column {
                 }
             }
         }
+
+        SettingRow {
+            label: "Change the cursor too"
+            description: "Presets pick a cursor that suits them. Off, the cursor stays as it is."
+            changed: !ShellSettings.isDefault("presetCursors")
+            onReset: ShellSettings.reset("presetCursors")
+
+            Toggle {
+                checked: ShellSettings.presetCursors
+                onToggled: ShellSettings.presetCursors = !checked
+            }
+        }
     }
 
     SettingsGroup {
@@ -177,21 +197,30 @@ Column {
     SettingsGroup {
         title: "Icons and cursor"
 
-        ListPicker {
+        GalleryPicker {
             label: "Icons"
             changed: Appearance.changed("iconTheme")
             onReset: Appearance.revert("iconTheme")
             choices: Appearance.iconThemes
             current: Appearance.iconTheme
+            pictures: name => Appearance.iconPreviews[name] ?? []
             onPicked: value => Appearance.setIconTheme(value)
         }
 
-        ListPicker {
+        // Each on a dark and a light background, as a cursor has to show up on both
+        GalleryPicker {
             label: "Cursor"
+            description: "The arrow, text beam and hand, on dark and light."
             changed: Appearance.changed("cursor")
             onReset: Appearance.revert("cursor")
             choices: Appearance.cursorThemes
             current: Appearance.cursorTheme
+            cursors: true
+            format: name => name.replace("-cursors", "")
+            pictures: name => {
+                const previews = Appearance.cursorPreviews[name] ?? {};
+                return ["pointer", "text", "hand"].filter(role => previews[role]).map(role => previews[role]);
+            }
             onPicked: value => Appearance.setCursor(value, Appearance.cursorSize)
         }
 
@@ -483,6 +512,15 @@ Column {
         signal picked(string value)
         signal reset
 
+        // Open again after a restart if it was before (RestartState)
+        onOpenChanged: RestartState.setPicker(label, open)
+        Component.onCompleted: {
+            if (RestartState.pickerOpen(label)) {
+                open = true;
+                list.setExpanded(true);
+            }
+        }
+
         readonly property bool searchable: choices.length > 15
         readonly property var shown: {
             const query = search.text.trim().toLowerCase();
@@ -537,6 +575,166 @@ Column {
                 onChosen: item => {
                     picker.picked(item.value);
                     picker.open = false;
+                }
+            }
+        }
+    }
+
+    // Like ListPicker, but the choices open as tiles with pictures of each (`pictures` gives a
+    // choice's image files); the current one's pictures also show beside the button. `cursors`
+    // shows each picture on a dark and a light background.
+    component GalleryPicker: Column {
+        id: gallery
+
+        property string label
+        property string description: ""
+        property var choices: []
+        property string current
+        property var pictures: name => []
+        property bool cursors: false
+        // How a choice's name shows
+        property var format: name => name
+        property bool open: false
+        property bool changed: false
+        signal picked(string value)
+        signal reset
+
+        // Open again after a restart if it was before (RestartState)
+        onOpenChanged: RestartState.setPicker(label, open)
+        Component.onCompleted: open = RestartState.pickerOpen(label)
+
+        width: parent.width
+
+        SettingRow {
+            label: gallery.label
+            description: gallery.description
+            changed: gallery.changed
+            onReset: gallery.reset()
+
+            Row {
+                spacing: 12
+
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 4
+
+                    Repeater {
+                        model: gallery.pictures(gallery.current).slice(0, gallery.cursors ? 3 : 4)
+
+                        Image {
+                            required property string modelData
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 22
+                            height: 22
+                            sourceSize.width: 44
+                            sourceSize.height: 44
+                            fillMode: Image.PreserveAspectFit
+                            source: `file://${modelData}`
+                            asynchronous: true
+                        }
+                    }
+                }
+
+                PanelButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 240
+                    label: gallery.current ? gallery.format(gallery.current) : "Default"
+                    icon: gallery.open ? "\u{F077}" : "\u{F078}"
+                    highlighted: gallery.open
+                    onClicked: gallery.open = !gallery.open
+                }
+            }
+        }
+
+        Flow {
+            visible: gallery.open
+            x: 16
+            width: parent.width - 32
+            spacing: 10
+            bottomPadding: 16
+
+            Repeater {
+                model: gallery.open ? gallery.choices : []
+
+                Rectangle {
+                    id: tile
+
+                    required property string modelData
+                    readonly property bool selected: modelData === gallery.current
+                    readonly property var shown: gallery.pictures(modelData)
+
+                    width: 200
+                    height: 96
+                    radius: Theme.radius
+                    color: tileMouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                    border.width: selected ? 2 : 0
+                    border.color: Theme.accent
+
+                    // Icons in a row; cursors twice, on dark then light
+                    Column {
+                        x: 10
+                        y: 10
+                        width: parent.width - 20
+                        spacing: 0
+
+                        Repeater {
+                            model: gallery.cursors ? ["#1e1e1e", "#f2f2f2"] : [""]
+
+                            Rectangle {
+                                id: strip
+
+                                required property string modelData
+
+                                width: parent.width
+                                height: gallery.cursors ? 25 : 50
+                                radius: gallery.cursors ? 0 : 6
+                                color: modelData === "" ? "transparent" : modelData
+
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: gallery.cursors ? 22 : 6
+
+                                    Repeater {
+                                        model: tile.shown
+
+                                        Image {
+                                            required property string modelData
+                                            width: gallery.cursors ? 22 : 28
+                                            height: width
+                                            sourceSize.width: width * 2
+                                            sourceSize.height: height * 2
+                                            fillMode: Image.PreserveAspectFit
+                                            source: `file://${modelData}`
+                                            asynchronous: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        PanelText {
+                            visible: tile.shown.length === 0
+                            text: Object.keys(gallery.cursors ? Appearance.cursorPreviews : Appearance.iconPreviews).length === 0 ? "Loading…" : "No preview"
+                            dim: true
+                        }
+                    }
+
+                    PanelText {
+                        x: 10
+                        y: 68
+                        width: parent.width - 20
+                        elide: Text.ElideRight
+                        text: (tile.selected ? "\u{F012C} " : "") + gallery.format(tile.modelData)
+                        color: tile.selected ? Theme.accent : Theme.text
+                    }
+
+                    MouseArea {
+                        id: tileMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: gallery.picked(tile.modelData)
+                    }
                 }
             }
         }
