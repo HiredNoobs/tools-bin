@@ -115,6 +115,16 @@ hl.window_rule({
 })
 
 -------------------------------------------------------
+-- Layer rules
+-------------------------------------------------------
+
+-- The shell's clipboard history (Super+V) shows as a black box to anyone watching a screen share
+hl.layer_rule({
+    match = { namespace = "quickshell-clipboard" },
+    no_screen_share = true
+})
+
+-------------------------------------------------------
 -- Workspace placement
 -------------------------------------------------------
 

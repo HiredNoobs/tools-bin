@@ -136,6 +136,10 @@ ShellRoot {
         id: launcher
     }
 
+    ClipboardWindow {
+        id: clipboardWindow
+    }
+
     // `qs ipc call launcher toggle` (Super+Space), `screenshot` (Print), `clipboard` (Super+V),
     // `wallpaper`
     IpcHandler {
@@ -163,8 +167,9 @@ ShellRoot {
             show("wallpaper");
         }
 
+        // Always its own layer, to keep it out of screen sharing (ClipboardWindow)
         function clipboard(): void {
-            show("clipboard");
+            clipboardWindow.toggle();
         }
     }
 

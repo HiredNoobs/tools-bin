@@ -158,6 +158,20 @@ Column {
 
         SettingRow {
             visible: ShellSettings.clipboardHistory
+            sub: true
+            changed: !ShellSettings.isDefault("clipboardSkipPasswords")
+            onReset: ShellSettings.reset("clipboardSkipPasswords")
+            label: "Skip anything that looks like a password"
+            description: "Text with no spaces that mixes at least three of capitals, small letters, numbers and symbols (generated passwords, keys, tokens), for password managers that don't mark what they copy as secret. Passphrases can slip through: an app clearing the clipboard (Bitwarden's \"Clear clipboard\" option) also removes what it held."
+
+            Toggle {
+                checked: ShellSettings.clipboardSkipPasswords
+                onToggled: ShellSettings.clipboardSkipPasswords = !checked
+            }
+        }
+
+        SettingRow {
+            visible: ShellSettings.clipboardHistory
             label: "Clear the history"
             description: `${Clipboard.entries.length} kept.`
 

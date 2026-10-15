@@ -32,6 +32,7 @@ Singleton {
             batteryCriticalAction: "nothing",
             colourSource: "gruvbox",
             clipboardHistory: true,
+            clipboardSkipPasswords: true,
             keepAwake: false,
             presetCursors: false
         })
@@ -78,6 +79,8 @@ Singleton {
     property alias colourSource: adapter.colourSource
     // Keep what's copied for the Super+V menu (see Clipboard)
     property alias clipboardHistory: adapter.clipboardHistory
+    // ...but not text that looks like a password (see Clipboard.looksLikePassword)
+    property alias clipboardSkipPasswords: adapter.clipboardSkipPasswords
     // Keep awake (see KeepAwake), kept on through restarts until switched off
     property alias keepAwake: adapter.keepAwake
     // Appearance presets also switch to a cursor that suits them (see Presets)
@@ -119,6 +122,7 @@ Singleton {
             property string batteryCriticalAction: root.defaults.batteryCriticalAction
             property string colourSource: root.defaults.colourSource
             property bool clipboardHistory: root.defaults.clipboardHistory
+            property bool clipboardSkipPasswords: root.defaults.clipboardSkipPasswords
             property bool keepAwake: root.defaults.keepAwake
             property bool presetCursors: root.defaults.presetCursors
         }
