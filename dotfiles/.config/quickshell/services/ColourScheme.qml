@@ -5,17 +5,17 @@ import Quickshell
 import Quickshell.Io
 import qs
 
-// The colour scheme, in pywal's files in ~/.cache/wal (pywal itself isn't used): colors.json
-// for the shell (Theme), the lock and login screens and the window borders, colors-kitty.conf
-// for kitty and colors-hyprland.conf for hyprlock. One of the named palettes below or one made
-// from the wallpaper (ShellSettings.colourSource), written again when either changes; kitty and
-// the borders are told straight away, the rest watch the files. Besides pywal's keys, colors.json
-// has special.accent: the terminal's 16 colours stay true to their names, and the shell's accent
-// is separate.
+// The colour scheme, in files in ~/.cache/colours: colours.json for the shell (Theme), the lock
+// and login screens and the window borders, kitty.conf for kitty and hyprlock.conf for hyprlock.
+// One of the named palettes below or one made from the wallpaper (ShellSettings.colourSource),
+// written at start if missing and again when either changes; kitty and the borders are told
+// straight away, the rest watch the files. colours.json keeps pywal's layout (special
+// background/foreground/cursor, 16 colours) plus special.accent: the terminal's 16 colours stay
+// true to their names, and the shell's accent is separate.
 Singleton {
     id: root
 
-    readonly property string dir: Quickshell.env("HOME") + "/.cache/wal"
+    readonly property string dir: Quickshell.env("HOME") + "/.cache/colours"
     readonly property bool fromWallpaper: ShellSettings.colourSource === "wallpaper"
 
     // { label, background, foreground, accent, colors: [16 hex strings] }
@@ -166,9 +166,9 @@ Singleton {
 
         saver.command = ["sh", "-c", `
             mkdir -p "$1" &&
-            printf '%s' "$2" > "$1/.colors-kitty.conf.new" && mv "$1/.colors-kitty.conf.new" "$1/colors-kitty.conf" &&
-            printf '%s' "$3" > "$1/.colors-hyprland.conf.new" && mv "$1/.colors-hyprland.conf.new" "$1/colors-hyprland.conf" &&
-            printf '%s' "$4" > "$1/.colors.json.new" && mv "$1/.colors.json.new" "$1/colors.json" &&
+            printf '%s' "$2" > "$1/.kitty.conf.new" && mv "$1/.kitty.conf.new" "$1/kitty.conf" &&
+            printf '%s' "$3" > "$1/.hyprlock.conf.new" && mv "$1/.hyprlock.conf.new" "$1/hyprlock.conf" &&
+            printf '%s' "$4" > "$1/.colours.json.new" && mv "$1/.colours.json.new" "$1/colours.json" &&
             pkill -USR1 -x kitty
             hyprctl eval "hl.config({ general = { col = { active_border = \\"$5\\", inactive_border = \\"$6\\" } } })" >/dev/null
         `, "sh", root.dir, kitty, hyprland, json, rgba(scheme.accent, 1), rgba(c[5], 1)];
@@ -177,11 +177,12 @@ Singleton {
 
     Process {
         id: saver
+        onExited: Theme.reloadColours()
     }
 
     FileView {
         id: existing
-        path: `${root.dir}/colors.json`
+        path: `${root.dir}/colours.json`
         blockLoading: true
         watchChanges: true
         printErrors: false

@@ -5,9 +5,9 @@ import Quickshell
 import Quickshell.Io
 
 Singleton {
-    readonly property color background: wal.special.background
-    readonly property color text: wal.special.foreground || wal.colors.color7
-    readonly property color accent: wal.special.accent || wal.colors.color9
+    readonly property color background: scheme.special.background
+    readonly property color text: scheme.special.foreground || scheme.colors.color7
+    readonly property color accent: scheme.special.accent || scheme.colors.color9
 
     readonly property color charging: "#26A65B"
     readonly property color warning: "#ffbe61"
@@ -48,14 +48,21 @@ Singleton {
     readonly property int animDuration: 300
     readonly property int panelAnimDuration: 250
 
-    // The colour scheme in pywal's colors.json (ColourScheme writes it), reloaded when it changes
+    // The colour scheme in colours.json (ColourScheme writes it), reloaded when it changes, and
+    // when ColourScheme has written it (on a first start it isn't there to watch yet)
+    function reloadColours(): void {
+        colourFile.reload();
+    }
+
     FileView {
-        path: Quickshell.env("HOME") + "/.cache/wal/colors.json"
+        id: colourFile
+        path: Quickshell.env("HOME") + "/.cache/colours/colours.json"
         watchChanges: true
+        printErrors: false
         onFileChanged: reload()
 
         JsonAdapter {
-            id: wal
+            id: scheme
 
             property JsonObject special: JsonObject {
                 property string background: "#282828"

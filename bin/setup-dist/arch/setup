@@ -71,9 +71,6 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/images/profile-pictures/"   "$HOME/Pictures/profile-pictures/"
   mkdir -p "$HOME/Pictures/screenshots"  # Used by the screenshot keybinds and swappy
 
-  # Only the first time: after that, the shell writes them (Settings › Appearance › Colours)
-  rsync -av --ignore-existing "$ROOT/dotfiles/.config/wal/" "$HOME/.cache/wal/"
-
   # The avatar on the lock and login screens
   [ -e "$HOME/.face" ] || ln -s Pictures/profile-pictures/alluka.jpg "$HOME/.face"
 
@@ -87,7 +84,8 @@ function configure_hyprland {
   sudo install -d -o "$USER" -m 755 /var/lib/quickshell-lock /var/lib/quickshell-lock/faces
   cp -L "$HOME/.cache/current-wallpaper" /var/lib/quickshell-lock/wallpaper
   cp -L "$HOME/.face" "/var/lib/quickshell-lock/faces/$USER"
-  cp "$HOME/.cache/wal/colors.json" /var/lib/quickshell-lock/colors.json
+  # The colours once the shell has written them (it shares them itself at start, too)
+  [ -f "$HOME/.cache/colours/colours.json" ] && cp "$HOME/.cache/colours/colours.json" /var/lib/quickshell-lock/colors.json
 
   # monitors.lua is the layout saved from the bar, local to each machine
   rsync -av --delete --exclude 'monitors.lua' --exclude 'input.lua' --exclude 'hypridle.local.conf' --exclude 'appearance.lua' "$ROOT/dotfiles/.config/hypr/" "$XDG_CONFIG_HOME/hypr/"

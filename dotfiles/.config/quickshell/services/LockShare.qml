@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 // Keeps the login screen (the SDDM theme) showing what the lockscreen shows: the wallpaper,
-// pywal's colours and the avatar, copied into a folder the user owns and the sddm user can read
+// colours (ColourScheme) and the avatar, copied into a folder the user owns and the sddm user can read
 // (made by setup; nothing happens without it). Copied when they change here, and all of them when
 // the shell starts, in case they changed elsewhere. Each copy replaces the file in one go, so the
 // greeter never reads half of one.
@@ -37,7 +37,7 @@ Singleton {
 
     function shareAll(): void {
         copy(`${home}/.cache/current-wallpaper`, "wallpaper");
-        copy(`${home}/.cache/wal/colors.json`, "colors.json");
+        copy(`${home}/.cache/colours/colours.json`, "colors.json");
         copy(facePath, `faces/${Quickshell.env("USER")}`);
     }
 
@@ -84,9 +84,9 @@ Singleton {
         }
     }
 
-    // pywal's colours change: the login screen's too
+    // The colours change: the login screen's too
     FileView {
-        path: `${root.home}/.cache/wal/colors.json`
+        path: `${root.home}/.cache/colours/colours.json`
         watchChanges: true
         printErrors: false
         onFileChanged: root.copy(path, "colors.json")

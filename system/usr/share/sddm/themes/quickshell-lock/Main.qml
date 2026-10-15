@@ -6,7 +6,7 @@ import QtQuick
 // user before anyone logs in (reading them needs QML_XHR_ALLOW_FILE_READ, set in sddm.conf.d):
 // - battery from /sys, Wi-Fi signal from /proc/net/wireless, and its name from `runDir`
 //   (written there by a NetworkManager dispatcher script, as only root can read it)
-// - wallpaper, colours (pywal's colors.json) and avatars (faces/<user>) from `sharedDir`, which
+// - wallpaper, colours (colors.json, a copy of the shell's colours.json) and avatars (faces/<user>) from `sharedDir`, which
 //   the user owns and setup fills
 // Clicking the name switches user, and the session button opens a list of sessions, when there's
 // more than one of either. Nothing is playing and no notifications are waiting at login, so those
@@ -68,7 +68,7 @@ Item {
         return names;
     }
 
-    // --- Colours, from the user's pywal colours if setup shared them
+    // --- Colours, from the user's colour scheme if it's been shared
 
     property var wal: {
         try {

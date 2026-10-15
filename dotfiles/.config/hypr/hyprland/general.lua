@@ -5,7 +5,7 @@
 -- A colour from the colour scheme (Quickshell's ColourScheme writes it, and sets the borders live
 -- when it changes), or `fallback`
 local function scheme_colour(name, fallback)
-    local file = io.open((os.getenv("HOME") or "") .. "/.cache/wal/colors.json", "r")
+    local file = io.open((os.getenv("HOME") or "") .. "/.cache/colours/colours.json", "r")
     if not file then
         return fallback
     end
