@@ -337,10 +337,12 @@ Column {
             onPicked: value => ShellSettings.colourSource = ColourScheme.sources.find(source => ColourScheme.label(source) === value)
         }
 
-        // The scheme: background, text, then the terminal's colours
+        // The scheme: background, text, then the terminal's colours; spaced from the divider
+        // above like a row's text
         Row {
             x: 16
             spacing: 6
+            topPadding: 14
             bottomPadding: 16
 
             Repeater {
