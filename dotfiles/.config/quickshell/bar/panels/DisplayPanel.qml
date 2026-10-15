@@ -100,7 +100,7 @@ Column {
                 Slider {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 90
-                    value: external.modelData.level
+                    value: ExternalBrightness.level(external.modelData.name)
                     from: 0
                     to: 1
                     onMoved: value => ExternalBrightness.set(external.modelData.name, value)
@@ -110,7 +110,7 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 40
                     horizontalAlignment: Text.AlignRight
-                    text: `${Math.round(external.modelData.level * 100)}%`
+                    text: `${Math.round(ExternalBrightness.level(external.modelData.name) * 100)}%`
                     dim: true
                 }
             }
