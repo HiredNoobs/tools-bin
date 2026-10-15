@@ -9,7 +9,7 @@ Singleton {
     id: root
 
     readonly property string device: "/sys/class/backlight/intel_backlight"
-    // Raw level brightnessctl won't go below, same floor as the old Waybar scroll binding
+    // Raw level brightnessctl won't go below, so the screen never goes fully dark
     readonly property int minRaw: 10000
 
     property int brightness: 0

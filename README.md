@@ -44,37 +44,28 @@ This does add this repo to the ``$PATH``.
 
 For Arch only.
 
-Included is a very basic Hyprland configuration.
+Hyprland with a Quickshell desktop shell (``dotfiles/.config/quickshell``): the bar and its panels, notifications, launcher, lock screen, a matching SDDM login theme, and a settings window (``Super`` + ``I``) for sound, network, Bluetooth, displays, input, power, default apps, appearance and the shell itself.
 
-The initial confiuration is based on the following repos:
+The initial configuration was based on:
 
 - Hyprland: [gaurav23b's simple-hyprland](https://github.com/gaurav23b/simple-hyprland)
-- Waybar: [elifouts' dotfiles](https://github.com/elifouts/Dotfiles)
-- Waybar network context menu: [cebem1nt's dotfiles](https://github.com/cebem1nt/dotfiles)
 - Wallpapers: [nordic-wallpapers](https://github.com/linuxdotexe/nordic-wallpapers)
 
 ### Keybinds
 
-`Super` + `H` lists every keybind.
+``Super`` + ``H`` lists every keybind. The main ones:
 
-Window control:
-
-- `Super` + `Q` = Kill window
-- `Super` + `1` = Move to workspace 1, replace 1 with any other number 0-9.
-- `Super` + `Alt` + `1` = Move current window to workspace 1, replace 1 with any other number 0-9.
-- `Super` + `Shift` + `←` = Move current window left
-- `Super` + `Shift` + `↓` = Move current window down
-- `Super` + `Shift` + `↑` = Move current window up
-- `Super` + `Shift` + `→` = Move current window right
-- `Super` + `LMB` = drag window
-
-Application shortcuts:
-
-- `Super` = Application launcher
-- `Super` + `W` = Web browser
-- `Super` + `E` = File explorer
-- `Super` + `T` = Terminal
-- `Super` + `C` = Code editor
+- ``Super`` + ``Space`` = Application launcher
+- ``Super`` + ``I`` = Settings
+- ``Super`` + ``Esc`` = Power menu
+- ``Super`` + ``L`` = Lock
+- ``Super`` + ``Tab`` = Workspace overview
+- ``Super`` + ``V`` = Clipboard history
+- ``Super`` + ``B`` = Wallpaper
+- ``Print`` = Screenshot menu
+- ``Super`` + ``Q`` = Close window
+- ``Super`` + ``1``-``0`` = Workspace on the main monitor (``Ctrl`` for the second, ``Alt`` to move the window there)
+- ``Super`` + ``T`` / ``W`` / ``E`` = Terminal / browser / files
 
 </details>
 

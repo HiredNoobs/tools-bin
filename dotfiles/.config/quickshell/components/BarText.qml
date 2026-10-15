@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import qs
 
-// A bar label with Waybar's shared padding, colours and hover behaviour
+// A bar label with the bar's shared padding, colours and hover behaviour
 Text {
     id: root
 

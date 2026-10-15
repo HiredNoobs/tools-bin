@@ -17,7 +17,7 @@ Singleton {
     readonly property var icons: ["\u{F007B}", "\u{F007C}", "\u{F007E}", "\u{F0080}", "\u{F0082}", "\u{F0079}"]
     readonly property string icon: charging || plugged ? "\u{F0084}" : icons[Math.min(icons.length - 1, Math.floor(capacity / 100 * icons.length))]
 
-    // Same colours as the old Waybar battery: green charging, amber at 30%, red at 20%
+    // Green charging, amber at 30%, red at 20%
     readonly property color colour: {
         if (charging)
             return Theme.charging;

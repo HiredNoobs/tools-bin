@@ -3,7 +3,7 @@ pragma Singleton
 import Quickshell
 
 Singleton {
-    // Run through a shell so `~`, quoting and `||` work like Waybar's commands
+    // Run through a shell so `~`, quoting and `||` work as on the command line
     function run(command: string): void {
         Quickshell.execDetached(["sh", "-c", command]);
     }
