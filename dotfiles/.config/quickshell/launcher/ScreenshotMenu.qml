@@ -25,7 +25,8 @@ Column {
         // Long enough for the menu's close animation
         const wait = option.delay ? "2" : "0.4";
         const name = `${option.area ? "snip" : "full"}-$(date +%Y%m%d-%H%M%S)-$$.png`;
-        const grab = option.area ? `area=$(slurp) && grim -g "$area" "$file"` : `grim "$file"`;
+        // Not while an area is already being selected (Super+Print), which would stack another
+        const grab = option.area ? `! pgrep -x slurp >/dev/null && area=$(slurp) && grim -g "$area" "$file"` : `grim "$file"`;
         Exec.run(`dir="$HOME/Pictures/screenshots"; mkdir -p "$dir" && sleep ${wait} && file="$dir/${name}" && ${grab} && swappy -f "$file"`);
     }
 

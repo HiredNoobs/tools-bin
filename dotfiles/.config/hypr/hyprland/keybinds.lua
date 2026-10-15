@@ -164,7 +164,8 @@ hl.bind("CONTROL + ESCAPE", hl.dsp.exec_cmd("qs ipc call bar toggle || qs"), { d
 -- Screenshot menu
 hl.bind("PRINT", hl.dsp.exec_cmd("qs ipc call launcher screenshot"), { description = "Toggle screenshot menu" })
 
--- Select area, saves unedited file, copies to clipboard, then opens file in swappy
+-- Select area, saves unedited file, copies to clipboard, then opens file in swappy. Pressed
+-- again while selecting, it cancels (rather than stacking another selection on top)
 hl.bind(mainMod .. " + PRINT", function()
     local file = "$HOME/Pictures/screenshots/snip-" .. os.date("%Y%m%d_%H%M%S-") .. math.random(32767) .. ".png"
     local grim = "grim -g \"$(slurp)\" \"" .. file .. "\""
@@ -172,7 +173,7 @@ hl.bind(mainMod .. " + PRINT", function()
     local copy = " && wl-copy < \"" .. file .. "\""
     local swappy = " && swappy -f \"" .. file .. "\""
 
-    hl.dispatch(hl.dsp.exec_cmd(grim .. message .. copy .. swappy))
+    hl.dispatch(hl.dsp.exec_cmd("if pgrep -x slurp >/dev/null; then pkill -x slurp; else " .. grim .. message .. copy .. swappy .. "; fi"))
 end, { description = "Screenshot - Select area" })
 
 -- Full screen saves file, copies to clipboard
