@@ -355,8 +355,9 @@ Column {
                 }
             }
 
-            // Keep awake
+            // Keep awake (a quick toggle instead when the control centre is on)
             ListRow {
+                visible: !Theme.controlCentre
                 width: parent.width
                 icon: KeepAwake.enabled ? "\u{F0176}" : "\u{F0150}"
                 label: "Keep awake"

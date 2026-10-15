@@ -7,8 +7,8 @@ import qs
 import qs.components
 import qs.services
 
-// Top of the control centre: a tile for each thing worth switching quickly (lit while on),
-// and the CPU, memory and temperature under them. The tabs below have the details.
+// Top of the control centre: a tile for each thing worth switching quickly (lit while on).
+// The tabs below have the details.
 Column {
     id: root
 
@@ -115,38 +115,6 @@ Column {
                     onClicked: tile.modelData.toggle()
                 }
             }
-        }
-    }
-
-    Row {
-        width: parent.width
-        spacing: 16
-
-        readonly property real third: (width - spacing * 2) / 3
-
-        StatBar {
-            width: parent.third
-            icon: "\u{F0EE0}"
-            label: "CPU"
-            value: `${SysStats.cpuUsage}%`
-            fraction: SysStats.cpuUsage / 100
-        }
-
-        StatBar {
-            width: parent.third
-            icon: "\u{EFC5}"
-            label: "RAM"
-            value: `${Math.round(SysStats.memTotalGiB > 0 ? SysStats.memUsedGiB / SysStats.memTotalGiB * 100 : 0)}%`
-            fraction: SysStats.memTotalGiB > 0 ? SysStats.memUsedGiB / SysStats.memTotalGiB : 0
-        }
-
-        StatBar {
-            width: parent.third
-            icon: "\u{F2C9}"
-            label: "Temp"
-            value: `${SysStats.temperature}°`
-            fraction: SysStats.temperature / 100
-            barColour: SysStats.temperature >= 85 ? Theme.critical : SysStats.temperature >= 70 ? Theme.warning : Theme.accent
         }
     }
 }

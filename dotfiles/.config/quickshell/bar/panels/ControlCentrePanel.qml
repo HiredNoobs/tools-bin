@@ -5,9 +5,9 @@ import qs
 import qs.components
 import qs.services
 
-// One panel with a tab per right-hand bar icon (Theme.controlCentre), under the quick toggles
-// and usage. Each tab shows that icon's own panel. Fixed width so the tab row stays put; the
-// height fits the tab.
+// One panel with a tab per right-hand bar icon (Theme.controlCentre), under the quick toggles.
+// Each tab shows that icon's own panel. Fixed width so the tab row stays put; the height fits
+// the tab, which scrolls under the toggles and tab row when it's taller than the room left.
 Column {
     id: root
 
@@ -35,29 +35,58 @@ Column {
     width: 400
     spacing: 12
 
+    // What's left of the panel's height for the tab
+    readonly property real tabRoom: Theme.panelMaxHeight - 2 * Theme.panelPadding - toggles.height - tabBar.height - 2 * spacing
+
+    onTabChanged: scroller.contentY = 0
+
     QuickToggles {
+        id: toggles
         width: parent.width
     }
 
     TabBar {
+        id: tabBar
         width: parent.width
         tabs: root.tabs
         current: root.tab
         onTabRequested: name => root.tabRequested(name)
     }
 
-    Loader {
-        id: content
+    Flickable {
+        id: scroller
         width: parent.width
-        sourceComponent: ({
-            "notifications": notificationsTab,
-            "audio": audioTab,
-            "connectivity": connectivityTab,
-            "display": displayTab,
-            "drives": drivesTab,
-            "apps": appsTab
-        })[root.tab] ?? null
-        onLoaded: fadeIn.restart()
+        height: Math.min(content.height, root.tabRoom)
+        contentHeight: content.height
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+
+        Loader {
+            id: content
+            width: parent.width
+            sourceComponent: ({
+                "notifications": notificationsTab,
+                "audio": audioTab,
+                "connectivity": connectivityTab,
+                "display": displayTab,
+                "drives": drivesTab,
+                "apps": appsTab
+            })[root.tab] ?? null
+            onLoaded: fadeIn.restart()
+        }
+
+        // Scrollbar, while it scrolls
+        Rectangle {
+            visible: scroller.contentHeight > scroller.height
+            parent: scroller
+            anchors.right: parent.right
+            y: scroller.visibleArea.yPosition * scroller.height
+            width: 3
+            height: scroller.visibleArea.heightRatio * scroller.height
+            radius: 1.5
+            color: Theme.subtext
+            opacity: 0.6
+        }
     }
 
     NumberAnimation {

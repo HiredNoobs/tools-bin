@@ -90,11 +90,16 @@ Item {
         attached: root.attached
     }
 
-    // Content, clipped to the body while the panel grows
-    Item {
+    // Content, clipped to the body while the panel grows, and scrolling once it's taller than
+    // the most a panel may be (Theme.panelMaxHeight)
+    Flickable {
+        id: scroller
         x: root.fillet
         width: root.bodyWidth
         height: root.height
+        contentHeight: root.targetHeight
+        interactive: root.targetHeight > Theme.panelMaxHeight
+        boundsBehavior: Flickable.StopAtBounds
         clip: true
 
         Loader {
@@ -102,7 +107,24 @@ Item {
             x: Theme.panelPadding
             y: Theme.panelPadding
             sourceComponent: root.panels[root.shown] ?? null
-            onLoaded: fadeIn.restart()
+            onLoaded: {
+                scroller.contentY = 0;
+                fadeIn.restart();
+            }
+        }
+
+        // Scrollbar, while it scrolls
+        Rectangle {
+            visible: scroller.interactive
+            parent: scroller
+            anchors.right: parent.right
+            anchors.rightMargin: 2
+            y: scroller.visibleArea.yPosition * scroller.height
+            width: 3
+            height: scroller.visibleArea.heightRatio * scroller.height
+            radius: 1.5
+            color: Theme.subtext
+            opacity: 0.6
         }
     }
 

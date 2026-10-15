@@ -42,6 +42,14 @@ Column {
         text: "Brightness"
     }
 
+    // Named like the external monitors' sliders when there are any
+    PanelText {
+        visible: Brightness.available && ExternalBrightness.available
+        text: "Built-in"
+        dim: true
+        font.pixelSize: Theme.panelFontSize - 2
+    }
+
     Row {
         visible: Brightness.available
         width: parent.width
@@ -121,15 +129,41 @@ Column {
         text: "Nightlight"
     }
 
-    ListRow {
+    // Warmth, right is warmer (6000 K down to 2500 K, as in Settings › Displays); moving it
+    // switches nightlight on. The on/off switch is a quick toggle when the control centre is on.
+    Row {
         width: parent.width
-        icon: "\u{F0594}"
-        label: "Nightlight"
-        sublabel: Nightlight.enabled ? `${Nightlight.temperature} K` : "Off"
-        selected: Nightlight.enabled
-        onClicked: Nightlight.setEnabled(!Nightlight.enabled)
+        spacing: 10
+
+        PanelText {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "\u{F0594}"
+            color: Nightlight.enabled ? Theme.accent : Theme.text
+        }
+
+        Slider {
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width - 100 - (nightlightToggle.visible ? nightlightToggle.width + parent.spacing : 0)
+            value: (6000 - ShellSettings.nightlightTemperature) / 3500
+            onMoved: value => {
+                ShellSettings.nightlightTemperature = Math.round((6000 - value * 3500) / 100) * 100;
+                if (!Nightlight.enabled)
+                    Nightlight.setEnabled(true);
+            }
+        }
+
+        PanelText {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 50
+            horizontalAlignment: Text.AlignRight
+            text: Nightlight.enabled ? `${Nightlight.temperature} K` : "Off"
+            dim: true
+        }
 
         Toggle {
+            id: nightlightToggle
+            visible: !Theme.controlCentre
+            anchors.verticalCenter: parent.verticalCenter
             checked: Nightlight.enabled
             onToggled: Nightlight.setEnabled(!Nightlight.enabled)
         }
