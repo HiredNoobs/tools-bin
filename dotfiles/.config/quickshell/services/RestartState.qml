@@ -6,7 +6,7 @@ import Quickshell.Io
 import qs
 
 // What's on screen, kept across a restart the shell does itself (changing its icons, see
-// Appearance): whether the settings window is open, its page, scroll position and open pickers,
+// Appearance, or Settings › Shell's restart button): whether the settings window is open, its page, scroll position and open pickers,
 // and the panels' open sections (PanelState). Saved just before, read back once at the next
 // start and then deleted, so an ordinary start, or closing the window, begins fresh.
 Singleton {
@@ -51,6 +51,14 @@ Singleton {
             pickers: pickers,
             panels: PanelState.open
         }));
+    }
+
+    // Restarts the shell through Hyprland (so it gets Hyprland's current environment, e.g. new
+    // icons), a second from now so changes being saved finish; the settings window comes back
+    // as it was once the new shell answers
+    function restartShell(): void {
+        save();
+        Exec.viaHyprland(`sh -c 'sleep 1; pkill -x qs; while pgrep -x qs >/dev/null; do sleep 0.1; done; qs & sleep 1; for try in $(seq 40); do [ -z "$(qs ipc call settings restore 2>&1)" ] && break; sleep 0.25; done'`, "");
     }
 
     // In case the window never comes back to use it

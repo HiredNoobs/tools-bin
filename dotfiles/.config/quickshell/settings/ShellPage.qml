@@ -182,4 +182,31 @@ Column {
             }
         }
     }
+
+    SettingsGroup {
+        title: "Reload"
+
+        SettingRow {
+            label: "Hyprland"
+            description: "Reads its config files again."
+
+            PanelButton {
+                icon: "\u{F01E}"
+                label: "Reload"
+                onClicked: Exec.run("hyprctl reload")
+            }
+        }
+
+        // A fresh start rather than a hot reload, which proved unreliable
+        SettingRow {
+            label: "Quickshell"
+            description: "Starts the shell again; this window comes back where it was."
+
+            PanelButton {
+                icon: "\u{F01E}"
+                label: "Restart"
+                onClicked: RestartState.restartShell()
+            }
+        }
+    }
 }

@@ -281,9 +281,7 @@ Singleton {
         // whatever else was changed with them is saved
         if (name !== "" && name !== Quickshell.env("QS_ICON_THEME")) {
             Exec.run(`hyprctl eval 'hl.env("QS_ICON_THEME", "${name}")'`);
-            // The settings window comes back as it was (RestartState), once the new shell answers
-            RestartState.save();
-            Exec.viaHyprland(`sh -c 'sleep 1; pkill -x qs; while pgrep -x qs >/dev/null; do sleep 0.1; done; qs & sleep 1; for try in $(seq 40); do [ -z "$(qs ipc call settings restore 2>&1)" ] && break; sleep 0.25; done'`, "");
+            RestartState.restartShell();
         }
     }
 

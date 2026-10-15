@@ -285,16 +285,12 @@ Column {
             }
         }
 
-        // Qt sizes fonts differently, so it can have its own; tucked away (remembered for the
-        // session like other expandable rows)
+        // Qt sizes fonts differently, so it can have its own: the rows below show while it does
         SettingRow {
             label: "Qt apps use the interface font"
             changed: Appearance.changed("qtFont")
             onReset: Appearance.revert("qtFont")
             description: Appearance.qtFont === "" ? "Off gives them their own, as Qt sizes fonts a little differently." : `Their own for now: ${Appearance.qtFont} ${Appearance.qtFontSize}.`
-            expandable: true
-            expanded: PanelState.isOpen("settings", "qt-font")
-            onExpandToggled: PanelState.toggle("settings", "qt-font")
 
             Toggle {
                 checked: Appearance.qtFont === ""
@@ -303,7 +299,7 @@ Column {
         }
 
         ListPicker {
-            visible: PanelState.isOpen("settings", "qt-font") && Appearance.qtFont !== ""
+            visible: Appearance.qtFont !== ""
             sub: true
             label: "Qt font"
             changed: Appearance.changed("qtFont")
@@ -314,7 +310,7 @@ Column {
         }
 
         SettingRow {
-            visible: PanelState.isOpen("settings", "qt-font") && Appearance.qtFont !== ""
+            visible: Appearance.qtFont !== ""
             sub: true
             label: "Qt font size"
             changed: Appearance.changed("qtFont")
