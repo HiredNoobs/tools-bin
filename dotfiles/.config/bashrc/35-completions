@@ -13,7 +13,7 @@ function _tools_bin_reply {
 # kns: the current context's namespaces
 # -----------------------------------------------------
 
-_kns_completions() {
+function _kns_completions {
   [[ "$COMP_CWORD" -eq 1 ]] || return
   _tools_bin_reply "$(kubectl get namespaces -o name 2> /dev/null | sed 's|^namespace/||')"
 }
@@ -35,7 +35,7 @@ function _vsecret_keys {
   vault kv get -format=json -mount=labv2 "$path" 2> /dev/null | jq -r '.data.data | keys[]' 2> /dev/null
 }
 
-_vsecret_completions() {
+function _vsecret_completions {
   local cur="${COMP_WORDS[COMP_CWORD]}" prev="${COMP_WORDS[COMP_CWORD-1]}" word skip=false words=()
 
   # Arguments typed so far, without the options (or --generate's number).
@@ -85,7 +85,7 @@ complete -F _vsecret_completions vsecret
 # redis: its own commands and the common Redis ones
 # -----------------------------------------------------
 
-_redis_completions() {
+function _redis_completions {
   case "$COMP_CWORD" in
     1) _tools_bin_reply "scan-delete help ACL INFO DBSIZE SCAN KEYS TYPE TTL GET DEL CLIENT CONFIG MEMORY SLOWLOG MONITOR";;
     *)
@@ -103,7 +103,7 @@ complete -F _redis_completions redis
 # rabbitmq: rabbitmqctl's common commands, diag (rabbitmq-diagnostics) and plugins
 # -----------------------------------------------------
 
-_rabbitmq_completions() {
+function _rabbitmq_completions {
   case "$COMP_CWORD" in
     1) _tools_bin_reply "diag plugins help status cluster_status environment list_queues list_connections list_channels list_consumers list_exchanges list_bindings list_users list_vhosts list_permissions";;
     2)
@@ -121,7 +121,7 @@ complete -F _rabbitmq_completions rabbitmq
 # setup: its commands, read from the script (its command_* functions)
 # -----------------------------------------------------
 
-_setup_completions() {
+function _setup_completions {
   [[ "$COMP_CWORD" -eq 1 ]] || return
   _tools_bin_reply "$(sed -n 's/^function command_\([a-z_]*\) .*/\1/p' "$TOOLS_BIN/setup" 2> /dev/null)"
 }
@@ -132,7 +132,7 @@ complete -F _setup_completions setup
 # content-dl: its options and yt-dlp's browsers for --browser
 # -----------------------------------------------------
 
-_content_dl_completions() {
+function _content_dl_completions {
   if [[ "${COMP_WORDS[COMP_CWORD-1]}" == "--browser" ]]; then
     _tools_bin_reply "brave chrome chromium edge firefox opera safari vivaldi whale"
   elif [[ "${COMP_WORDS[COMP_CWORD]}" == -* ]]; then
@@ -146,7 +146,7 @@ complete -F _content_dl_completions content-dl
 # make-*, secret-merge, secret-compare: their options, otherwise file names
 # -----------------------------------------------------
 
-_tools_bin_options() {
+function _tools_bin_options {
   local options
   case "$1" in
     make-ca|make-truststore) options="--outdir";;

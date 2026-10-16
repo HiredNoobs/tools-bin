@@ -72,7 +72,7 @@ function kc {
   fi
 }
 
-_kc_completions() {
+function _kc_completions {
   if [[ "${#COMP_WORDS[@]}" != "2" ]]; then
     return
   fi
