@@ -38,17 +38,18 @@ function _vsecret_keys {
 function _vsecret_completions {
   local cur="${COMP_WORDS[COMP_CWORD]}" prev="${COMP_WORDS[COMP_CWORD-1]}" word skip=false words=()
 
-  # Arguments typed so far, without the options (or --generate's number).
+  # Arguments typed so far, without the options (or --generate's number, when it has one).
   for word in "${COMP_WORDS[@]:1:COMP_CWORD-1}"; do
-    if [[ "$skip" == true ]]; then skip=false; continue; fi
+    if [[ "$skip" == true ]]; then
+      skip=false
+      [[ "$word" =~ ^[0-9]+$ ]] && continue
+    fi
     case "$word" in
       --generate|-g) skip=true;;
       -*) ;;
       *) words+=("$word");;
     esac
   done
-
-  [[ "$prev" == --generate || "$prev" == -g ]] && return
 
   if [[ "$cur" == -* ]]; then
     case "${words[0]:-}" in

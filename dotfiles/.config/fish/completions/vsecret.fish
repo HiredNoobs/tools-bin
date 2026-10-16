@@ -1,13 +1,13 @@
 # vsecret: commands, the secrets in labv2/production and their keys (both read from Vault, so
 # they need a token; nothing is offered without one). As bash's in bashrc/35-completions.
 
-# The arguments typed so far, without the options (or --generate's number).
+# The arguments typed so far, without the options (or --generate's number, when it has one).
 function __vsecret_words
     set -l skip 0
     for word in (commandline -opc)[2..-1]
         if test $skip -eq 1
             set skip 0
-            continue
+            string match -qr '^[0-9]+$' -- $word; and continue
         end
         switch $word
             case --generate -g
@@ -46,5 +46,5 @@ complete -c vsecret -n '__vsecret_at 1 ls get set unset edit' -a '(__vsecret_pat
 complete -c vsecret -n '__vsecret_at 2 get' -a '(__vsecret_keys)'
 complete -c vsecret -n 'set -l w (__vsecret_words); test (count $w) -ge 2; and contains -- $w[1] set unset' -a '(__vsecret_keys)'
 complete -c vsecret -n '__fish_seen_subcommand_from get' -l show -d 'Show the values'
-complete -c vsecret -n '__fish_seen_subcommand_from set' -s g -l generate -x -d 'Generate N letters and digits'
+complete -c vsecret -n '__fish_seen_subcommand_from set' -s g -l generate -d 'Generate random letters and digits (N, default 32)'
 complete -c vsecret -n '__fish_seen_subcommand_from set unset edit' -l no-sync -d "Don't force-sync the ExternalSecrets"
