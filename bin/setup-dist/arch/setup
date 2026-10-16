@@ -4,9 +4,18 @@
 # It doesn't do anything when executed directly.
 
 function configure_bash {
-  sudo pacman -S bash-completion
+  sudo pacman -S --needed bash-completion starship
   rsync -av "$ROOT/dotfiles/.bashrc" ~/.bashrc
-  rsync -av --delete "$ROOT/dotfiles/.config/bashrc/" "$XDG_CONFIG_HOME/bashrc/"
+  # 40-host is generated per host by context-setup
+  rsync -av --delete --exclude "40-host" "$ROOT/dotfiles/.config/bashrc/" "$XDG_CONFIG_HOME/bashrc/"
+  rsync -av "$ROOT/dotfiles/.config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
+}
+
+function configure_fish {
+  sudo pacman -S --needed --noconfirm fish starship
+  # conf.d/40-host.fish is generated per host by context-setup
+  rsync -av --delete --exclude "conf.d/40-host.fish" "$ROOT/dotfiles/.config/fish/" "$XDG_CONFIG_HOME/fish/"
+  rsync -av "$ROOT/dotfiles/.config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 }
 
 function configure_hyprland {
@@ -41,7 +50,6 @@ function configure_hyprland {
   rsync -av "$ROOT/dotfiles/.config/mimeapps.list"      "$HOME/.config/mimeapps.list"
   ln -s ~/.config/mimeapps.list ~/.local/share/applications/mimeapps.list
 
-  rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
   rsync -av "$ROOT/images/wallpapers/nord_scenary.png"  "$HOME/.cache/current-wallpaper"
   rsync -av --delete "$ROOT/images/wallpapers/"         "$HOME/Pictures/wallpapers/"
@@ -56,7 +64,8 @@ function configure_hyprland {
   rsync -av --delete "$ROOT/dotfiles/.config/rofi/"     "$XDG_CONFIG_HOME/rofi/"
   rsync -av --delete "$ROOT/dotfiles/.config/kitty/"    "$XDG_CONFIG_HOME/kitty/"
   rsync -av --delete "$ROOT/dotfiles/.config/swappy/"   "$XDG_CONFIG_HOME/swappy/"
-  rsync -av --delete "$ROOT/dotfiles/.config/fish/"     "$XDG_CONFIG_HOME/fish/"
+
+  configure_fish
 }
 
 function configure_docker {
@@ -83,11 +92,11 @@ function configure_vim {
 
   log_info "Cloning vim addons."
 
-  get_latest_git https://github.com/vim-airline/vim-airline.git ~/.vim/bundle/airline --commit 1586662296c9dc946083e17cb6a4ef0b3e7c0d68
-  get_latest_git https://github.com/preservim/nerdtree.git ~/.vim/bundle/nerdtree --commit 690d061b591525890f1471c6675bcb5bdc8cdff9
-  get_latest_git https://github.com/tpope/vim-fugitive.git ~/.vim/bundle/fugitive --commit 3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0
-  get_latest_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify --commit 3b5ae37eb2b77c3ae58d60dfdc3fc30258078663
-  get_latest_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox --commit 697c00291db857ca0af00ec154e5bd514a79191f
+  sync_git https://github.com/vim-airline/vim-airline.git ~/.vim/bundle/airline --commit 1586662296c9dc946083e17cb6a4ef0b3e7c0d68
+  sync_git https://github.com/preservim/nerdtree.git ~/.vim/bundle/nerdtree --commit 690d061b591525890f1471c6675bcb5bdc8cdff9
+  sync_git https://github.com/tpope/vim-fugitive.git ~/.vim/bundle/fugitive --commit 3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0
+  sync_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify --commit 3b5ae37eb2b77c3ae58d60dfdc3fc30258078663
+  sync_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox --commit 697c00291db857ca0af00ec154e5bd514a79191f
 
   log_info "Installing YouCompleteMe."
 

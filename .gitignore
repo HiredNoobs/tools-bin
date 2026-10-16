@@ -1,0 +1,8 @@
+# Binaries installed by context-setup
+bin/vault
+bin/talosctl
+bin/kubectl
+bin/flux
+
+# Installed by setup (bash, fish)
+bin/starship
