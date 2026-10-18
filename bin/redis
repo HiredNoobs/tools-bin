@@ -14,8 +14,10 @@
 #   redis scan-delete <pattern> [--db N] [--yes]
 #                                               Delete the keys matching a pattern, after
 #                                               showing how many (UNLINK, in batches).
-#   redis sentinel [<command> [args ...]]       redis-cli against a sentinel instead, e.g.
-#                                               redis sentinel SENTINEL replicas redis.
+#   redis SENTINEL <subcommand> [args ...]      A SENTINEL command, run against a sentinel
+#                                               instead of Redis, e.g. redis SENTINEL master redis
+#                                               (any case: redis sentinel replicas redis).
+#   redis sentinel                              Interactive against a sentinel.
 #   redis --pod <pod> ...                       Any of the above in that pod instead, e.g.
 #                                               redis --pod redis-2 ROLE on a replica.
 #
@@ -98,7 +100,7 @@ function sentinel_master_pod {
   exit 1
 }
 
-# The pod to run in (--pod, the master or redis-0) and, for "redis sentinel", any pod with a
+# The pod to run in (--pod, the master or redis-0) and, for SENTINEL commands, any pod with a
 # sentinel (the master's, as good as any).
 function pick_pod {
   if [[ -n "$POD" ]]; then
@@ -202,13 +204,13 @@ if [[ $# -eq 0 ]]; then
 elif [[ "$1" == "scan-delete" ]]; then
   shift
   scan_delete "$@"
-elif [[ "$1" == "sentinel" ]]; then
-  shift
+# SENTINEL is only a sentinel's command (Redis doesn't have it), so it goes to one, as is.
+elif [[ "${1,,}" == "sentinel" ]]; then
   if [[ "$SENTINEL" != true ]] && ! has_sentinel; then
     log_error "Redis in $NAMESPACE ($(context)) runs without Sentinel."
     exit 1
   fi
-  if [[ $# -eq 0 ]]; then
+  if [[ $# -eq 1 ]]; then
     echo
     log_info "Connecting to the sentinel in $POD in $NAMESPACE ($(context)) as admin."
     echo
