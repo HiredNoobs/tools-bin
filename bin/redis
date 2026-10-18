@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 #
-# redis-cli as Redis' admin user, run in redis-0 over TLS with Redis'
-# own certificate. The admin password is labv2/production/redis
-# REDIS_ADMIN_PASSWORD (vsecret get redis REDIS_ADMIN_PASSWORD).
+# redis-cli as Redis' admin user, run in the master's pod over TLS with
+# Redis' own certificate. With Sentinel (a sentinel container in the
+# StatefulSet) the sentinels say which pod is the master, without it
+# it's redis-0. The admin password is labv2/production/redis
+# REDIS_ADMIN_PASSWORD (vsecret get redis REDIS_ADMIN_PASSWORD), the
+# same for Redis and Sentinel.
 #
 # Usage:
 #   redis                                       Interactive (exit with ctrl+c).
@@ -11,6 +14,10 @@
 #   redis scan-delete <pattern> [--db N] [--yes]
 #                                               Delete the keys matching a pattern, after
 #                                               showing how many (UNLINK, in batches).
+#   redis sentinel [<command> [args ...]]       redis-cli against a sentinel instead, e.g.
+#                                               redis sentinel SENTINEL replicas redis.
+#   redis --pod <pod> ...                       Any of the above in that pod instead, e.g.
+#                                               redis --pod redis-2 ROLE on a replica.
 #
 # Runs against the current kubectl context.
 
@@ -23,15 +30,18 @@ source "$HERE/lib/confirmation.sh"
 set -euo pipefail
 
 NAMESPACE="redis"
-POD="redis-0"
-CONTAINER="redis"
+STATEFULSET="redis"
+# The master's name in Sentinel (sentinel monitor).
+SENTINEL_MASTER="redis"
 
-REDIS_CLI=(
-  redis-cli --tls -h localhost -p 6379 --user admin
+TLS=(
+  --tls
   --cacert /etc/redis/secrets/ca.crt
   --cert /etc/redis/secrets/tls.crt
   --key /etc/redis/secrets/tls.key
 )
+REDIS_CLI=(redis-cli "${TLS[@]}" -h localhost -p 6379 --user admin)
+SENTINEL_CLI=(redis-cli "${TLS[@]}" -h localhost -p 26379 --user admin)
 
 # -----------------------------------------------------
 # Functions
@@ -52,10 +62,65 @@ function context {
   kubectl config current-context 2> /dev/null || echo "?"
 }
 
+# Whether the StatefulSet runs sentinels (a container named sentinel).
+function has_sentinel {
+  local containers
+  if ! containers=$(kubectl get statefulset "$STATEFULSET" --namespace "$NAMESPACE" \
+      -o jsonpath='{.spec.template.spec.containers[*].name}' 2> /dev/null); then
+    log_error "Couldn't read statefulset/$STATEFULSET in $NAMESPACE ($(context))."
+    exit 1
+  fi
+  [[ " $containers " == *" sentinel "* ]]
+}
+
+# The running Redis pods' names.
+function running_pods {
+  kubectl get pods --namespace "$NAMESPACE" -l "app.kubernetes.io/name=$STATEFULSET" \
+    --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}'
+}
+
+# The master's pod, from the first sentinel that answers: it gives the master's hostname
+# (<pod>.redis.redis.svc, announce-hostnames). No answer means no guess: the user picks with
+# --pod.
+function sentinel_master_pod {
+  local pod master
+  for pod in $(running_pods); do
+    master=$(kubectl exec "$pod" --namespace "$NAMESPACE" -c sentinel -- \
+      env REDISCLI_AUTH="$PASSWORD" "${SENTINEL_CLI[@]}" \
+      SENTINEL get-master-addr-by-name "$SENTINEL_MASTER" < /dev/null 2> /dev/null | head -n 1) || continue
+    # A hostname, not an error or (nil) printed in its place.
+    if [[ "$master" =~ ^($STATEFULSET-[0-9]+)\. ]]; then
+      echo "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done
+  log_error "No sentinel in $NAMESPACE ($(context)) says which pod is the master; pick one with --pod <pod>."
+  exit 1
+}
+
+# The pod to run in (--pod, the master or redis-0) and, for "redis sentinel", any pod with a
+# sentinel (the master's, as good as any).
+function pick_pod {
+  if [[ -n "$POD" ]]; then
+    return
+  fi
+  if has_sentinel; then
+    SENTINEL=true
+    POD=$(sentinel_master_pod)
+  else
+    POD="$STATEFULSET-0"
+  fi
+}
+
 # Runs redis-cli in the pod with $@ as its arguments, stdin passed through.
 function redis_cli {
-  kubectl exec -i "$POD" --namespace "$NAMESPACE" -c "$CONTAINER" -- \
+  kubectl exec -i "$POD" --namespace "$NAMESPACE" -c redis -- \
     env REDISCLI_AUTH="$PASSWORD" "${REDIS_CLI[@]}" "$@"
+}
+
+function sentinel_cli {
+  kubectl exec -i "$POD" --namespace "$NAMESPACE" -c sentinel -- \
+    env REDISCLI_AUTH="$PASSWORD" "${SENTINEL_CLI[@]}" "$@"
 }
 
 function scan_delete {
@@ -83,7 +148,7 @@ function scan_delete {
     return 0
   fi
 
-  log_warning "$count key(s) match '$pattern' in redis-0 ($(context)), e.g.:"
+  log_warning "$count key(s) match '$pattern' in $POD ($(context)), e.g.:"
   head -5 <<< "$keys" >&2
   if [[ "$yes" != true ]]; then
     confirm_dangerous || exit 1
@@ -113,18 +178,45 @@ case "${1:-}" in
     ;;
 esac
 
+POD=""
+SENTINEL=false
+if [[ "${1:-}" == "--pod" ]]; then
+  if [[ -z "${2:-}" ]]; then
+    log_error "Usage: redis --pod <pod> ..."
+    exit 1
+  fi
+  POD="$2"
+  shift 2
+fi
+
 PASSWORD=$(admin_password)
+pick_pod
 
 if [[ $# -eq 0 ]]; then
   echo
-  log_info "Connecting to $POD in $NAMESPACE ($(context)) as admin."
+  log_info "Connecting to Redis in $POD in $NAMESPACE ($(context)) as admin."
   log_warning "This is the live Redis. Exit with ctrl+c."
   echo
-  kubectl exec -it "$POD" --namespace "$NAMESPACE" -c "$CONTAINER" -- \
+  kubectl exec -it "$POD" --namespace "$NAMESPACE" -c redis -- \
     env REDISCLI_AUTH="$PASSWORD" "${REDIS_CLI[@]}"
 elif [[ "$1" == "scan-delete" ]]; then
   shift
   scan_delete "$@"
+elif [[ "$1" == "sentinel" ]]; then
+  shift
+  if [[ "$SENTINEL" != true ]] && ! has_sentinel; then
+    log_error "Redis in $NAMESPACE ($(context)) runs without Sentinel."
+    exit 1
+  fi
+  if [[ $# -eq 0 ]]; then
+    echo
+    log_info "Connecting to the sentinel in $POD in $NAMESPACE ($(context)) as admin."
+    echo
+    kubectl exec -it "$POD" --namespace "$NAMESPACE" -c sentinel -- \
+      env REDISCLI_AUTH="$PASSWORD" "${SENTINEL_CLI[@]}"
+  else
+    sentinel_cli "$@" < /dev/null
+  fi
 else
   redis_cli "$@" < /dev/null
 fi

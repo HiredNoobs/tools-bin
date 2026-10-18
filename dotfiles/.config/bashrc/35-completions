@@ -87,14 +87,32 @@ complete -F _vsecret_completions vsecret
 # -----------------------------------------------------
 
 function _redis_completions {
-  case "$COMP_CWORD" in
-    1) _tools_bin_reply "scan-delete help ACL INFO DBSIZE SCAN KEYS TYPE TTL GET DEL CLIENT CONFIG MEMORY SLOWLOG MONITOR";;
-    *)
-      case "${COMP_WORDS[1]}" in
-        scan-delete) [[ "${COMP_WORDS[COMP_CWORD]}" == -* ]] && _tools_bin_reply "--db --yes";;
-        ACL|acl) [[ "$COMP_CWORD" -eq 2 ]] && _tools_bin_reply "LIST USERS WHOAMI GETUSER CAT LOG";;
+  # --pod <pod> first moves the command along by two.
+  local first=1
+  if [[ "${COMP_WORDS[1]}" == "--pod" ]]; then
+    if [[ "$COMP_CWORD" -eq 2 ]]; then
+      _tools_bin_reply "$(kubectl get pods -n redis -l app.kubernetes.io/name=redis -o name 2> /dev/null | sed 's|^pod/||')"
+      return
+    fi
+    first=3
+  fi
+
+  if [[ "$COMP_CWORD" -eq "$first" ]]; then
+    local extra=""
+    [[ "$first" -eq 1 ]] && extra="--pod"
+    _tools_bin_reply "$extra scan-delete sentinel help ACL INFO ROLE DBSIZE SCAN KEYS TYPE TTL GET DEL CLIENT CONFIG MEMORY SLOWLOG MONITOR"
+    return
+  fi
+
+  case "${COMP_WORDS[first]}" in
+    scan-delete) [[ "${COMP_WORDS[COMP_CWORD]}" == -* ]] && _tools_bin_reply "--db --yes";;
+    sentinel)
+      case "$((COMP_CWORD - first))" in
+        1) _tools_bin_reply "SENTINEL INFO ROLE PING";;
+        2) [[ "${COMP_WORDS[first+1]^^}" == "SENTINEL" ]] && _tools_bin_reply "get-master-addr-by-name master masters replicas sentinels ckquorum failover reset";;
       esac
       ;;
+    ACL|acl) [[ "$COMP_CWORD" -eq "$((first + 1))" ]] && _tools_bin_reply "LIST USERS WHOAMI GETUSER CAT LOG";;
   esac
 }
 
