@@ -21,6 +21,24 @@ function _kns_completions {
 complete -F _kns_completions kns
 
 # -----------------------------------------------------
+# deployment: its commands, read from the script (its command_* functions), then the context's
+# namespaces for status
+# -----------------------------------------------------
+
+function _deployment_completions {
+  case "$COMP_CWORD" in
+    1) _tools_bin_reply "$(sed -n 's/^function command_\([a-z_]*\) .*/\1/p' "$TOOLS_BIN/deployment" 2> /dev/null)";;
+    2)
+      if [[ "${COMP_WORDS[1]}" == "status" ]]; then
+        _tools_bin_reply "$(kubectl get namespaces -o name 2> /dev/null | sed 's|^namespace/||')"
+      fi
+      ;;
+  esac
+}
+
+complete -F _deployment_completions deployment
+
+# -----------------------------------------------------
 # vsecret: commands, the secrets in labv2/production and their keys (both read from Vault, so
 # they need a token; nothing is offered without one)
 # -----------------------------------------------------

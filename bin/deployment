@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+#
+# What's deployed on the current kube context. `deployment help` lists the commands.
+
+THIS=$(realpath "$0")
+HERE=$(dirname "$THIS")
+
+source "$HERE/lib/logging.sh"
+
+set -euo pipefail
+
+# -----------------------------------------------------
+# Helper functions
+# -----------------------------------------------------
+
+function check_env {
+  local cmd
+  for cmd in kubectl jq; do
+    if ! command -v "$cmd" > /dev/null; then
+      log_error "'$cmd' isn't installed."
+      exit 1
+    fi
+  done
+}
+
+# One tab separated line per container: namespace, pod, container, image without its digest
+# (name:tag, or name@sha256:<12> with no tag), node, state (running/waiting/terminated, the
+# reason if there is one, how long ago it started) and restarts.
+function container_lines {
+  jq -r '
+    def age:
+      (now - (sub("\\.[0-9]+"; "") | fromdateiso8601)) as $s
+      | if $s < 120 then "\($s | floor)s"
+        elif $s < 7200 then "\($s / 60 | floor)m"
+        elif $s < 172800 then "\($s / 3600 | floor)h"
+        else "\($s / 86400 | floor)d" end;
+    def image:
+      if test("@sha256:") then
+        (split("@sha256:")) as [$name, $digest]
+        | if ($name | split("/") | last | contains(":")) then $name else "\($name)@sha256:\($digest[:12])" end
+      else . end;
+    def state:
+      if . == null then ["pending"]
+      elif .running then ["running", (.running.startedAt | age)]
+      elif .waiting then ["waiting", .waiting.reason]
+      elif .terminated then ["terminated", .terminated.reason, (.terminated.finishedAt // null | if . then age else null end)]
+      else ["unknown"] end
+      | map(select(. != null and . != "")) | join(" ");
+    .items[]
+    | . as $pod
+    | ($pod.status.containerStatuses // []) as $statuses
+    | $pod.spec.containers[]
+    | . as $container
+    | ($statuses | map(select(.name == $container.name)) | first) as $status
+    | [
+        $pod.metadata.namespace,
+        $pod.metadata.name,
+        $container.name,
+        ($container.image | image),
+        ($pod.spec.nodeName // "-"),
+        ($status.state | state),
+        ($status.restartCount // 0 | tostring)
+      ]
+    | @tsv'
+}
+
+# -----------------------------------------------------
+# Run functions
+# -----------------------------------------------------
+
+function run_help {
+  echo "Deployment commands:"
+  # Each command_* function with the comment block right above it, indented.
+  awk '/^#/ { doc = doc "    " substr($0, 3) "\n"; next }
+       /^function command_[a-z_]+ / { sub(/^function command_/, ""); sub(/ .*/, ""); printf "* %s\n%s", $0, doc }
+       { doc = "" }' "$THIS"
+}
+
+function run_status {
+  local namespace="$1" pods lines
+
+  if [[ -n "$namespace" ]]; then
+    pods=$(kubectl get pods --namespace "$namespace" -o json)
+  else
+    pods=$(kubectl get pods --all-namespaces -o json)
+  fi
+
+  lines=$(container_lines <<< "$pods")
+  if [[ -z "$lines" ]]; then
+    log_info "No pods in ${namespace:-any namespace} on $(kubectl config current-context)."
+    return
+  fi
+
+  {
+    printf 'NAMESPACE\tPOD\tCONTAINER\tIMAGE\tNODE\tSTATE\tRESTARTS\n'
+    sort -t $'\t' -k1,1 -k2,2 -s <<< "$lines"
+  } | if [[ -n "$namespace" ]]; then cut -f2-; else cat; fi \
+    | column -t -s $'\t'
+}
+
+# -----------------------------------------------------
+# Commands
+# -----------------------------------------------------
+
+# Lists the commands.
+function command_help {
+  run_help
+}
+
+# Each pod's containers, one per line: the image they run, the node, their
+# state and restarts. Takes a namespace, every namespace without one.
+function command_status {
+  local namespace="${1:-}"
+
+  run_status "$namespace"
+}
+
+# -----------------------------------------------------
+# Main
+# -----------------------------------------------------
+
+check_env
+
+ARG=${1:-help}
+CMD="command_$ARG"
+shift || true
+
+if declare -F "$CMD" > /dev/null; then
+  $CMD "$@"
+else
+  log_error "$ARG is not a valid command."
+  exit 1
+fi
