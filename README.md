@@ -30,7 +30,7 @@ After running you should update the password for the new user with ``passwd [use
 setup COMMAND
 ```
 
-``setup help`` can be used to see all the available options. Some of them can be seen below.
+``setup help`` can be used to see all the available options (Hyprland's is in [docs](docs/hyprland.md)). Some of them can be seen below.
 
 <details><summary>Bash</summary>
 
@@ -40,64 +40,28 @@ This does add this repo to the ``$PATH``.
 
 </details>
 
-<details><summary>Hyprland</summary>
+## New machine
 
-For Arch only.
+- A Debian host, VM or LXC: ``movein.sh`` (above), then ``setup bash`` or ``setup fish``. The prx-999 VMs get this from Ansible (iac-homelab's ``movein`` role), the management VM its contexts too (``mgmt.yml``).
+- Anything else: clone the repo, then ``setup bash`` / ``setup fish``. With talosconfigs in ``~/.talos/contexts/`` (iac-homelab's ``./build.sh clusters`` writes them), ``context-setup`` for the cluster tools.
 
-Included is a very basic Hyprland configuration.
+## Tools
 
-The initial confiuration is based on the following repos:
+| Tool | Does |
+| --- | --- |
+| ``context-setup`` | A kube context for each Talos cluster this host manages, and the pinned ``talosctl``, ``kubectl``, ``flux`` and Vault client. |
+| ``kc``, ``kns`` | Switch this shell's kube and Talos context, and the context's namespace. |
+| ``vsecret`` | Vault secrets in ``labv2``, synced to the cluster's ExternalSecrets. |
+| ``deployment`` | ``deployment status``: each pod's containers, image, node and state. ``deployment longhorn_backup``: a Longhorn system backup before an upgrade. |
+| ``redis``, ``rabbitmq`` | Their admin CLIs in the cluster. |
+| ``secret-merge``, ``secret-compare`` | Filters on a secret as JSON, used by ``vsecret``. |
+| ``make-ca``, ``make-cert``, ``make-keystore``, ``make-truststore`` | A CA, certificates signed by it, Java keystores and truststores. |
+| ``content-dl`` | Audio or video from a URL with yt-dlp, into ``~/Downloads``. |
 
-- Hyprland + wlogout: [gaurav23b's simple-hyprland](https://github.com/gaurav23b/simple-hyprland)
-- Waybar: [elifouts' dotfiles](https://github.com/elifouts/Dotfiles)
-- Waybar network context menu: [cebem1nt's dotfiles](https://github.com/cebem1nt/dotfiles)
-- Wallpapers: [nordic-wallpapers](https://github.com/linuxdotexe/nordic-wallpapers)
+## More
 
-### Keybinds
-
-Window control:
-
-- `Super` + `Q` = Kill window
-- `Super` + `1` = Move to workspace 1, replace 1 with any other number 0-9.
-- `Super` + `Alt` + `1` = Move current window to workspace 1, replace 1 with any other number 0-9.
-- `Super` + `Shift` + `←` = Move current window left
-- `Super` + `Shift` + `↓` = Move current window down
-- `Super` + `Shift` + `↑` = Move current window up
-- `Super` + `Shift` + `→` = Move current window right
-- `Super` + `LMB` = drag window
-
-Application shortcuts:
-
-- `Super` = Application launcher
-- `Super` + `W` = Web browser
-- `Super` + `E` = File explorer
-- `Super` + `T` = Terminal
-- `Super` + `C` = Code editor
-
-</details>
-
-## Contexts
-
-``context-setup`` configures the Talos clusters this host manages: a kube context for each talosconfig in ``~/.talos/contexts/<context>.yaml`` (e.g. ``production.core.yaml``), generated with ``talosctl`` into ``~/.kube/contexts``, using the control plane IPs in the talosconfig so it doesn't need DNS. Re-run it when the admin kubeconfig certificate expires (a year). It also installs the Vault client and the pinned ``talosctl``, ``kubectl`` and ``flux`` into ``bin/``.
-
-It writes the default context to ``~/.config/bashrc/40-host`` and ``~/.config/fish/conf.d/40-host.fish``. ``kc`` switches context per shell (below).
-
-``secret-merge`` and ``secret-compare`` are self-contained filters on a secret as a flat JSON object of strings (stdin/stdout, usable on their own), used by ``vsecret``: ``secret-merge`` applies ``KEY=VALUE``, ``KEY=@FILE``, generated keys (``--generate N``) and ``--unset KEY``; ``secret-compare OLD NEW`` prints the keys added, changed and removed (names only), exit 0 for none, 1 for changes, 2 if NEW isn't a secret.
-
-``make-ca``, ``make-cert``, ``make-keystore`` and ``make-truststore`` create a CA, certificates signed by it, and Java keystores/truststores (openssl, keytool).
-
-## Cluster tools
-
-For the apps on Flux, run against the current kubectl context. Each prints its full usage with ``help``.
-
-- ``vsecret``: Vault secrets in ``labv2`` for the one-key-per-secret layout (``labv2/<env>/<app>``, a path without ``/`` is in ``production/``). ``ls``, ``get``, ``set`` (merges keys; ``KEY=VALUE``, ``KEY=@FILE``, or a hidden prompt; ``--generate [N]``, 32 by default), ``unset`` and ``edit`` (in ``$EDITOR``). Every write is check-and-set against the version it read, and force-syncs the ExternalSecrets reading that path (``--no-sync`` to skip). A file-shaped secret is one key: ``vsecret set redis ca.crt=@ca.crt``, ``vsecret get redis ca.crt > ca.crt``. The changes themselves are worked out by ``secret-merge`` and ``secret-compare``.
-- ``redis``: ``redis-cli`` as the admin user in the master's pod (interactive without arguments): the one the sentinels name when Redis runs with Sentinel, else ``redis-0``. Plus ``redis scan-delete <pattern>``, ``redis SENTINEL <subcommand>`` (e.g. ``redis SENTINEL master redis``) goes to a sentinel, ``redis sentinel`` alone is interactive against one, and ``redis --pod <pod> ...`` for a given pod (a replica). The admin password is ``labv2/production/redis`` ``REDIS_ADMIN_PASSWORD``.
-- ``kc`` (a shell function, bash and fish): shows or switches this shell's kube and Talos context (``kc production.core``).
-- ``kns``: shows the current context's namespace and the cluster's namespaces, or sets it (``kns redis``, tab completes), so ``kubectl`` doesn't need ``-n``. It's saved in the context's kubeconfig, so it applies to every shell on that context.
-- ``deployment status [namespace]``: like ``docker stack ps``, each pod's containers one per line: the image they run (``name:tag``), the node, their state and restarts. Every namespace without one.
-- ``deployment longhorn_backup``: a Longhorn system backup before an upgrade (a new backup of every volume, then Longhorn's own resources, to its backup target), followed until it's ready or fails. Once it's ready it replaces the one it made last time (so there's one; a failed run keeps the last good one). The volume backups it makes (``system-backup-*``) are left to manage by hand.
-- ``rabbitmq``: ``rabbitmqctl`` in ``rabbitmq-0``, ``rabbitmq diag`` for ``rabbitmq-diagnostics``, ``rabbitmq plugins`` for ``rabbitmq-plugins``. Users and permissions are in git (the Topology Operator), not made here.
-
-## Prompt
-
-bash and fish share one [Starship](https://starship.rs) prompt, ``dotfiles/.config/starship.toml`` (``setup bash`` / ``setup fish`` install it, a pinned release on Debian). Two lines: linked ``[...]`` segments above for what applies (the kube context, red for production, with the namespace from ``kns``; the git branch and status; slow commands; a failed command's exit code; background jobs), an active Python venv, the directory and ``$`` (``#`` as root) below. With nothing for the first line it's just the second. Plain text and box drawing characters, no Nerd Font needed. Without Starship, bash falls back to a plain version.
+| Page | Covers |
+| --- | --- |
+| [Cluster tools](docs/cluster-tools.md) | ``context-setup`` and the cluster tools above in detail. |
+| [Prompt](docs/prompt.md) | The Starship prompt bash and fish share. |
+| [Hyprland](docs/hyprland.md) | The Arch Hyprland setup and its keybinds. |
