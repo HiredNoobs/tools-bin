@@ -95,6 +95,7 @@ For the apps on Flux, run against the current kubectl context. Each prints its f
 - ``kc`` (a shell function, bash and fish): shows or switches this shell's kube and Talos context (``kc production.core``).
 - ``kns``: shows the current context's namespace and the cluster's namespaces, or sets it (``kns redis``, tab completes), so ``kubectl`` doesn't need ``-n``. It's saved in the context's kubeconfig, so it applies to every shell on that context.
 - ``deployment status [namespace]``: like ``docker stack ps``, each pod's containers one per line: the image they run (``name:tag``), the node, their state and restarts. Every namespace without one.
+- ``deployment longhorn_backup [name]``: a Longhorn system backup to its backup target (a new backup of every volume, then Longhorn's own resources), followed until it's ready or fails. Named ``manual-<UTC time>`` without a name.
 - ``rabbitmq``: ``rabbitmqctl`` in ``rabbitmq-0``, ``rabbitmq diag`` for ``rabbitmq-diagnostics``, ``rabbitmq plugins`` for ``rabbitmq-plugins``. Users and permissions are in git (the Topology Operator), not made here.
 
 ## Prompt

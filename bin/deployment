@@ -98,6 +98,52 @@ function run_status {
     | column -t -s $'\t'
 }
 
+# A Longhorn system backup to its backup target: a new backup of every volume
+# (volumeBackupPolicy always), then Longhorn's own resources (settings, volumes, PVs/PVCs,
+# StorageClasses, recurring jobs) with them. Followed until it's Ready or fails.
+function run_longhorn_backup {
+  local name="$1" state last="" message
+
+  log_info "Creating Longhorn system backup $name on $(kubectl config current-context)."
+  kubectl create -f - > /dev/null <<EOF
+apiVersion: longhorn.io/v1beta2
+kind: SystemBackup
+metadata:
+  name: $name
+  namespace: longhorn-system
+spec:
+  volumeBackupPolicy: always
+EOF
+
+  log_info "Waiting for it (ctrl+c stops waiting, not the backup)."
+  while true; do
+    # A failed read (the API restarting) isn't the backup failing: try again.
+    if ! state=$(kubectl get systembackups.longhorn.io "$name" --namespace longhorn-system \
+        -o jsonpath='{.status.state}'); then
+      log_warning "Couldn't read $name, retrying."
+      sleep 5
+      continue
+    fi
+    if [[ "$state" != "$last" ]]; then
+      echo "$(date +%T) ${state:-Pending}"
+      last="$state"
+    fi
+    case "$state" in
+      Ready)
+        log_info "$name is ready."
+        return 0
+        ;;
+      Error)
+        message=$(kubectl get systembackups.longhorn.io "$name" --namespace longhorn-system \
+          -o jsonpath='{.status.conditions[?(@.type=="Error")].message}')
+        log_error "$name failed: ${message:-no message (kubectl -n longhorn-system describe systembackups.longhorn.io $name)}"
+        return 1
+        ;;
+    esac
+    sleep 5
+  done
+}
+
 # -----------------------------------------------------
 # Commands
 # -----------------------------------------------------
@@ -113,6 +159,14 @@ function command_status {
   local namespace="${1:-}"
 
   run_status "$namespace"
+}
+
+# A Longhorn system backup: every volume backed up now, plus Longhorn's own resources, to
+# its backup target. Takes a name, manual-<UTC time> without one. Waits until it's done.
+function command_longhorn_backup {
+  local name="${1:-manual-$(date -u +%Y%m%d-%H%M%S)}"
+
+  run_longhorn_backup "$name"
 }
 
 # -----------------------------------------------------
