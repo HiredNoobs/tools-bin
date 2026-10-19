@@ -1,0 +1,3 @@
+# Prompt
+
+bash and fish share one [Starship](https://starship.rs) prompt, ``dotfiles/.config/starship.toml`` (``setup bash`` / ``setup fish`` install it, a pinned release on Debian). Two lines: linked ``[...]`` segments above for what applies (the kube context, red for production, with the namespace from ``kns``; the git branch and status; slow commands; a failed command's exit code; background jobs), an active Python venv, the directory and ``$`` (``#`` as root) below. With nothing for the first line it's just the second. Plain text and box drawing characters, no Nerd Font needed. Without Starship, bash falls back to a plain version.
