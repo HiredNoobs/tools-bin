@@ -9,6 +9,10 @@ source "$HERE/lib/logging.sh"
 
 set -euo pipefail
 
+# On the Longhorn system backups longhorn_backup makes, so it only replaces its own.
+LONGHORN_BACKUP_LABEL_KEY="app.kubernetes.io/managed-by"
+LONGHORN_BACKUP_LABEL_VALUE="tools-bin-deployment"
+
 # -----------------------------------------------------
 # Helper functions
 # -----------------------------------------------------
@@ -100,9 +104,12 @@ function run_status {
 
 # A Longhorn system backup to its backup target: a new backup of every volume
 # (volumeBackupPolicy always), then Longhorn's own resources (settings, volumes, PVs/PVCs,
-# StorageClasses, recurring jobs) with them. Followed until it's Ready or fails.
+# StorageClasses, recurring jobs) with them. Followed until it's Ready or fails; once it's
+# Ready the ones this made before are deleted (with their copy in the backup target), so there's
+# one. A failed one leaves the last good one. Their volume backups stay: those are managed by hand.
 function run_longhorn_backup {
-  local name="$1" state last="" message
+  local name state last="" message
+  name="manual-backup-$(date -u +%Y%m%d-%H%M%S)"
 
   log_info "Creating Longhorn system backup $name on $(kubectl config current-context)."
   kubectl create -f - > /dev/null <<EOF
@@ -111,6 +118,8 @@ kind: SystemBackup
 metadata:
   name: $name
   namespace: longhorn-system
+  labels:
+    $LONGHORN_BACKUP_LABEL_KEY: $LONGHORN_BACKUP_LABEL_VALUE
 spec:
   volumeBackupPolicy: always
 EOF
@@ -130,7 +139,9 @@ EOF
     fi
     case "$state" in
       Ready)
-        log_info "$name is ready."
+        log_info "$name is ready, deleting the older ones."
+        kubectl delete systembackups.longhorn.io --namespace longhorn-system \
+          -l "$LONGHORN_BACKUP_LABEL_KEY=$LONGHORN_BACKUP_LABEL_VALUE" --field-selector "metadata.name!=$name"
         return 0
         ;;
       Error)
@@ -161,12 +172,10 @@ function command_status {
   run_status "$namespace"
 }
 
-# A Longhorn system backup: every volume backed up now, plus Longhorn's own resources, to
-# its backup target. Takes a name, manual-<UTC time> without one. Waits until it's done.
+# A Longhorn system backup before an upgrade: every volume backed up now, plus Longhorn's own
+# resources, to its backup target. Waits until it's done, then replaces the previous one.
 function command_longhorn_backup {
-  local name="${1:-manual-$(date -u +%Y%m%d-%H%M%S)}"
-
-  run_longhorn_backup "$name"
+  run_longhorn_backup
 }
 
 # -----------------------------------------------------
