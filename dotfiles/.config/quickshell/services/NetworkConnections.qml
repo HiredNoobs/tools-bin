@@ -63,8 +63,9 @@ Singleton {
 
     // Runs `nmcli <args>` after any action before it, then re-reads the connections. A quiet
     // one's failure isn't reported (e.g. taking down a connection that may not be up).
-    function nmcli(args: var, quiet: var): void {
-        queue = [...queue, { args: args, quiet: quiet ?? false }];
+    // `extra`: { input (written to its stdin, for secrets), onFail (called if it fails) }
+    function nmcli(args: var, quiet: var, extra: var): void {
+        queue = [...queue, Object.assign({ args: args, quiet: quiet ?? false, input: "", onFail: null }, extra ?? {})];
         next();
     }
 
@@ -75,6 +76,8 @@ Singleton {
         if (!queue[0].quiet)
             error = "";
         quietAction = queue[0].quiet;
+        action.input = queue[0].input;
+        action.onFail = queue[0].onFail;
         action.command = ["nmcli", ...queue[0].args];
         queue = queue.slice(1);
         action.running = true;
@@ -124,11 +127,22 @@ Singleton {
         nmcli(["connection", "down", name], true);
     }
 
+    // A profile for the network, then brought up with the password on nmcli's stdin (on its
+    // command line any user could read it); removed again if it doesn't connect
     function connectHidden(ssid: string, password: string): void {
-        const args = ["device", "wifi", "connect", ssid, "hidden", "yes"];
+        const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+            const r = Math.floor(Math.random() * 16);
+            return (c === "x" ? r : (r & 3) | 8).toString(16);
+        });
+        const args = ["connection", "add", "type", "wifi", "con-name", ssid, "ssid", ssid, "connection.uuid", uuid, "802-11-wireless.hidden", "yes"];
         if (password !== "")
-            args.push("password", password);
-        nmcli(args);
+            args.push("wifi-sec.key-mgmt", "wpa-psk");
+        // Not added: don't try to connect it (queued right behind)
+        nmcli(args, false, { onFail: () => root.queue = root.queue.slice(1) });
+        nmcli(["connection", "up", uuid, ...(password !== "" ? ["passwd-file", "/dev/stdin"] : [])], false, {
+            input: password !== "" ? `802-11-wireless-security.psk:${password}\n` : "",
+            onFail: () => root.nmcli(["connection", "delete", uuid], true)
+        });
     }
 
     Component.onCompleted: refresh()
@@ -156,12 +170,27 @@ Singleton {
 
     Process {
         id: action
+
+        property string input
+        property var onFail
+
+        stdinEnabled: true
+        // The secret, then end of input
+        onStarted: {
+            if (input !== "")
+                write(input);
+            input = "";
+            stdinEnabled = false;
+        }
         stderr: StdioCollector {
             id: actionError
         }
         onExited: code => {
+            stdinEnabled = true;
             if (code !== 0 && !root.quietAction)
                 root.error = actionError.text.trim().replace(/^Error: /, "") || `nmcli failed (${code})`;
+            if (code !== 0 && onFail)
+                onFail();
             root.busy = false;
             root.refresh();
             root.next();
