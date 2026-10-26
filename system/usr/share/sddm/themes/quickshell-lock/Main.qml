@@ -139,9 +139,10 @@ Item {
         anchors.fill: parent
 
         wallpaper: `file://${root.sharedDir}/wallpaper`
-        background: root.scheme?.special?.background ?? config.background ?? "#282828"
-        text: root.scheme?.special?.foreground ?? root.scheme?.colors?.color7 ?? config.text ?? "#d5c4a1"
-        accent: root.scheme?.special?.accent ?? root.scheme?.colors?.color9 ?? config.accent ?? "#fb4934"
+        // || not ??, as the scheme can leave a colour empty (as Theme.qml reads it)
+        background: root.scheme?.special?.background || config.background || "#282828"
+        text: root.scheme?.special?.foreground || root.scheme?.colors?.color7 || config.text || "#d5c4a1"
+        accent: root.scheme?.special?.accent || root.scheme?.colors?.color9 || config.accent || "#fb4934"
         fontFamily: config.font || "CodeNewRoman Nerd Font Propo"
 
         userName: root.user ? root.user.realName || root.user.name : ""
