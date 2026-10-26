@@ -14,7 +14,7 @@ Column {
     readonly property var monitors: Monitors.monitors
 
     function displayName(monitor: var): string {
-        return monitor.name.startsWith("eDP") ? "Built-in display" : monitor.model || monitor.name;
+        return Monitors.isBuiltIn(monitor.name) ? "Built-in display" : monitor.model || monitor.name;
     }
 
     // "1920x1080@59.98" -> [width, height, rate]

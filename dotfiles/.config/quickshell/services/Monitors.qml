@@ -58,6 +58,11 @@ Singleton {
         query.running = true;
     }
 
+    // A laptop's own screen, by its connector: eDP, or LVDS (older) or DSI (some thin ones)
+    function isBuiltIn(name: string): bool {
+        return /^(eDP|LVDS|DSI)/.test(name);
+    }
+
     function byName(name: string): var {
         return monitors.find(m => m.name === name) ?? null;
     }

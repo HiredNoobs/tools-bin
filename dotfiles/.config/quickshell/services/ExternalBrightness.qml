@@ -12,7 +12,7 @@ import Quickshell.Io
 //
 // ddcutil checks a monitor before each command, which some monitors (an AOC here) answer only
 // after seconds of retries; skipping it makes a read or write ~100 ms. Each connector's I2C bus
-// comes from sysfs, as `ddcutil detect` takes as long as those checks.
+// comes from sysfs, as `ddcutil detect` takes as long as those checks (it's only the fallback).
 Singleton {
     id: root
 
@@ -89,25 +89,45 @@ Singleton {
     }
 
     // "connector<TAB>bus<TAB>VCP 10 C <current> <max>" per connected monitor that answers (not
-    // the laptop's own screen); nothing without ddcutil. Each is asked up to three times, as
-    // some miss the first message after a while idle.
+    // a laptop's own screen); nothing without ddcutil. Each is asked up to three times, as some
+    // miss the first message after a while idle. The buses come from sysfs; drivers that don't
+    // link them there (NVIDIA's own) fall back to `ddcutil detect`, which is slow but finds them.
     Process {
         id: detector
         command: ["sh", "-c", `
             command -v ddcutil >/dev/null || exit 0
-            for connector in /sys/class/drm/card*-*; do
-                [ -e "$connector/ddc" ] && [ "$(cat "$connector/status")" = connected ] || continue
-                name=\${connector##*/card[0-9]-}
-                case $name in eDP*) continue ;; esac
-                bus=$(basename "$(readlink -f "$connector/ddc")")
-                bus=\${bus#i2c-}
+            ask() {
                 for try in 1 2 3; do
-                    vcp=$(${root.ddcutil.join(" ")} --bus "$bus" getvcp 10 --brief 2>/dev/null) && break
+                    vcp=$(${root.ddcutil.join(" ")} --bus "$2" getvcp 10 --brief 2>/dev/null) && break
                     vcp=""
                     sleep 0.3
                 done
-                [ -n "$vcp" ] && printf '%s\\t%s\\t%s\\n' "$name" "$bus" "$vcp"
+                [ -n "$vcp" ] && printf '%s\\t%s\\t%s\\n' "$1" "$2" "$vcp"
+            }
+            builtin() { case $1 in eDP*|LVDS*|DSI*) return 0 ;; esac; return 1; }
+            missing=0
+            for connector in /sys/class/drm/card*-*; do
+                [ "$(cat "$connector/status" 2>/dev/null)" = connected ] || continue
+                name=\${connector##*/card[0-9]-}
+                builtin "$name" && continue
+                if [ -e "$connector/ddc" ]; then
+                    bus=$(basename "$(readlink -f "$connector/ddc")")
+                    ask "$name" "\${bus#i2c-}"
+                else
+                    missing=1
+                fi
             done
+            # No sysfs link for some monitor (or no DRM connectors at all): ask ddcutil
+            if [ $missing = 1 ] || ! ls /sys/class/drm/card*-* >/dev/null 2>&1; then
+                ddcutil detect --brief 2>/dev/null |
+                    sed -n 's|.*I2C bus: */dev/i2c-\\([0-9]*\\).*|bus \\1|p; s|.*DRM[ _]connector: *card[0-9]*-\\(.*\\)|connector \\1|p' |
+                    while read -r kind value; do
+                        case $kind in
+                            bus) bus=$value ;;
+                            connector) builtin "$value" || [ -e /sys/class/drm/card*-"$value"/ddc ] || ask "$value" "$bus" ;;
+                        esac
+                    done
+            fi
         `]
         stdout: StdioCollector {
             onStreamFinished: {

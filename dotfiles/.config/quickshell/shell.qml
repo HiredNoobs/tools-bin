@@ -236,6 +236,15 @@ ShellRoot {
         function brightness(direction: string): void {
             OsdState.brightness(direction);
         }
+
+        // Brightness keys held down: `brightnessHold up|down` on press, `brightnessRelease`
+        function brightnessHold(direction: string): void {
+            OsdState.holdBrightness(direction);
+        }
+
+        function brightnessRelease(): void {
+            OsdState.releaseBrightness();
+        }
     }
 
     // Hyprland's lid switch binds: `qs ipc call lid closed|opened`

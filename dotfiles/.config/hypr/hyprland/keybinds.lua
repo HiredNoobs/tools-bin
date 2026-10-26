@@ -207,5 +207,9 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true 
 -- Brightness control
 -------------------------------------------------------
 
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("qs ipc call osd brightness up || brightnessctl s +5%"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("qs ipc call osd brightness down || brightnessctl s 5%-"), { locked = true, repeating = true })
+-- Brightness steps while held come from the shell (faster than the keyboard repeats): press
+-- starts it, release stops it
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("qs ipc call osd brightnessHold up || brightnessctl s +5%"), { locked = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("qs ipc call osd brightnessRelease"), { locked = true, release = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("qs ipc call osd brightnessHold down || brightnessctl s 5%-"), { locked = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("qs ipc call osd brightnessRelease"), { locked = true, release = true })

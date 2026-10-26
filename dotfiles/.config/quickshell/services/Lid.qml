@@ -17,8 +17,8 @@ Singleton {
     property var laptopSpec: null
 
     function closed(): void {
-        const laptop = Monitors.enabledMonitors.find(m => m.name.startsWith("eDP"));
-        const docked = Monitors.enabledMonitors.some(m => !m.name.startsWith("eDP"));
+        const laptop = Monitors.enabledMonitors.find(m => Monitors.isBuiltIn(m.name));
+        const docked = Monitors.enabledMonitors.some(m => !Monitors.isBuiltIn(m.name));
         switch (docked ? ShellSettings.lidDocked : ShellSettings.lidAction) {
         case "suspend":
             Exec.run("systemctl suspend");

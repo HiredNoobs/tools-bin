@@ -4,37 +4,53 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Laptop backlight. `available` is false on machines without intel_backlight (the desktop).
+// The laptop's backlight, whichever the machine has (intel_backlight, amdgpu_bl0, acpi_video0…):
+// with several, the kernel's advice is firmware, then platform, then raw. `available` is false
+// without one (a desktop, whose monitors go through ExternalBrightness instead).
 Singleton {
     id: root
 
-    readonly property string device: "/sys/class/backlight/intel_backlight"
-    // Raw level brightnessctl won't go below, so the screen never goes fully dark
-    readonly property int minRaw: 10000
+    // e.g. "intel_backlight" ("" until found, or without one)
+    property string name: ""
+    readonly property string device: name !== "" ? `/sys/class/backlight/${name}` : ""
+    // The lowest it goes (5%, a step of the brightness keys), so the screen never goes fully
+    // dark; brightnessctl is told the raw level
+    readonly property real minFraction: 0.05
+    readonly property int minRaw: Math.round(maxBrightness * minFraction)
 
     property int brightness: 0
     property int maxBrightness: 0
     readonly property bool available: maxBrightness > 0
     readonly property real fraction: available ? brightness / maxBrightness : 0
-    readonly property real minFraction: available ? minRaw / maxBrightness : 0
 
-    // Latest requested percentage, applied by the debounce timer
+    // A percentage waiting for the timer below (-1 when none)
     property int pendingPercent: -1
 
+    // Written straight away, unless the last write was under 50 ms ago (a dragged slider sends
+    // many values): then the newest one waits for the 50 ms to pass
     function set(value: real): void {
         const clamped = Math.max(minFraction, Math.min(1, value));
         brightness = Math.round(clamped * maxBrightness);
-        pendingPercent = Math.round(clamped * 100);
-        applyTimer.restart();
+        const percent = Math.round(clamped * 100);
+        if (applyTimer.running) {
+            pendingPercent = percent;
+            return;
+        }
+        apply(percent);
     }
 
-    // Slider drags fire many values; only run brightnessctl every 50ms
+    function apply(percent: int): void {
+        Exec.run(`brightnessctl --device=${Exec.quote(name)} --min-value=${minRaw} set ${percent}%`);
+        pendingPercent = -1;
+        applyTimer.start();
+    }
+
     Timer {
         id: applyTimer
         interval: 50
         onTriggered: {
-            Exec.run(`brightnessctl --min-value=${root.minRaw} set ${root.pendingPercent}%`);
-            root.pendingPercent = -1;
+            if (root.pendingPercent >= 0)
+                root.apply(root.pendingPercent);
         }
     }
 
@@ -49,15 +65,33 @@ Singleton {
         }
     }
 
+    // "type<TAB>name" per backlight; ddcci ones are monitors (the ddcci driver), not the laptop
+    Process {
+        running: true
+        command: ["sh", "-c", `for d in /sys/class/backlight/*; do
+            [ -e "$d/max_brightness" ] || continue
+            case \${d##*/} in ddcci*) continue ;; esac
+            printf '%s\\t%s\\n' "$(cat "$d/type")" "\${d##*/}"
+        done`]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const rank = { firmware: 0, platform: 1, raw: 2 };
+                const found = text.trim().split("\n").filter(line => line.includes("\t")).map(line => line.split("\t"));
+                found.sort((a, b) => (rank[a[0]] ?? 3) - (rank[b[0]] ?? 3));
+                root.name = found.length > 0 ? found[0][1] : "";
+            }
+        }
+    }
+
     FileView {
         id: brightnessFile
-        path: root.device + "/brightness"
+        path: root.device !== "" ? root.device + "/brightness" : ""
         printErrors: false
         onLoaded: root.brightness = Number(text())
     }
 
     FileView {
-        path: root.device + "/max_brightness"
+        path: root.device !== "" ? root.device + "/max_brightness" : ""
         printErrors: false
         onLoaded: root.maxBrightness = Number(text())
     }
