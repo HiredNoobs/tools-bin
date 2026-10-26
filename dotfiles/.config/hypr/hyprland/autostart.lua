@@ -3,11 +3,19 @@
 -------------------------------------------------------
 
 hl.on("hyprland.start", function()
-    -- Theme
-    hl.exec_cmd("gsettings set org.gnome.desktop.interface font-name 'CodeNewRoman Nerd Font Propo 11'")
-    hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
-    hl.exec_cmd("gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3")
-    hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme 'catppuccin-latte-red-cursors'")
+    -- Theme defaults for a first login, set only while they're unset: after that they're
+    -- Quickshell's Settings › Appearance choices
+    local defaults = {
+        ["font-name"] = "CodeNewRoman Nerd Font Propo 11",
+        ["color-scheme"] = "prefer-dark",
+        ["gtk-theme"] = "adw-gtk3",
+        ["cursor-theme"] = "catppuccin-latte-red-cursors",
+    }
+    for key, value in pairs(defaults) do
+        hl.exec_cmd(string.format(
+            [[sh -c '[ -n "$(dconf read /org/gnome/desktop/interface/$0)" ] || gsettings set org.gnome.desktop.interface "$0" "$1"' %s '%s']],
+            key, value))
+    end
 
     hl.exec_cmd("gsettings set org.gnome.desktop.wm.preferences button-layout :")
 
