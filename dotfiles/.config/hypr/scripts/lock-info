@@ -42,10 +42,11 @@ battery() {
 
 network() {
   local wifi signal ssid
-  wifi=$(nmcli -t -f ACTIVE,SIGNAL,SSID dev wifi 2>/dev/null | grep -m 1 '^yes:')
+  wifi=$(nmcli -t -f ACTIVE,SIGNAL,SSID dev wifi list --rescan no 2>/dev/null | grep -m 1 '^yes:')
   if [ -n "$wifi" ]; then
     signal=$(echo "$wifi" | cut -d: -f2)
-    ssid=$(echo "$wifi" | cut -d: -f3-)
+    # Without the terse output's escaping of ":" and "\"
+    ssid=$(echo "$wifi" | cut -d: -f3- | sed 's/\\\(.\)/\1/g')
     local icons=($'\U000F092F' $'\U000F091F' $'\U000F0922' $'\U000F0925' $'\U000F0928')
     local i=$((signal * 5 / 100))
     [ "$i" -gt 4 ] && i=4

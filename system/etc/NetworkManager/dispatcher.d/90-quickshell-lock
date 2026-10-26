@@ -8,6 +8,7 @@ case "$2" in
 esac
 
 mkdir -p /run/quickshell-lock
-nmcli -t -f ACTIVE,SSID dev wifi 2>/dev/null | sed -n 's/^yes://p' | head -n 1 > /run/quickshell-lock/ssid.new
+# From the last scan (no rescan), without the terse output's escaping of ":" and "\"
+nmcli -t -f ACTIVE,SSID dev wifi list --rescan no 2>/dev/null | sed -n 's/^yes://p' | head -n 1 | sed 's/\\\(.\)/\1/g' > /run/quickshell-lock/ssid.new
 chmod 644 /run/quickshell-lock/ssid.new
 mv /run/quickshell-lock/ssid.new /run/quickshell-lock/ssid
