@@ -53,10 +53,10 @@ Singleton {
         if (custom) {
             localFile.setText(generate());
             hasLocal = true;
-            restart.command = ["sh", "-c", `sleep 0.3; pkill -x hypridle; hyprctl dispatch 'hl.dsp.exec_cmd("hypridle -c ${localPath}")'`];
+            restart.command = ["sh", "-c", `sleep 0.3; pkill -x hypridle; hyprctl dispatch "$1"`, "sh", `hl.dsp.exec_cmd(${Exec.lua("hypridle -c " + Exec.quote(localPath))})`];
         } else {
             hasLocal = false;
-            restart.command = ["sh", "-c", `rm -f '${localPath}'; pkill -x hypridle; hyprctl dispatch 'hl.dsp.exec_cmd("hypridle")'`];
+            restart.command = ["sh", "-c", `rm -f "$1"; pkill -x hypridle; hyprctl dispatch 'hl.dsp.exec_cmd("hypridle")'`, "sh", localPath];
         }
         restart.running = true;
     }

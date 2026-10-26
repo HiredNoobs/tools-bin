@@ -98,7 +98,7 @@ Singleton {
     function lua(value: var, indent: var): string {
         indent = indent ?? "";
         if (typeof value === "string")
-            return `"${value.replace(/[\\"]/g, "\\$&")}"`;
+            return Exec.lua(value);
         if (typeof value === "object" && value !== null) {
             const inner = indent + "    ";
             const fields = Object.entries(value).map(([key, item]) => `${inner}${key} = ${lua(item, inner)}`);

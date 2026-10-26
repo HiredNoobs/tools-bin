@@ -99,8 +99,6 @@ Singleton {
     property var fonts: []
     property var monoFonts: []
 
-    // GTK 3 or Qt set to something else than the choices above (as nwg-look and qt6ct allow);
-    // worked out after reading and after each change (see checkMatch)
     // Gallery pictures by theme (scripts/theme-previews.py): icons -> [file], cursors ->
     // { pointer, text, hand } PNGs
     property var iconPreviews: ({})
@@ -113,7 +111,9 @@ Singleton {
             lists.running = true;
     }
 
-    // What differs, as "GTK 3 cursor: <name>" lines
+    // GTK 3 or Qt set to something else than the choices above (as nwg-look and qt6ct allow);
+    // worked out after reading and after each change (see checkMatch). What differs, as
+    // "GTK 3 cursor: <name>" lines
     property var mismatches: []
     readonly property bool mismatched: mismatches.length > 0
     property bool loaded: false
@@ -280,7 +280,7 @@ Singleton {
         // The shell picks its icons at start: restart it with these (and come back here), once
         // whatever else was changed with them is saved
         if (name !== "" && name !== Quickshell.env("QS_ICON_THEME")) {
-            Exec.run(`hyprctl eval 'hl.env("QS_ICON_THEME", "${name}")'`);
+            Quickshell.execDetached(["hyprctl", "eval", `hl.env("QS_ICON_THEME", ${Exec.lua(name)})`]);
             RestartState.restartShell();
         }
     }
@@ -305,11 +305,11 @@ Singleton {
             "-- started after login. Loaded by hyprland.lua after env.lua; this machine's own, kept by",
             "-- the setup script.",
             "",
-            `hl.env("HYPRCURSOR_THEME", "${cursorTheme}")`,
+            `hl.env("HYPRCURSOR_THEME", ${Exec.lua(cursorTheme)})`,
             `hl.env("HYPRCURSOR_SIZE", "${cursorSize}")`,
-            `hl.env("XCURSOR_THEME", "${cursorTheme}")`,
+            `hl.env("XCURSOR_THEME", ${Exec.lua(cursorTheme)})`,
             `hl.env("XCURSOR_SIZE", "${cursorSize}")`,
-            ...(iconTheme !== "" ? [`hl.env("QS_ICON_THEME", "${iconTheme}")`] : []),
+            ...(iconTheme !== "" ? [`hl.env("QS_ICON_THEME", ${Exec.lua(iconTheme)})`] : []),
             ""
         ].join("\n"));
     }
@@ -362,7 +362,7 @@ Singleton {
 
     Component.onCompleted: {
         // Kvantum Manager makes this on first use
-        Exec.run(`mkdir -p '${configDir}/Kvantum'`);
+        Exec.run(`mkdir -p ${Exec.quote(configDir + "/Kvantum")}`);
         refresh();
     }
 
@@ -396,7 +396,7 @@ Singleton {
                 // from its next start
                 if (root.iconTheme !== "" && root.iconTheme !== Quickshell.env("QS_ICON_THEME")) {
                     root.writeHyprEnv();
-                    Exec.run(`hyprctl eval 'hl.env("QS_ICON_THEME", "${root.iconTheme}")'`);
+                    Quickshell.execDetached(["hyprctl", "eval", `hl.env("QS_ICON_THEME", ${Exec.lua(root.iconTheme)})`]);
                 }
             }
         }

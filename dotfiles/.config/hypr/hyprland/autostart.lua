@@ -23,7 +23,7 @@ hl.on("hyprland.start", function()
     local file = io.open(idle, "r")
     if file then
         file:close()
-        hl.exec_cmd("hypridle -c " .. idle)
+        hl.exec_cmd("hypridle -c '" .. idle:gsub("'", "'\\''") .. "'")
     else
         hl.exec_cmd("hypridle")
     end

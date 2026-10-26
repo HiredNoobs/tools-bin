@@ -75,7 +75,7 @@ Singleton {
     // Lua table literal for hl.monitor
     function luaSpec(spec: var): string {
         const fields = Object.entries(spec).map(([key, value]) => {
-            const literal = typeof value === "string" ? `"${value.replace(/[\\"]/g, "\\$&")}"` : String(value);
+            const literal = typeof value === "string" ? Exec.lua(value) : String(value);
             return `${key} = ${literal}`;
         });
         return `hl.monitor({ ${fields.join(", ")} })`;
@@ -229,7 +229,7 @@ Singleton {
     }
 
     function resetSaved(): void {
-        Exec.run(`rm -f '${savedPath}' && hyprctl reload`);
+        Exec.run(`rm -f ${Exec.quote(savedPath)} && hyprctl reload`);
         hasSaved = false;
         refreshTimer.restart();
     }
