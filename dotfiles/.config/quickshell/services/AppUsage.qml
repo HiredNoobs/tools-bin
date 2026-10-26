@@ -10,13 +10,16 @@ Singleton {
     id: root
 
     property var usage: ({})
+    // Read (or there's nothing to read), so writing won't replace what's there
+    property bool loaded: false
 
     function record(id: string): void {
         const entry = usage[id] ?? { count: 0, last: 0 };
         const updated = Object.assign({}, usage);
         updated[id] = { count: entry.count + 1, last: Date.now() };
         usage = updated;
-        file.setText(JSON.stringify(usage));
+        if (loaded)
+            file.setText(JSON.stringify(usage));
     }
 
     // Launch count weighted by how recently it was last used; 0 if never used
@@ -35,10 +38,16 @@ Singleton {
         printErrors: false
         onLoaded: {
             try {
-                root.usage = JSON.parse(text());
+                // With anything recorded before it was read
+                root.usage = Object.assign(JSON.parse(text()), root.usage);
             } catch (e) {
                 root.usage = {};
             }
+            root.loaded = true;
+        }
+        onLoadFailed: error => {
+            if (error === FileViewError.FileNotFound)
+                root.loaded = true;
         }
     }
 }

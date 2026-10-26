@@ -66,8 +66,10 @@ Singleton {
         }
     }
 
+    // Never before the file has been read, which would replace the notes in it
     function save(): void {
-        file.setText(JSON.stringify(items, null, 2));
+        if (loaded)
+            file.setText(JSON.stringify(items, null, 2));
     }
 
     SystemClock {
@@ -92,12 +94,17 @@ Singleton {
             try {
                 root.items = JSON.parse(text());
             } catch (e) {
+                // Unreadable: kept aside before starting again, so the notes can be recovered
+                Quickshell.execDetached(["cp", root.path, `${root.path}.broken-${Date.now()}`]);
                 root.items = [];
             }
             root.loaded = true;
             root.tidy();
         }
-        // No file yet: start empty
-        onLoadFailed: root.loaded = true
+        // No file yet: start empty. Any other error leaves it alone (and saving off)
+        onLoadFailed: error => {
+            if (error === FileViewError.FileNotFound)
+                root.loaded = true;
+        }
     }
 }
