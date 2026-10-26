@@ -215,13 +215,15 @@ Singleton {
         return "";
     }
 
+    // The laptop screen while its closed lid has it off (Lid) is saved as it was before, so it
+    // isn't left off for the next start, maybe without another screen
     function save(): void {
         const lines = [
             "-- Monitor layout saved from the Quickshell display panel.",
             "-- Loaded by hyprland.lua after the machine file; kept by the setup script's rsync.",
             "-- Delete this file (or use \"Use defaults\" in the panel) to go back to the machine config.",
             "",
-            ...monitors.map(m => luaSpec(specOf(m))),
+            ...monitors.map(m => luaSpec(m.disabled && Lid.laptopSpec?.output === m.name ? Lid.laptopSpec : specOf(m))),
             ""
         ];
         savedFile.setText(lines.join("\n"));
