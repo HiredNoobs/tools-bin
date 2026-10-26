@@ -4,8 +4,10 @@ import qs.components
 import qs.services
 
 // The Bluetooth pairing window's content (PairingWindow), for the request BluetoothAgent is
-// waiting on: check a code matches, allow a device, enter a PIN or passkey, or (keyboards) type
-// a code on the device. Enter accepts, Esc rejects; answering closes the window.
+// waiting on: check a code matches, allow a device (to pair, or to connect when it isn't
+// trusted), enter a PIN or passkey, or (keyboards) type a code on the device. Enter accepts, Esc
+// rejects (a code to type has nothing to accept: Esc cancels the pairing); answering closes the
+// window.
 Column {
     id: root
 
@@ -26,13 +28,19 @@ Column {
     width: 380
     spacing: 14
 
-    Component.onCompleted: Qt.callLater(() => needsInput ? field.forceActiveFocus() : root.forceActiveFocus())
+    Component.onCompleted: Qt.callLater(() => needsInput ? field.focusInput() : root.forceActiveFocus())
+
+    // The next waiting request takes this one's place
+    onRequestChanged: {
+        field.text = "";
+        Qt.callLater(() => needsInput ? field.focusInput() : root.forceActiveFocus());
+    }
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape)
             root.reject();
-        else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
-            root.type === "display" ? root.reject() : root.accept();
+        else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && root.type !== "display")
+            root.accept();
         else
             return;
         event.accepted = true;
@@ -40,7 +48,7 @@ Column {
 
     PanelText {
         width: parent.width
-        text: `\u{F00AF}  ${root.type === "authorize" ? `${root.request?.device} wants to pair` : `Pair with ${root.request?.device}`}`
+        text: `\u{F00AF}  ${root.type === "authorize" ? `${root.request?.device} wants to pair` : root.type === "service" ? `${root.request?.device} wants to connect` : `Pair with ${root.request?.device}`}`
         font.pixelSize: Theme.fontSize + 2
         elide: Text.ElideRight
     }
@@ -55,6 +63,8 @@ Column {
                 return `Check this code matches the one shown on ${root.request?.device}:`;
             case "authorize":
                 return "Allow it to pair with this computer?";
+            case "service":
+                return "Allow it this time? Turn on Trusted for it in Settings › Bluetooth to stop being asked.";
             case "pin":
                 return `Enter its PIN (often 0000 or 1234, or see its manual):`;
             case "passkey":
@@ -96,13 +106,13 @@ Column {
         spacing: 8
 
         PanelButton {
-            label: root.type === "display" ? "Cancel" : root.type === "authorize" ? "Deny" : "Reject"
+            label: root.type === "display" ? "Cancel" : root.type === "authorize" || root.type === "service" ? "Deny" : "Reject"
             onClicked: root.reject()
         }
 
         PanelButton {
             visible: root.type !== "display"
-            label: root.type === "authorize" ? "Allow" : "Pair"
+            label: root.type === "authorize" || root.type === "service" ? "Allow" : "Pair"
             highlighted: true
             onClicked: root.accept()
         }

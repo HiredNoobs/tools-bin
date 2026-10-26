@@ -43,13 +43,13 @@ ShellRoot {
         Appearance.loaded;
     }
 
-    // A window for each Bluetooth pairing request, there until answered (or closed, which
-    // rejects) or cancelled by the device
+    // A window for Bluetooth pairing requests, one after another, there until answered (or
+    // closed, which rejects all of them) or cancelled by the device
     LazyLoader {
         active: BluetoothAgent.request !== null
 
         PairingWindow {
-            onClosed: BluetoothAgent.answer(false, "")
+            onClosed: BluetoothAgent.rejectAll()
         }
     }
 

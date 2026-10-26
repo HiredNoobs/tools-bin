@@ -4,10 +4,12 @@
 BlueZ asks its agent to confirm pairing codes, enter PINs and allow incoming pairing; without
 one, phones and keyboards can't pair. Each request goes to the shell as a JSON line on stdout,
 and the shell answers on stdin with "<id> accept [value]" or "<id> reject". Devices you accept
-are trusted, so they reconnect without asking. Exits when the shell does (stdin closes).
+are trusted, so they reconnect without asking (allowing a single service doesn't trust). Exits
+when the shell does (stdin closes).
 """
 
 import json
+import os
 import sys
 
 import dbus
@@ -30,9 +32,11 @@ class Canceled(dbus.DBusException):
 
 bus = None
 loop = None
-# Request id -> (kind, device path, reply, error)
+# Request id -> (kind, device path, reply, error, whether accepting trusts the device)
 pending = {}
 next_id = 0
+# Answers read so far that don't end in a newline yet
+unread = b""
 
 
 def send(message):
@@ -59,12 +63,12 @@ def trust(path):
         pass
 
 
-def ask(kind, device, reply, error, **extra):
+def ask(kind, device, reply, error, trusts=True, **extra):
     """Passes a request to the shell; BlueZ gets its answer when the shell replies."""
     global next_id
     next_id += 1
-    pending[next_id] = (kind, device, reply, error)
-    send({"id": next_id, "type": kind, "device": device_name(device), **extra})
+    pending[next_id] = (kind, device, reply, error, trusts)
+    send({"id": next_id, "type": kind, "device": device_name(device), "path": str(device), **extra})
 
 
 class Agent(dbus.service.Object):
@@ -85,11 +89,12 @@ class Agent(dbus.service.Object):
     # The device (e.g. a keyboard) needs this typed on it; nothing to answer
     @dbus.service.method("org.bluez.Agent1", in_signature="os", out_signature="")
     def DisplayPinCode(self, device, pincode):
-        send({"id": 0, "type": "display", "device": device_name(device), "code": str(pincode)})
+        send({"id": 0, "type": "display", "device": device_name(device), "path": str(device),
+              "code": str(pincode)})
 
     @dbus.service.method("org.bluez.Agent1", in_signature="ouq", out_signature="")
     def DisplayPasskey(self, device, passkey, entered):
-        send({"id": 0, "type": "display", "device": device_name(device),
+        send({"id": 0, "type": "display", "device": device_name(device), "path": str(device),
               "code": f"{int(passkey):06d}", "entered": int(entered)})
 
     @dbus.service.method("org.bluez.Agent1", in_signature="ou", out_signature="",
@@ -102,50 +107,63 @@ class Agent(dbus.service.Object):
     def RequestAuthorization(self, device, reply, error):
         ask("authorize", device, reply, error)
 
-    # A paired, trusted device using a service (audio, file transfer…) needs no asking
+    # A device using a service (audio, file transfer…): a trusted one needs no asking (BlueZ
+    # rarely asks then); anything else, paired or not, is asked about each time
     @dbus.service.method("org.bluez.Agent1", in_signature="os", out_signature="",
                          async_callbacks=("reply", "error"))
     def AuthorizeService(self, device, uuid, reply, error):
-        if device_property(device, "Paired", False) or device_property(device, "Trusted", False):
+        if device_property(device, "Trusted", False):
             reply()
         else:
-            ask("authorize", device, reply, error)
+            ask("service", device, reply, error, trusts=False)
 
     @dbus.service.method("org.bluez.Agent1", in_signature="", out_signature="")
     def Cancel(self):
-        for kind, device, reply, error in pending.values():
+        for kind, device, reply, error, trusts in pending.values():
             error(Canceled("Canceled"))
         pending.clear()
         send({"id": 0, "type": "cancel"})
 
 
+# Several answers can come at once (closing the window rejects everything waiting), so read
+# what's there and answer each complete line; Python's own buffered readline would leave the
+# rest unread until more arrives
 def on_answer(source, condition):
-    line = sys.stdin.readline()
-    if not line:
+    global unread
+    chunk = os.read(sys.stdin.fileno(), 4096)
+    if not chunk:
         loop.quit()
         return False
+    unread += chunk
+    *lines, unread = unread.split(b"\n")
+    for line in lines:
+        answer(line.decode(errors="replace"))
+    return True
+
+
+def answer(line):
     parts = line.split(maxsplit=2)
     if len(parts) < 2 or not parts[0].isdigit():
-        return True
+        return
     request = pending.pop(int(parts[0]), None)
     if request is None:
-        return True
-    kind, device, reply, error = request
+        return
+    kind, device, reply, error, trusts = request
     value = parts[2].strip() if len(parts) > 2 else ""
     if parts[1] != "accept":
         error(Rejected("Rejected"))
-        return True
-    try:
-        if kind == "pin":
-            reply(value)
-        elif kind == "passkey":
-            reply(dbus.UInt32(int(value)))
-        else:
-            reply()
+        return
+    if kind == "passkey" and not (value.isdigit() and int(value) <= 999999):
+        error(Rejected("Not a passkey"))
+        return
+    if kind == "pin":
+        reply(value)
+    elif kind == "passkey":
+        reply(dbus.UInt32(int(value)))
+    else:
+        reply()
+    if trusts:
         trust(device)
-    except ValueError:
-        error(Rejected("Not a number"))
-    return True
 
 
 def register(*_):
