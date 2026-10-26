@@ -136,9 +136,20 @@ Singleton {
         query.running = true;
     }
 
+    // One at a time, in order: a change made while one is still running waits for it
+    property var queued: []
+
     function run(code: string): void {
+        queued = [...queued, code];
+        runNext();
+    }
+
+    function runNext(): void {
+        if (evaluate.running || queued.length === 0)
+            return;
         lastError = "";
-        evaluate.command = ["hyprctl", "eval", code];
+        evaluate.command = ["hyprctl", "eval", queued[0]];
+        queued = queued.slice(1);
         evaluate.running = true;
     }
 
@@ -177,6 +188,7 @@ Singleton {
                     root.lastError = output;
             }
         }
+        onExited: root.runNext()
     }
 
     // After a reset has rewritten the file

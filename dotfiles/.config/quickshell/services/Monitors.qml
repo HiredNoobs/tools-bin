@@ -234,9 +234,21 @@ Singleton {
         refreshTimer.restart();
     }
 
+    // One at a time, in order: a change made while one is still running (the lid closing just
+    // after a click in the panel) waits for it
+    property var queued: []
+
     function run(lua: string): void {
+        queued = [...queued, lua];
+        runNext();
+    }
+
+    function runNext(): void {
+        if (evaluate.running || queued.length === 0)
+            return;
         lastError = "";
-        evaluate.command = ["hyprctl", "eval", lua];
+        evaluate.command = ["hyprctl", "eval", queued[0]];
+        queued = queued.slice(1);
         evaluate.running = true;
     }
 
@@ -299,6 +311,7 @@ Singleton {
                 repaintTimer.restart();
             }
         }
+        onExited: root.runNext()
     }
 
     Connections {
