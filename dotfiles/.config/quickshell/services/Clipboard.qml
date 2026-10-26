@@ -22,6 +22,9 @@ Singleton {
 
     // [{ text } or { image: path }], newest first
     property var entries: []
+    // The latest copy wasn't kept (a secret, or text that looks like a password), so an app
+    // emptying the clipboard next is clearing that, not entries[0]
+    property bool skippedLast: false
 
     onEnabledChanged: {
         if (!enabled)
@@ -68,9 +71,11 @@ Singleton {
     }
 
     // An app emptied the clipboard on purpose (e.g. Bitwarden's "Clear clipboard after…"):
-    // forget what it held, as that's usually why
+    // forget what it held, as that's usually why, unless that copy was never kept
     function forgetNewest(): void {
-        if (entries.length > 0)
+        if (skippedLast)
+            skippedLast = false;
+        else if (entries.length > 0)
             remove(entries[0]);
     }
 
@@ -86,8 +91,11 @@ Singleton {
     }
 
     function add(entry): void {
-        if (entry.text !== undefined && ShellSettings.clipboardSkipPasswords && looksLikePassword(entry.text))
+        if (entry.text !== undefined && ShellSettings.clipboardSkipPasswords && looksLikePassword(entry.text)) {
+            skippedLast = true;
             return;
+        }
+        skippedLast = false;
         // The same text, or the same picture (named after its contents)
         const kept = entries.filter(e => !same(e, entry));
         for (const old of kept.slice(limit - 1))
@@ -96,9 +104,9 @@ Singleton {
         entries = [entry, ...kept.slice(0, limit - 1)];
     }
 
-    // Each change: "T<TAB>text" or "I<TAB>path", ended by a record separator (\x1e). Secret
-    // copies (CLIPBOARD_STATE=sensitive) and a clipboard emptied by its app closing print
-    // nothing (an app writing empty text does: see forgetNewest); a picture is
+    // Each change: "T<TAB>text", "I<TAB>path" or "S<TAB>" (a secret copy, CLIPBOARD_STATE=
+    // sensitive, not kept), ended by a record separator (\x1e). A clipboard emptied by its app
+    // closing prints nothing (an app writing empty text does: see forgetNewest); a picture is
     // kept as a picture only when no text came with it, named after its contents so a repeat is
     // the same file.
     Process {
@@ -108,6 +116,7 @@ Singleton {
         command: ["sh", "-c", `rm -rf "$1" && mkdir -p -m 700 "$1" || exit 1
         wl-paste --watch sh -c '
             cat >/dev/null
+            [ "$CLIPBOARD_STATE" = sensitive ] && { printf "S\\t\\036"; exit 0; }
             [ "$CLIPBOARD_STATE" = data ] || exit 0
             types=$(wl-paste --list-types)
             if printf "%s\\n" "$types" | grep -q "^image/png$" && ! printf "%s\\n" "$types" | grep -q "^text/plain"; then
@@ -127,10 +136,13 @@ Singleton {
                 const tab = data.indexOf("\t");
                 const kind = data.slice(0, tab);
                 const value = data.slice(tab + 1);
-                if (kind === "T" && value.replace(/[\s\u0000]/g, "") === "")
+                if (kind === "S")
+                    root.skippedLast = true;
+                else if (kind === "T" && value.replace(/[\s\u0000]/g, "") === "")
                     root.forgetNewest();
                 else if (kind === "T")
-                    root.add({ text: value });
+                    // Without a character cut in half by maxBytes (decoded as U+FFFD)
+                    root.add({ text: value.replace(/\uFFFD+$/, "") });
                 else if (kind === "I")
                     root.add({ image: value });
             }
