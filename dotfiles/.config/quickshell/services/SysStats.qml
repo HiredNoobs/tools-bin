@@ -10,6 +10,10 @@ Singleton {
     property real memUsedGiB: 0
     property real memTotalGiB: 0
     property int temperature: 0
+    // The CPU's sensor: the package temperature of Intel's coretemp or AMD's k10temp/zenpower,
+    // else the x86_pkg_temp zone, else the first zone (thermal_zone0 is often the ACPI one,
+    // which reads far below the CPU)
+    property string temperaturePath: ""
 
     property var lastCpuTimes: []
 
@@ -21,7 +25,8 @@ Singleton {
         onTriggered: {
             stat.reload();
             meminfo.reload();
-            thermal.reload();
+            if (thermal.path !== "")
+                thermal.reload();
         }
     }
 
@@ -61,9 +66,26 @@ Singleton {
         }
     }
 
+    Process {
+        running: true
+        command: ["sh", "-c", `
+            for h in /sys/class/hwmon/hwmon*; do
+                case $(cat "$h/name" 2>/dev/null) in coretemp|k10temp|zenpower) [ -e "$h/temp1_input" ] && echo "$h/temp1_input" && exit ;; esac
+            done
+            for z in /sys/class/thermal/thermal_zone*; do
+                [ "$(cat "$z/type" 2>/dev/null)" = x86_pkg_temp ] && echo "$z/temp" && exit
+            done
+            [ -e /sys/class/thermal/thermal_zone0/temp ] && echo /sys/class/thermal/thermal_zone0/temp
+        `]
+        stdout: StdioCollector {
+            onStreamFinished: temperaturePath = text.trim()
+        }
+    }
+
     FileView {
         id: thermal
-        path: "/sys/class/thermal/thermal_zone0/temp"
+        path: temperaturePath
+        printErrors: false
         onLoaded: temperature = Math.round(Number(text()) / 1000)
     }
 }

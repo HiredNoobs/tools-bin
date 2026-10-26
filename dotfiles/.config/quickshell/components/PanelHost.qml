@@ -30,6 +30,8 @@ Item {
     onCurrentChanged: {
         if (current !== "") {
             closeTimer.stop();
+            // The same module again may have moved meanwhile (e.g. the now-playing label came)
+            updateAnchor();
             shown = current;
             forceActiveFocus();
         } else {
@@ -38,7 +40,9 @@ Item {
     }
 
     // Set before `current`, so while closed the panel jumps to the new module instead of sliding
-    onAnchorItemChanged: {
+    onAnchorItemChanged: updateAnchor()
+
+    function updateAnchor(): void {
         if (anchorItem)
             anchorX = anchorItem.mapToItem(null, anchorItem.width / 2, 0).x;
     }

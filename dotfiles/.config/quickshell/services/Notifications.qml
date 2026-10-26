@@ -107,7 +107,13 @@ Singleton {
             notification.tracked = true;
             root.received = Object.assign({}, root.received, { [notification.id]: Date.now() });
             root.unread++;
-            notification.closed.connect(() => root.hidePopup(notification));
+            const id = notification.id;
+            notification.closed.connect(() => {
+                root.hidePopup(notification);
+                const received = Object.assign({}, root.received);
+                delete received[id];
+                root.received = received;
+            });
             if (!root.dnd || notification.urgency === NotificationUrgency.Critical)
                 root.showPopup(notification);
         }

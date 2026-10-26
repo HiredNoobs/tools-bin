@@ -10,7 +10,8 @@ import qs
 Singleton {
     id: root
 
-    readonly property bool discharging: Battery.present && UPower.onBattery
+    // Only once UPower has reported the battery, as its level reads 0 until then
+    readonly property bool discharging: Battery.device.ready && Battery.present && UPower.onBattery
     readonly property int level: Battery.capacity
     property bool warned: false
     property bool acted: false

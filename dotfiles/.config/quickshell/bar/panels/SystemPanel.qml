@@ -96,10 +96,11 @@ Column {
                 running: true
                 command: ["df", "-B1", "--output=target,size,used", "-x", "tmpfs", "-x", "devtmpfs", "-x", "efivarfs", "-x", "overlay", "-x", "squashfs"]
                 stdout: StdioCollector {
+                    // The mount point can have spaces (a drive's label), so the numbers are read from the end
                     onStreamFinished: system.disks = text.trim().split("\n").slice(1)
-                        .map(line => line.trim().split(/\s+/))
-                        .filter(f => f.length === 3 && !f[0].startsWith("/boot") && !f[0].startsWith("/efi"))
-                        .map(f => ({ mount: f[0], size: Number(f[1]), used: Number(f[2]) }))
+                        .map(line => line.trim().match(/^(.*\S)\s+(\d+)\s+(\d+)$/))
+                        .filter(f => f && !f[1].startsWith("/boot") && !f[1].startsWith("/efi"))
+                        .map(f => ({ mount: f[1], size: Number(f[2]), used: Number(f[3]) }))
                 }
             }
 
