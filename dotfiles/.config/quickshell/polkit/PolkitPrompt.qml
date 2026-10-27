@@ -9,7 +9,8 @@ import qs.components
 // The authentication agent, in place of hyprpolkitagent: when an app asks for an admin action
 // (pkexec, NetworkManager, udisks, …) a card over the focused screen asks for the password.
 // Enter (or Authenticate) answers, Esc (or Cancel, or a click outside) declines; a wrong
-// password shakes the card and asks again.
+// password shakes the card and asks again. It says whose password it wants; when several
+// accounts could answer (e.g. more than one admin), a button switches between them.
 Scope {
     id: root
 
@@ -20,6 +21,12 @@ Scope {
     readonly property AuthFlow flow: agent.flow
     // What went wrong last ("" for nothing)
     property string error: ""
+    // The screen it shows on, the focused one when it opened (so it doesn't follow the pointer
+    // to another screen while it's up)
+    property string screenName: ""
+    // Who the password is for, and whether another account could answer instead
+    readonly property string identityName: flow?.selectedIdentity?.displayName ?? ""
+    readonly property int identityCount: flow?.identities.length ?? 0
 
     Connections {
         target: root.flow
@@ -39,11 +46,35 @@ Scope {
 
     onFlowChanged: error = ""
 
+    Connections {
+        target: agent
+
+        function onIsActiveChanged(): void {
+            if (agent.isActive)
+                root.screenName = Hyprland.focusedMonitor?.name ?? "";
+        }
+    }
+
+    // Doesn't keep the password once it's been sent
     function submit(): void {
         if (flow && flow.isResponseRequired && field.text !== "") {
             error = "";
             flow.submit(field.text);
+            field.text = "";
         }
+    }
+
+    // The next account that could answer (starts over for that one)
+    function nextIdentity(): void {
+        if (!flow || identityCount < 2)
+            return;
+        let index = 0;
+        for (let i = 0; i < identityCount; i++) {
+            if (flow.identities[i] === flow.selectedIdentity)
+                index = i;
+        }
+        error = "";
+        flow.selectedIdentity = flow.identities[(index + 1) % identityCount];
     }
 
     function cancel(): void {
@@ -54,7 +85,7 @@ Scope {
         id: window
 
         visible: agent.isActive
-        screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0]
+        screen: Quickshell.screens.find(s => s.name === root.screenName) ?? Quickshell.screens[0]
         anchors.top: true
         anchors.bottom: true
         anchors.left: true
@@ -66,10 +97,9 @@ Scope {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
         onVisibleChanged: {
-            if (visible) {
-                field.text = "";
+            field.text = "";
+            if (visible)
                 field.focusInput();
-            }
         }
 
         // A click outside the card declines
@@ -136,10 +166,39 @@ Scope {
                     }
                 }
 
+                // From the app asking (pkexec puts the program's path in it): plain text
                 PanelText {
                     width: parent.width
                     text: root.flow?.message ?? ""
+                    textFormat: Text.PlainText
                     wrapMode: Text.WordWrap
+                }
+
+                // Whose password, with a way to another account when there's a choice
+                Item {
+                    width: parent.width
+                    height: Math.max(identityText.implicitHeight, switchIdentity.implicitHeight)
+                    visible: root.identityName !== ""
+
+                    PanelText {
+                        id: identityText
+                        anchors.left: parent.left
+                        anchors.right: switchIdentity.visible ? switchIdentity.left : parent.right
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: `\u{F0004}  Password for ${root.identityName}`
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                    }
+
+                    PanelButton {
+                        id: switchIdentity
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: root.identityCount > 1
+                        label: "Other account"
+                        onClicked: root.nextIdentity()
+                    }
                 }
 
                 PanelText {
@@ -165,6 +224,7 @@ Scope {
                     width: parent.width
                     visible: text !== ""
                     text: root.error !== "" ? root.error : root.flow?.supplementaryMessage ?? ""
+                    textFormat: Text.PlainText
                     color: root.error !== "" || root.flow?.supplementaryIsError ? Theme.critical : Theme.subtext
                     wrapMode: Text.WordWrap
                 }
