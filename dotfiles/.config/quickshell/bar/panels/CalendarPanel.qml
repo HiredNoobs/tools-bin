@@ -432,7 +432,10 @@ Row {
 
         property bool ongoing: false
 
+        // Not until the notes have been read (adding before then couldn't be saved)
         function submit(): void {
+            if (!Todos.loaded)
+                return;
             Todos.add(input.text, noteInput.ongoing ? "" : root.selectedDay);
             input.text = "";
         }
@@ -480,6 +483,7 @@ Row {
                         selectedTextColor: Theme.background
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.panelFontSize
+                        readOnly: !Todos.loaded
                         onCursorRectangleChanged: inputScroll.ensureVisible(cursorRectangle)
 
                         Keys.onReturnPressed: event => {
@@ -492,7 +496,7 @@ Row {
 
                         PanelText {
                             visible: input.text === ""
-                            text: noteInput.ongoing ? "Add an ongoing note…" : "Add a note…"
+                            text: Todos.loadFailed ? "Notes couldn't be read (todos.json)" : !Todos.loaded ? "Reading notes…" : noteInput.ongoing ? "Add an ongoing note…" : "Add a note…"
                             dim: true
                         }
                     }

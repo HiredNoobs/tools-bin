@@ -37,13 +37,24 @@ Singleton {
         path: Quickshell.statePath("launcher.json")
         printErrors: false
         onLoaded: {
+            let stored = {};
             try {
-                // With anything recorded before it was read
-                root.usage = Object.assign(JSON.parse(text()), root.usage);
+                stored = JSON.parse(text());
             } catch (e) {
-                root.usage = {};
+                // Unreadable: kept aside before starting again
+                Quickshell.execDetached(["cp", file.path, `${file.path}.broken-${Date.now()}`]);
             }
+            // With anything recorded before it was read added on
+            const merged = Object.assign({}, stored);
+            for (const id in root.usage) {
+                const before = stored[id] ?? { count: 0, last: 0 };
+                merged[id] = { count: before.count + root.usage[id].count, last: Math.max(before.last, root.usage[id].last) };
+            }
+            const recorded = Object.keys(root.usage).length > 0;
+            root.usage = merged;
             root.loaded = true;
+            if (recorded)
+                file.setText(JSON.stringify(merged));
         }
         onLoadFailed: error => {
             if (error === FileViewError.FileNotFound)

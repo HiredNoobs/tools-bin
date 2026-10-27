@@ -14,6 +14,9 @@ Singleton {
     // [{ id, text, date: "yyyy-MM-dd" | null, done, doneOn: "yyyy-MM-dd" | null }]
     property var items: []
     property bool loaded: false
+    // The file is there but couldn't be read (not just missing): nothing can be added, as it
+    // couldn't be saved
+    property bool loadFailed: false
 
     readonly property string path: Quickshell.statePath("todos.json")
     readonly property string today: dayKey(clock.date)
@@ -41,7 +44,7 @@ Singleton {
 
     function add(text: string, day: string): void {
         const trimmed = text.trim();
-        if (trimmed === "")
+        if (trimmed === "" || !loaded)
             return;
         items = [...items, { id: Date.now(), text: trimmed, date: day || null, done: false, doneOn: null }];
         save();
@@ -105,6 +108,8 @@ Singleton {
         onLoadFailed: error => {
             if (error === FileViewError.FileNotFound)
                 root.loaded = true;
+            else
+                root.loadFailed = true;
         }
     }
 }
