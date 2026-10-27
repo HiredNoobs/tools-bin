@@ -16,10 +16,13 @@ Column {
     // Close when the last app quits (off inside the control centre, which switches tab instead)
     property bool closeWhenEmpty: true
 
-    onItemsChanged: {
+    // Also when opened with none (IPC)
+    function closeIfEmpty(): void {
         if (closeWhenEmpty && items.length === 0)
             closeRequested();
     }
+    onItemsChanged: closeIfEmpty()
+    Component.onCompleted: closeIfEmpty()
 
     width: 300
     spacing: 6

@@ -26,19 +26,29 @@ Column {
         { name: "notifications", icon: Notifications.dnd ? "\u{F009B}" : "\u{F009A}", label: "Notifications", dot: Notifications.unread > 0 }
     ]
 
-    // The open tab went away (e.g. last drive ejected): fall back to Notifications
-    onTabsChanged: {
+    // The open tab went away (e.g. last drive ejected), or was asked for with nothing in it
+    // (IPC): fall back to Notifications
+    function checkTab(): void {
         if (!tabs.some(t => t.name === tab))
             tabRequested("notifications");
     }
+    onTabsChanged: checkTab()
+    Component.onCompleted: checkTab()
+
+    // The most the whole panel may be (the bar sets it for its screen)
+    property real maxHeight: Theme.panelMaxHeight
 
     width: 400
     spacing: 12
 
     // What's left of the panel's height for the tab
-    readonly property real tabRoom: Theme.panelMaxHeight - 2 * Theme.panelPadding - toggles.height - tabBar.height - 2 * spacing
+    readonly property real tabRoom: maxHeight - 2 * Theme.panelPadding - toggles.height - tabBar.height - 2 * spacing
 
-    onTabChanged: scroller.contentY = 0
+    onTabChanged: {
+        scroller.contentY = 0;
+        // Once this change is done: asking for another tab from inside it is a binding loop
+        Qt.callLater(checkTab);
+    }
 
     QuickToggles {
         id: toggles

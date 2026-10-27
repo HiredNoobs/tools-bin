@@ -22,6 +22,8 @@ Item {
     readonly property bool open: current !== ""
 
     property real anchorX: 0
+    // The most the panel may be (the bar sets it for its screen)
+    property real maxHeight: Theme.panelMaxHeight
 
     property bool attached: Theme.panelsAttached
     // Width of the curve joining the panel to the bar, on each side
@@ -45,6 +47,20 @@ Item {
     function updateAnchor(): void {
         if (anchorItem)
             anchorX = anchorItem.mapToItem(null, anchorItem.width / 2, 0).x;
+    }
+
+    // Follows the module while open, as it moves or changes size (workspaces coming and
+    // going, a new track's title)
+    Connections {
+        target: root.anchorItem
+        enabled: root.open
+
+        function onXChanged(): void {
+            root.updateAnchor();
+        }
+        function onWidthChanged(): void {
+            root.updateAnchor();
+        }
     }
 
     Behavior on anchorX {
@@ -76,7 +92,7 @@ Item {
     // translucent background twice and shows as a darker line
     y: Theme.barHeight + (attached ? 0 : Theme.panelGap)
     width: bodyWidth + 2 * fillet
-    height: open ? Math.min(targetHeight, Theme.panelMaxHeight) : 0
+    height: open ? Math.min(targetHeight, maxHeight) : 0
     opacity: open ? 1 : 0
     focus: open
 
@@ -87,7 +103,14 @@ Item {
         NumberAnimation { duration: Theme.panelAnimDuration }
     }
 
-    Keys.onEscapePressed: closeRequested()
+    // Esc in a text field leaves the field, keeping what's typed; Esc again closes the panel
+    Keys.onEscapePressed: {
+        const focused = Window.activeFocusItem;
+        if (focused !== root && (focused instanceof TextInput || focused instanceof TextEdit))
+            root.forceActiveFocus();
+        else
+            closeRequested();
+    }
 
     PanelBackground {
         anchors.fill: parent
@@ -95,14 +118,14 @@ Item {
     }
 
     // Content, clipped to the body while the panel grows, and scrolling once it's taller than
-    // the most a panel may be (Theme.panelMaxHeight)
+    // the most a panel may be (maxHeight)
     Flickable {
         id: scroller
         x: root.fillet
         width: root.bodyWidth
         height: root.height
         contentHeight: root.targetHeight
-        interactive: root.targetHeight > Theme.panelMaxHeight
+        interactive: root.targetHeight > root.maxHeight
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 

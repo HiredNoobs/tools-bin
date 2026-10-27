@@ -111,7 +111,11 @@ PanelWindow {
         left: 10
         right: 10
     }
-    implicitHeight: Theme.barHeight + Theme.panelGap + Theme.panelMaxHeight
+    // The most a panel may be on this screen: Theme.panelMaxHeight, or less on a short screen
+    // (e.g. 1080p at 1.5×), so a panel never runs off the bottom where it can't scroll to
+    readonly property real panelMaxHeight: Math.max(200, Math.min(Theme.panelMaxHeight, screen.height - margins.top - Theme.barHeight - Theme.panelGap - 12))
+
+    implicitHeight: Theme.barHeight + Theme.panelGap + panelMaxHeight
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: Theme.barHeight
     color: "transparent"
@@ -232,6 +236,7 @@ PanelWindow {
     PanelHost {
         id: panelHost
         current: root.openPanel
+        maxHeight: root.panelMaxHeight
         // The launcher's menus are only here while they're attached; the rest follow the
         // panels' setting
         attached: ["launcher", "screenshot", "wallpaper"].includes(current || shown) ? Theme.launcherAttached : Theme.panelsAttached
@@ -316,6 +321,7 @@ PanelWindow {
         id: controlPanel
 
         ControlCentrePanel {
+            maxHeight: root.panelMaxHeight
             tab: root.controlTab
             onTabRequested: name => root.controlTab = name
             onCloseRequested: root.closePanel()

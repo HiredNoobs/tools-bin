@@ -14,10 +14,13 @@ Column {
     property bool closeWhenEmpty: true
 
     readonly property int driveCount: Drives.drives.length
-    onDriveCountChanged: {
+    // Also when opened with none (IPC)
+    function closeIfEmpty(): void {
         if (closeWhenEmpty && driveCount === 0)
             closeRequested();
     }
+    onDriveCountChanged: closeIfEmpty()
+    Component.onCompleted: closeIfEmpty()
 
     width: 340
     spacing: 10

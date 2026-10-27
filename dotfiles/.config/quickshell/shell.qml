@@ -147,9 +147,9 @@ ShellRoot {
     IpcHandler {
         target: "launcher"
 
-        // Under the focused monitor's bar, or the centred popup
+        // Under the focused monitor's bar, or the centred popup (also while the bar is hidden)
         function show(name: string): void {
-            if (Theme.launcherAttached) {
+            if (Theme.launcherAttached && root.barVisible) {
                 const monitor = Hyprland.focusedMonitor?.name;
                 bars.instances.find(bar => bar.screen.name === monitor)?.togglePanelByName(name);
             } else {
@@ -305,8 +305,9 @@ ShellRoot {
             root.barVisible = !root.barVisible;
         }
 
-        // Toggle a panel on the focused monitor's bar
+        // Toggle a panel on the focused monitor's bar, bringing the bar back if it's hidden
         function panel(name: string): void {
+            root.barVisible = true;
             const monitor = Hyprland.focusedMonitor?.name;
             bars.instances.find(bar => bar.screen.name === monitor)?.togglePanelByName(name);
         }
