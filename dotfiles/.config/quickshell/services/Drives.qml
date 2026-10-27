@@ -20,7 +20,8 @@ Singleton {
     property var errors: ({})
     // Partition to open once it has been mounted
     property string pendingOpen: ""
-    // Drives seen already, so each is only mounted when it first appears
+    // Partitions seen already (by cryptPath or path), so each is only mounted when it first
+    // appears: a drive's partitions can show up a moment after the drive itself
     property var known: []
     readonly property var unmountable: ["crypto_LUKS", "BitLocker", "swap", "LVM2_member", "linux_raid_member"]
     readonly property var encryptions: ["crypto_LUKS", "BitLocker"]
@@ -101,19 +102,21 @@ Singleton {
             Exec.floating(`kitty yazi ${Exec.quote(partition.mountpoint)}`, true);
             return;
         }
-        pendingOpen = partition.path;
-        mount(partition, drive);
+        if (run(["udisksctl", "mount", "--no-user-interaction", "-b", partition.path], drive.path))
+            pendingOpen = partition.path;
     }
 
-    function run(command: var, drivePath: string): void {
+    // False if another action is still running (this one isn't started)
+    function run(command: var, drivePath: string): bool {
         if (action.running)
-            return;
+            return false;
         const cleared = Object.assign({}, errors);
         delete cleared[drivePath];
         errors = cleared;
         action.drivePath = drivePath;
         action.command = command;
         action.running = true;
+        return true;
     }
 
     function parse(json: string): void {
@@ -143,12 +146,13 @@ Singleton {
             partitions: (d.children ?? (d.fstype ? [d] : [])).filter(p => p.fstype).map(toPartition)
         }));
 
-        // New drives: mount what can be, one after the other, telling how it went
-        const fresh = drives.filter(d => !known.includes(d.path));
-        known = drives.map(d => d.path);
-        for (const drive of fresh) {
+        // New partitions: mount what can be, one after the other, telling how it went
+        const key = p => p.cryptPath || p.path;
+        const seen = known;
+        known = [].concat(...drives.map(d => d.partitions.map(key)));
+        for (const drive of drives) {
             const steps = drive.partitions
-                .filter(p => !p.mountpoint && !unmountable.includes(p.fstype))
+                .filter(p => !seen.includes(key(p)) && !p.mountpoint && !unmountable.includes(p.fstype))
                 .map(p => {
                     const device = Exec.quote(p.path);
                     const name = Exec.quote(p.label);

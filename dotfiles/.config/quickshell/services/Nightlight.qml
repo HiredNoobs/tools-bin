@@ -19,14 +19,26 @@ Singleton {
 
     // Whether the schedule says on now, as last checked (null before the first check)
     property var scheduledOn: null
+    // The temperature last set here, until hyprsunset reports it (null then), and the tries so
+    // far: at start hyprsunset may not be answering yet, so a set it didn't take is sent again
+    // after 1, 2, 4 and 8 s
+    property var wanted: null
+    property int tries: 0
 
     function refresh(): void {
         query.running = true;
     }
 
     function setEnabled(on: bool): void {
-        temperature = on ? warmTemperature : offTemperature;
-        Exec.run(`hyprctl hyprsunset temperature ${temperature}`);
+        tries = 0;
+        apply(on ? warmTemperature : offTemperature);
+    }
+
+    function apply(value: int): void {
+        temperature = value;
+        wanted = value;
+        retryTimer.stop();
+        Exec.run(`hyprctl hyprsunset temperature ${value}`);
         refreshTimer.restart();
     }
 
@@ -99,6 +111,12 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 const value = parseInt(text.trim());
+                if (root.wanted !== null && value !== root.wanted && root.tries < 4) {
+                    retryTimer.interval = 1000 * Math.pow(2, root.tries++);
+                    retryTimer.restart();
+                    return;
+                }
+                root.wanted = null;
                 if (!isNaN(value))
                     root.temperature = value;
             }
@@ -110,5 +128,13 @@ Singleton {
         id: refreshTimer
         interval: 300
         onTriggered: root.refresh()
+    }
+
+    Timer {
+        id: retryTimer
+        onTriggered: {
+            if (root.wanted !== null)
+                root.apply(root.wanted);
+        }
     }
 }

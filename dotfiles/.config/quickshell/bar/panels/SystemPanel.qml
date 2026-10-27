@@ -198,11 +198,17 @@ Column {
                         return "Checking…";
                     if (Updates.lastChecked === null)
                         return "";
-                    const minutes = Math.round((Date.now() - Updates.lastChecked) / 60000);
+                    // minuteClock: ticks over each minute while open
+                    const minutes = Math.round((minuteClock.date.getTime() - Updates.lastChecked) / 60000);
                     const ago = minutes < 1 ? "just now" : minutes < 60 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`;
                     return Updates.failed ? `Check failed ${ago}` : `Checked ${ago}`;
                 }
                 onClicked: PanelState.toggle("updates", "list")
+
+                SystemClock {
+                    id: minuteClock
+                    precision: SystemClock.Minutes
+                }
 
                 Row {
                     spacing: 6

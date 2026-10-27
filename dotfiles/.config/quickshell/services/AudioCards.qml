@@ -161,13 +161,10 @@ Singleton {
         }
     }
 
-    // Re-read after outputs appear or disappear (profile switches, plugging in devices)
-    Connections {
-        target: Pipewire.nodes
-        function onValuesChanged() {
-            refreshTimer.restart();
-        }
-    }
+    // Re-read after outputs appear or disappear (profile switches, plugging in devices); not
+    // for app streams coming and going (each notification sound is one)
+    readonly property string devices: Pipewire.nodes.values.filter(node => !node.isStream).map(node => node.name).join("\n")
+    onDevicesChanged: refreshTimer.restart()
 
     Timer {
         id: refreshTimer

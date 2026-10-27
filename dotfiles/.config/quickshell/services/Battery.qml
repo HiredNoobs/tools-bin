@@ -28,14 +28,15 @@ Singleton {
         return Theme.accent;
     }
 
+    // UPower reports no time (0) for a little while after plugging in or out
     readonly property string status: {
         if (charging)
-            return `Charging, full in ${formatTime(device.timeToFull)}`;
+            return device.timeToFull > 0 ? `Charging, full in ${formatTime(device.timeToFull)}` : "Charging";
         if (plugged)
             return "Plugged in, not charging";
         if (!UPower.onBattery)
             return "Fully charged";
-        return `${formatTime(device.timeToEmpty)} remaining`;
+        return device.timeToEmpty > 0 ? `${formatTime(device.timeToEmpty)} remaining` : "On battery, estimating time left…";
     }
 
     function formatTime(seconds: real): string {

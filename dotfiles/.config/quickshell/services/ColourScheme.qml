@@ -162,9 +162,16 @@ Singleton {
         return `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${alpha})`;
     }
 
+    // A scheme waiting while the last one is still being written (the newest wins)
+    property var queued: null
+
     function save(scheme): void {
         if (!scheme)
             return;
+        if (saver.running) {
+            queued = scheme;
+            return;
+        }
         const c = scheme.colors;
         const colours = {};
         c.forEach((value, i) => colours[`color${i}`] = value);
@@ -174,9 +181,9 @@ Singleton {
             special: { background: scheme.background, foreground: scheme.foreground, cursor: scheme.foreground, accent: scheme.accent },
             colors: colours
         }, null, 4) + "\n";
-        // Unchanged: leave the files (and everything watching them) alone
-        if (json === existing.text())
-            return;
+        // Unchanged: leave the files (and everything watching them) alone, unless kitty's or
+        // hyprlock's is missing
+        const unchanged = json === existing.text() ? "1" : "";
 
         const kitty = [
             `foreground ${scheme.foreground}`, `background ${scheme.background}`, "background_opacity 1.0", `cursor ${scheme.foreground}`, "",
@@ -197,19 +204,27 @@ Singleton {
         ].join("\n") + "\n";
 
         saver.command = ["sh", "-c", `
+            [ -n "$7" ] && [ -e "$1/kitty.conf" ] && [ -e "$1/hyprlock.conf" ] && exit 0
             mkdir -p "$1" &&
             printf '%s' "$2" > "$1/.kitty.conf.new" && mv "$1/.kitty.conf.new" "$1/kitty.conf" &&
             printf '%s' "$3" > "$1/.hyprlock.conf.new" && mv "$1/.hyprlock.conf.new" "$1/hyprlock.conf" &&
             printf '%s' "$4" > "$1/.colours.json.new" && mv "$1/.colours.json.new" "$1/colours.json" &&
             pkill -USR1 -x kitty
             hyprctl eval "hl.config({ general = { col = { active_border = \\"$5\\", inactive_border = \\"$6\\" } } })" >/dev/null
-        `, "sh", root.dir, kitty, hyprland, json, rgba(scheme.accent, 1), rgba(c[5], 1)];
+        `, "sh", root.dir, kitty, hyprland, json, rgba(scheme.accent, 1), rgba(c[5], 1), unchanged];
         saver.running = true;
     }
 
     Process {
         id: saver
-        onExited: Theme.reloadColours()
+        onExited: {
+            Theme.reloadColours();
+            if (root.queued) {
+                const scheme = root.queued;
+                root.queued = null;
+                root.save(scheme);
+            }
+        }
     }
 
     FileView {

@@ -24,6 +24,10 @@ Singleton {
     property var levels: ({})
     // Raw values waiting to be sent, by connector
     property var pending: ({})
+    // When each connector was last set, and when the running detection started: a level set
+    // meanwhile is newer than what detection read (not properties to bind to)
+    property var setAt: ({})
+    property real detectStarted: 0
 
     readonly property var ddcutil: ["ddcutil", "--skip-ddc-checks", "--maxtries", "3,3,3"]
 
@@ -43,6 +47,7 @@ Singleton {
         const updatedLevels = Object.assign({}, levels);
         updatedLevels[name] = clamped;
         levels = updatedLevels;
+        setAt[name] = Date.now();
         const updated = Object.assign({}, pending);
         updated[name] = Math.round(clamped * target.max);
         pending = updated;
@@ -66,9 +71,16 @@ Singleton {
         }
     }
 
+    // Not while a write is going (they'd share the bus): tried again a moment later
     function detect(): void {
-        if (!detector.running && !sender.running && Object.keys(pending).length === 0)
-            detector.running = true;
+        if (detector.running)
+            return;
+        if (sender.running || Object.keys(pending).length > 0) {
+            detectTimer.restart();
+            return;
+        }
+        detectStarted = Date.now();
+        detector.running = true;
     }
 
     Component.onCompleted: detect()
@@ -139,7 +151,8 @@ Singleton {
                     const match = String(parts[2] ?? "").match(/^VCP 10 C (\d+) (\d+)/);
                     if (name && match && Number(match[2]) > 0) {
                         found.push({ name: name, bus: Number(parts[1]), max: Number(match[2]) });
-                        levels[name] = Number(match[1]) / Number(match[2]);
+                        const newer = (root.setAt[name] ?? 0) > root.detectStarted && root.levels[name] !== undefined;
+                        levels[name] = newer ? root.levels[name] : Number(match[1]) / Number(match[2]);
                     }
                 }
                 // Same monitors: keep the list (and the sliders built from it)
