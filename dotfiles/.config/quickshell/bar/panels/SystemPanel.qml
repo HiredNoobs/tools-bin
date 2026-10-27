@@ -268,8 +268,8 @@ Column {
             property real uptimeSeconds: 0
 
             readonly property var actions: [
-                { icon: "\u{F023}", name: "Lock", command: "loginctl lock-session", confirm: false },
-                { icon: "\u{23FE}", name: "Sleep", command: "systemctl suspend-then-hibernate || systemctl suspend", confirm: false },
+                { icon: "\u{F023}", name: "Lock", command: Exec.lockCommand, confirm: false },
+                { icon: "\u{23FE}", name: "Sleep", command: `${Exec.lockCommand}; systemctl suspend-then-hibernate || systemctl suspend`, confirm: false },
                 { icon: "\u{F0343}", name: "Logout", command: "hyprshutdown -t 'Logging out...'", confirm: true },
                 { icon: "\u{EAD2}", name: "Reboot", command: "hyprshutdown -t 'Rebooting...' --post-cmd 'systemctl reboot'", confirm: true },
                 { icon: "\u{23FB}", name: "Shutdown", command: "hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'", confirm: true }

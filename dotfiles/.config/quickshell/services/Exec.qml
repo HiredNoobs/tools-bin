@@ -3,6 +3,10 @@ pragma Singleton
 import Quickshell
 
 Singleton {
+    // Locks the session, with hyprlock if the shell can't (hypr/scripts/lock). Not
+    // `loginctl lock-session`, which only locks while hypridle is running.
+    readonly property string lockCommand: "~/.config/hypr/scripts/lock"
+
     // Run through a shell so `~`, quoting and `||` work as on the command line
     function run(command: string): void {
         Quickshell.execDetached(["sh", "-c", command]);

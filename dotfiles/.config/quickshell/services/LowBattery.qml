@@ -29,7 +29,7 @@ Singleton {
         if (!acted && level <= ShellSettings.batteryCritical) {
             acted = true;
             if (ShellSettings.batteryCriticalAction === "suspend")
-                Exec.run("systemctl suspend");
+                Exec.run(`${Exec.lockCommand}; systemctl suspend`);
             else if (ShellSettings.batteryCriticalAction === "poweroff")
                 Exec.run("systemctl poweroff");
         }

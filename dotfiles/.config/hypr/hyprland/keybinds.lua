@@ -123,7 +123,7 @@ end, { description = "Toggle games workspace" })
 -------------------------------------------------------
 
 hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("qs ipc call bar panel power"), { description = "Toggle system control menu" })
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Lock session" })
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"), { description = "Lock session" })
 
 -------------------------------------------------------
 -- Application shortcuts

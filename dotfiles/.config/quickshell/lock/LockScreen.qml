@@ -41,6 +41,10 @@ Scope {
         password = "";
         message = "";
         checkCaps();
+        // Locked here but not holding the lock (refused, e.g. hyprlock had it when this shell
+        // started, and has since unlocked): ask for it afresh
+        if (locked && !sessionLock.secure)
+            locked = false;
         locked = true;
         flag.setText("locked\n");
     }
@@ -156,6 +160,7 @@ Scope {
     }
 
     WlSessionLock {
+        id: sessionLock
         locked: root.locked
 
         WlSessionLockSurface {

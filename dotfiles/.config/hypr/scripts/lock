@@ -1,0 +1,8 @@
+#!/bin/sh
+# Locks the session: Quickshell's lockscreen, or hyprlock (made to look the same) if the shell
+# isn't running or doesn't answer. Returns straight away, so it can go before a suspend.
+# Super+L, hypridle's lock_cmd and the shell's own lock and sleep actions all use it.
+
+pidof hyprlock >/dev/null && exit 0
+timeout 3 qs ipc call lock lock >/dev/null 2>&1 && exit 0
+hyprlock >/dev/null 2>&1 &
