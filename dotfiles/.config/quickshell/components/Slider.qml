@@ -2,7 +2,8 @@ import QtQuick
 import qs
 
 // Horizontal slider from `from` to `to`. It doesn't change `value` itself: it emits `moved`
-// while dragging, clicking or scrolling, and the owner applies it.
+// while dragging, clicking or scrolling, and the owner applies it. With `moveOnRelease`, a
+// drag emits it once, where it's let go (seeking, which players don't take many of at once).
 Item {
     id: root
 
@@ -11,6 +12,7 @@ Item {
     property real to: 1
     property real scrollStep: 0.02
     property bool enabled: true
+    property bool moveOnRelease: false
 
     signal moved(real value)
 
@@ -67,13 +69,19 @@ Item {
 
         onPressed: event => {
             root.dragValue = root.valueAt(event.x);
-            root.moved(root.dragValue);
+            if (!root.moveOnRelease)
+                root.moved(root.dragValue);
         }
         onPositionChanged: event => {
             if (!pressed)
                 return;
             root.dragValue = root.valueAt(event.x);
-            root.moved(root.dragValue);
+            if (!root.moveOnRelease)
+                root.moved(root.dragValue);
+        }
+        onReleased: {
+            if (root.moveOnRelease)
+                root.moved(root.dragValue);
         }
         onWheel: event => {
             const step = event.angleDelta.y > 0 ? root.scrollStep : -root.scrollStep;

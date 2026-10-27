@@ -123,6 +123,7 @@ Column {
             to: root.player?.length ?? 1
             value: root.player?.position ?? 0
             enabled: root.player?.canSeek ?? false
+            moveOnRelease: true
             scrollStep: 5
             onMoved: value => {
                 if (root.player?.canSeek)
