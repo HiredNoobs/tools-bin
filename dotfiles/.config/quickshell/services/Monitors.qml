@@ -49,8 +49,9 @@ Singleton {
         const specs = revertTo;
         revertTo = null;
         countdown.stop();
-        // Turn screens on before any are turned off, so one always stays on
-        const ordered = [...specs.filter(s => !s.disabled), ...specs.filter(s => s.disabled)];
+        // Turn screens on before any are turned off, so one always stays on. On ones say so:
+        // hl.monitor merges, so a screen the change turned off would otherwise stay off
+        const ordered = [...specs.filter(s => !s.disabled).map(s => Object.assign({ disabled: false }, s)), ...specs.filter(s => s.disabled)];
         run(ordered.map(spec => luaSpec(spec)).join("\n"));
     }
 
@@ -215,15 +216,26 @@ Singleton {
         return "";
     }
 
-    // The laptop screen while its closed lid has it off (Lid) is saved as it was before, so it
-    // isn't left off for the next start, maybe without another screen
+    // A laptop screen that's off is never saved off, as the next start may have no other
+    // screen: while its closed lid has it off (Lid) it's saved as it was before, otherwise it's
+    // left to the machine config
     function save(): void {
+        // Not a change that's waiting to be kept or undone
+        if (confirming)
+            return;
+        const saved = m => {
+            if (!m.disabled || !isBuiltIn(m.name))
+                return luaSpec(specOf(m));
+            if (Lid.laptopSpec?.output === m.name)
+                return luaSpec(Lid.laptopSpec);
+            return `-- ${m.name} is off, but left to the machine config (it may be the only screen next time)`;
+        };
         const lines = [
             "-- Monitor layout saved from the Quickshell display panel.",
             "-- Loaded by hyprland.lua after the machine file; kept by the setup script's rsync.",
             "-- Delete this file (or use \"Use defaults\" in the panel) to go back to the machine config.",
             "",
-            ...monitors.map(m => luaSpec(m.disabled && Lid.laptopSpec?.output === m.name ? Lid.laptopSpec : specOf(m))),
+            ...monitors.map(saved),
             ""
         ];
         savedFile.setText(lines.join("\n"));

@@ -197,6 +197,9 @@ Column {
         PanelButton {
             icon: "\u{F0193}"
             label: "Save layout"
+            // Not while a change waits to be kept: it may be about to be undone
+            enabled: !Monitors.confirming
+            opacity: enabled ? 1 : 0.4
             onClicked: Monitors.save()
         }
 
