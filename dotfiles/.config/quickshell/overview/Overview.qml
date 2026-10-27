@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Io
 import Quickshell.Wayland
 import qs
 import qs.components
@@ -178,14 +177,9 @@ PanelWindow {
             hl.config({ cursor = { no_warps = warps } })`;
     }
 
+    // In order through HyprLua, so a second drop right after the first isn't lost
     function runLua(lua: string): void {
-        luaProcess.command = ["hyprctl", "eval", lua];
-        luaProcess.running = true;
-    }
-
-    Process {
-        id: luaProcess
-        onExited: root.reclaimKeyboard()
+        HyprLua.run(lua, () => root.reclaimKeyboard());
     }
 
     Timer {

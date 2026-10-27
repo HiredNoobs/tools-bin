@@ -168,7 +168,7 @@ Item {
             if (calculator.answer === "")
                 return;
             root.closeRequested();
-            Quickshell.execDetached(["wl-copy", "--", calculator.answer]);
+            Clipboard.copy({ text: calculator.answer });
         } else if (mode === "run") {
             if (input === "")
                 return;

@@ -248,22 +248,14 @@ Singleton {
         refreshTimer.restart();
     }
 
-    // One at a time, in order: a change made while one is still running (the lid closing just
+    // In order through HyprLua: a change made while one is still running (the lid closing just
     // after a click in the panel) waits for it
-    property var queued: []
-
     function run(lua: string): void {
-        queued = [...queued, lua];
-        runNext();
-    }
-
-    function runNext(): void {
-        if (evaluate.running || queued.length === 0)
-            return;
-        lastError = "";
-        evaluate.command = ["hyprctl", "eval", queued[0]];
-        queued = queued.slice(1);
-        evaluate.running = true;
+        HyprLua.run(lua, (ok, output) => {
+            root.lastError = ok ? "" : output;
+            refreshTimer.restart();
+            repaintTimer.restart();
+        });
     }
 
     function parse(json: string): void {
@@ -311,21 +303,6 @@ Singleton {
                 }
             }
         }
-    }
-
-    // hyprctl eval prints "ok", or the Lua error
-    Process {
-        id: evaluate
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const output = text.trim();
-                if (output !== "ok" && output !== "")
-                    root.lastError = output;
-                refreshTimer.restart();
-                repaintTimer.restart();
-            }
-        }
-        onExited: root.runNext()
     }
 
     Connections {

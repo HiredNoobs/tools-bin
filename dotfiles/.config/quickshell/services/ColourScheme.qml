@@ -162,16 +162,17 @@ Singleton {
         return `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${alpha})`;
     }
 
-    // A scheme waiting while the last one is still being written (the newest wins)
-    property var queued: null
-
+    // One waits while the last is still being written (the newest wins); its files are worked
+    // out when it starts, against what's written by then
     function save(scheme): void {
         if (!scheme)
             return;
-        if (saver.running) {
-            queued = scheme;
-            return;
-        }
+        const job = { done: () => Theme.reloadColours() };
+        job.started = () => job.command = saveCommand(scheme);
+        saver.enqueue(job);
+    }
+
+    function saveCommand(scheme): var {
         const c = scheme.colors;
         const colours = {};
         c.forEach((value, i) => colours[`color${i}`] = value);
@@ -203,7 +204,7 @@ Singleton {
             `$subtextMarkup = ##${scheme.foreground.slice(1)}99`
         ].join("\n") + "\n";
 
-        saver.command = ["sh", "-c", `
+        return ["sh", "-c", `
             [ -n "$7" ] && [ -e "$1/kitty.conf" ] && [ -e "$1/hyprlock.conf" ] && exit 0
             mkdir -p "$1" &&
             printf '%s' "$2" > "$1/.kitty.conf.new" && mv "$1/.kitty.conf.new" "$1/kitty.conf" &&
@@ -212,19 +213,11 @@ Singleton {
             pkill -USR1 -x kitty
             hyprctl eval "hl.config({ general = { col = { active_border = \\"$5\\", inactive_border = \\"$6\\" } } })" >/dev/null
         `, "sh", root.dir, kitty, hyprland, json, rgba(scheme.accent, 1), rgba(c[5], 1), unchanged];
-        saver.running = true;
     }
 
-    Process {
+    ProcessQueue {
         id: saver
-        onExited: {
-            Theme.reloadColours();
-            if (root.queued) {
-                const scheme = root.queued;
-                root.queued = null;
-                root.save(scheme);
-            }
-        }
+        latestOnly: true
     }
 
     FileView {

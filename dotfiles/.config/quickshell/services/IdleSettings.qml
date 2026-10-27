@@ -29,9 +29,6 @@ Singleton {
     property bool hasLocal: false
     property bool loaded: false
     property bool localLoaded: false
-    // The local file's text to write next (null: delete it), while a restart of hypridle is
-    // still going; only the newest is kept
-    property var pending: undefined
 
     function get(kind: string, power: string): int {
         return values[kind]?.[power] ?? 0;
@@ -56,30 +53,24 @@ Singleton {
     }
 
     // Writes the local config (or deletes it when nothing differs) and restarts hypridle. One
-    // change at a time: one made while hypridle is still restarting waits for it, so a delete
-    // can't land after a newer write (or the other way round)
+    // change at a time: one made while hypridle is still restarting waits for it (the newest
+    // wins), so a delete can't land after a newer write (or the other way round). The file is
+    // written as its restart starts, straight away (blockWrites), so it's there for hypridle.
     function apply(): void {
         const custom = kinds.some(kind => isCustom(kind));
         hasLocal = custom;
-        pending = custom ? generate() : null;
-        if (!restart.running)
-            applyPending();
-    }
-
-    function applyPending(): void {
-        if (pending === undefined)
-            return;
-        const text = pending;
-        pending = undefined;
-        if (text !== null) {
-            localFile.setText(text);
-            localGeneralBlock = generalBlock;
-            // A moment for the file to be written first
-            restart.command = ["sh", "-c", `sleep 0.3; pkill -x hypridle; hyprctl dispatch "$1"`, "sh", `hl.dsp.exec_cmd(${Exec.lua("hypridle -c " + Exec.quote(localPath))})`];
+        if (custom) {
+            const text = generate();
+            restart.enqueue({
+                command: ["sh", "-c", `pkill -x hypridle; hyprctl dispatch "$1"`, "sh", `hl.dsp.exec_cmd(${Exec.lua("hypridle -c " + Exec.quote(localPath))})`],
+                started: () => {
+                    localFile.setText(text);
+                    root.localGeneralBlock = root.generalBlock;
+                }
+            });
         } else {
-            restart.command = ["sh", "-c", `rm -f "$1"; pkill -x hypridle; hyprctl dispatch 'hl.dsp.exec_cmd("hypridle")'`, "sh", localPath];
+            restart.enqueue({ command: ["sh", "-c", `rm -f "$1"; pkill -x hypridle; hyprctl dispatch 'hl.dsp.exec_cmd("hypridle")'`, "sh", localPath] });
         }
-        restart.running = true;
     }
 
     // At start, once both files are read: a local file with an older general block is written
@@ -162,6 +153,7 @@ Singleton {
     FileView {
         id: localFile
         path: root.localPath
+        blockWrites: true
         printErrors: false
         onLoaded: {
             // Only the first read: later ones are this writing it
@@ -179,8 +171,8 @@ Singleton {
         }
     }
 
-    Process {
+    ProcessQueue {
         id: restart
-        onExited: root.applyPending()
+        latestOnly: true
     }
 }

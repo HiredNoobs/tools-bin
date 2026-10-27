@@ -18,10 +18,7 @@ Singleton {
     property var ssids: ({})
     // The last action's error, "" if it worked
     property string error: ""
-    property bool busy: false
-    property var queue: []
-    // The running action's failure isn't reported
-    property bool quietAction: false
+    readonly property bool busy: actions.busy
 
     function refresh(): void {
         list.running = true;
@@ -88,22 +85,27 @@ Singleton {
     // `extra`: { input (written to its stdin, for secrets), onFail (called if it fails),
     // followUp (a later step of the same change, which leaves an earlier step's error shown) }
     function nmcli(args: var, quiet: var, extra: var): void {
-        queue = [...queue, Object.assign({ args: args, quiet: quiet ?? false, input: "", onFail: null, followUp: false }, extra ?? {})];
-        next();
-    }
-
-    function next(): void {
-        if (busy || queue.length === 0)
-            return;
-        busy = true;
-        if (!queue[0].quiet && !queue[0].followUp)
-            error = "";
-        quietAction = queue[0].quiet;
-        action.input = queue[0].input;
-        action.onFail = queue[0].onFail;
-        action.command = ["nmcli", ...queue[0].args];
-        queue = queue.slice(1);
-        action.running = true;
+        const step = Object.assign({ input: "", onFail: null, followUp: false }, extra ?? {});
+        quiet = quiet ?? false;
+        actions.enqueue({
+            command: ["nmcli", ...args],
+            input: step.input,
+            started: () => {
+                if (!quiet && !step.followUp)
+                    root.error = "";
+            },
+            done: (code, stdout, stderr) => {
+                if (code !== 0 && !quiet)
+                    root.error = stderr.trim().replace(/^Error: /, "") || `nmcli failed (${code})`;
+                if (code !== 0 && step.onFail)
+                    step.onFail();
+                root.refresh();
+            }
+        });
+        // The secret's only in the job now (until it's written)
+        step.input = "";
+        if (extra)
+            extra.input = "";
     }
 
     function setAutoconnect(uuid: string, on: bool): void {
@@ -139,7 +141,7 @@ Singleton {
         if (args.length === 3)
             return;
         // Not changed: don't reconnect (queued right behind)
-        nmcli(args, false, active ? { onFail: () => root.queue = root.queue.slice(1) } : {});
+        nmcli(args, false, active ? { onFail: () => actions.dropNext() } : {});
         if (active)
             nmcli(["connection", "up", uuid], false, { followUp: true });
     }
@@ -166,12 +168,13 @@ Singleton {
         if (password !== "")
             args.push("wifi-sec.key-mgmt", "wpa-psk");
         // Not added: don't try to connect it (queued right behind)
-        nmcli(args, false, { onFail: () => root.queue = root.queue.slice(1) });
+        nmcli(args, false, { onFail: () => actions.dropNext() });
         nmcli(["connection", "up", uuid, ...(password !== "" ? ["passwd-file", "/dev/stdin"] : [])], false, {
             followUp: true,
             input: password !== "" ? `802-11-wireless-security.psk:${password}\n` : "",
             onFail: () => root.nmcli(["connection", "delete", uuid], true)
         });
+        password = "";
     }
 
     Component.onCompleted: refresh()
@@ -218,32 +221,8 @@ Singleton {
         }
     }
 
-    Process {
-        id: action
-
-        property string input
-        property var onFail
-
-        stdinEnabled: true
-        // The secret, then end of input
-        onStarted: {
-            if (input !== "")
-                write(input);
-            input = "";
-            stdinEnabled = false;
-        }
-        stderr: StdioCollector {
-            id: actionError
-        }
-        onExited: code => {
-            stdinEnabled = true;
-            if (code !== 0 && !root.quietAction)
-                root.error = actionError.text.trim().replace(/^Error: /, "") || `nmcli failed (${code})`;
-            if (code !== 0 && onFail)
-                onFail();
-            root.busy = false;
-            root.refresh();
-            root.next();
-        }
+    // One at a time, in order; a secret (`input`) goes on nmcli's stdin
+    ProcessQueue {
+        id: actions
     }
 }

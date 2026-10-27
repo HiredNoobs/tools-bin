@@ -45,9 +45,7 @@ Singleton {
             Quickshell.execDetached(["sh", "-c", `wl-copy --type image/png < "$1"`, "sh", entry.image]);
             return;
         }
-        copier.queued = entry.text;
-        if (!copier.running)
-            copier.next();
+        copier.enqueue({ command: ["wl-copy"], input: entry.text });
     }
 
     // A picture the watcher below saved: in imageDir, named after its contents. Anything else
@@ -161,30 +159,8 @@ Singleton {
     }
 
     // Text going back on the clipboard; the newest waits if one is still being handed over
-    Process {
+    ProcessQueue {
         id: copier
-
-        // Text waiting to go (null when none), and the text going now
-        property var queued: null
-        property string text
-
-        function next(): void {
-            text = queued;
-            queued = null;
-            running = true;
-        }
-
-        command: ["wl-copy"]
-        stdinEnabled: true
-        onStarted: {
-            write(text);
-            text = "";
-            stdinEnabled = false;
-        }
-        onExited: {
-            stdinEnabled = true;
-            if (queued !== null)
-                next();
-        }
+        latestOnly: true
     }
 }

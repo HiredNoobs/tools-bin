@@ -26,12 +26,21 @@ Singleton {
     readonly property var unmountable: ["crypto_LUKS", "BitLocker", "swap", "LVM2_member", "linux_raid_member"]
     readonly property var encryptions: ["crypto_LUKS", "BitLocker"]
     // The encrypted partition being unlocked (its cryptPath, "" when none)
-    readonly property string unlocking: unlocker.running ? unlocker.cryptPath : ""
+    readonly property string unlocking: unlocker.current?.cryptPath ?? ""
 
     signal unlocked(string cryptPath)
 
     function refresh(): void {
         query.running = true;
+    }
+
+    function setError(drivePath: string, message: string): void {
+        const updated = Object.assign({}, errors);
+        if (message !== "")
+            updated[drivePath] = message;
+        else
+            delete updated[drivePath];
+        errors = updated;
     }
 
     function partitionByPath(path: string): var {
@@ -70,20 +79,30 @@ Singleton {
     // if it unlocked but what's inside couldn't be mounted. False if it couldn't start (another
     // unlock is running, or it isn't locked).
     function unlock(partition: var, drive: var, passphrase: string): bool {
-        if (unlocker.running || !partition.locked)
+        if (unlocker.busy || !partition.locked)
             return false;
-        const cleared = Object.assign({}, errors);
-        delete cleared[drive.path];
-        errors = cleared;
-        unlocker.drivePath = drive.path;
-        unlocker.cryptPath = partition.cryptPath;
-        unlocker.passphrase = passphrase;
-        unlocker.command = ["sh", "-c", `
-            udisksctl unlock --no-user-interaction -b "$1" --key-file /dev/stdin >/dev/null || exit 1
-            dev=$(lsblk -nro PATH,TYPE "$1" | awk '$2 == "crypt" { print $1; exit }')
-            [ -z "$dev" ] || udisksctl mount --no-user-interaction -b "$dev" >/dev/null || exit 2
-        `, "sh", partition.cryptPath];
-        unlocker.running = true;
+        setError(drive.path, "");
+        const cryptPath = partition.cryptPath;
+        unlocker.enqueue({
+            cryptPath: cryptPath,
+            command: ["sh", "-c", `
+                udisksctl unlock --no-user-interaction -b "$1" --key-file /dev/stdin >/dev/null || exit 1
+                dev=$(lsblk -nro PATH,TYPE "$1" | awk '$2 == "crypt" { print $1; exit }')
+                [ -z "$dev" ] || udisksctl mount --no-user-interaction -b "$dev" >/dev/null || exit 2
+            `, "sh", cryptPath],
+            input: passphrase,
+            done: (code, stdout, stderr) => {
+                // "Error unlocking /dev/sda1: GDBus.Error:…: Failed to activate device: Incorrect passphrase."
+                const message = stderr.trim();
+                if (message !== "")
+                    root.setError(drive.path, message.split("\n").pop().split(": ").pop());
+                if (code === 0 || code === 2)
+                    root.unlocked(cryptPath);
+                refreshTimer.restart();
+            }
+        });
+        // Not kept here (the job above has its own copy until it's written)
+        passphrase = "";
         return true;
     }
 
@@ -102,21 +121,26 @@ Singleton {
             Exec.floating(`kitty yazi ${Exec.quote(partition.mountpoint)}`, true);
             return;
         }
-        if (run(["udisksctl", "mount", "--no-user-interaction", "-b", partition.path], drive.path))
-            pendingOpen = partition.path;
+        pendingOpen = partition.path;
+        mount(partition, drive);
     }
 
-    // False if another action is still running (this one isn't started)
-    function run(command: var, drivePath: string): bool {
-        if (action.running)
-            return false;
-        const cleared = Object.assign({}, errors);
-        delete cleared[drivePath];
-        errors = cleared;
-        action.drivePath = drivePath;
-        action.command = command;
-        action.running = true;
-        return true;
+    // After any action still running (one at a time, in order); a failure's reason is shown
+    // under its drive
+    function run(command: var, drivePath: string): void {
+        actions.enqueue({
+            command: command,
+            started: () => root.setError(drivePath, ""),
+            done: (code, stdout, stderr) => {
+                const message = stderr.trim();
+                if (message !== "") {
+                    // udisksctl errors are long; the last line has the reason
+                    root.setError(drivePath, message.split("\n").pop().replace(/^Error.*?: /, ""));
+                    root.pendingOpen = "";
+                }
+                refreshTimer.restart();
+            }
+        });
     }
 
     function parse(json: string): void {
@@ -196,58 +220,13 @@ Singleton {
         }
     }
 
-    Process {
-        id: action
-
-        property string drivePath
-
-        stderr: StdioCollector {
-            onStreamFinished: {
-                const message = text.trim();
-                if (message !== "") {
-                    const updated = Object.assign({}, root.errors);
-                    // udisksctl errors are long; the last line has the reason
-                    updated[action.drivePath] = message.split("\n").pop().replace(/^Error.*?: /, "");
-                    root.errors = updated;
-                    root.pendingOpen = "";
-                }
-            }
-        }
-        onExited: refreshTimer.restart()
+    ProcessQueue {
+        id: actions
     }
 
-    Process {
+    // The password goes on stdin, then end of input, so udisks reads exactly what was typed
+    ProcessQueue {
         id: unlocker
-
-        property string drivePath
-        property string cryptPath
-        property string passphrase
-
-        stdinEnabled: true
-        // The password, then end of input, so udisks reads exactly what was typed
-        onStarted: {
-            write(passphrase);
-            passphrase = "";
-            stdinEnabled = false;
-        }
-        stderr: StdioCollector {
-            onStreamFinished: {
-                const message = text.trim();
-                if (message !== "") {
-                    const updated = Object.assign({}, root.errors);
-                    // "Error unlocking /dev/sda1: GDBus.Error:…: Failed to activate device: Incorrect passphrase."
-                    updated[unlocker.drivePath] = message.split("\n").pop().split(": ").pop();
-                    root.errors = updated;
-                }
-            }
-        }
-        onExited: code => {
-            passphrase = "";
-            stdinEnabled = true;
-            if (code === 0 || code === 2)
-                root.unlocked(cryptPath);
-            refreshTimer.restart();
-        }
     }
 
     Timer {

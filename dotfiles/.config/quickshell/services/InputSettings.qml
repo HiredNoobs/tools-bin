@@ -102,8 +102,11 @@ Singleton {
                     refresh();
             });
         }
-        if (reloadConfig)
-            reload.restart();
+        // Once the file's rewritten (straight away: blockWrites) or gone
+        if (reloadConfig) {
+            Exec.run(custom.length === 0 ? `rm -f ${Exec.quote(savedPath)}; hyprctl reload` : "hyprctl reload");
+            refreshTimer.restart();
+        }
     }
 
     // { "input.touchpad.x": 1 } -> { input: { touchpad: { x: 1 } } }
@@ -162,23 +165,13 @@ Singleton {
         query.running = true;
     }
 
-    // One at a time, in order: a change made while one is still running waits for it.
+    // In order through HyprLua: a change made while one is still running waits for it.
     // `done(ok)` runs once Hyprland has answered.
-    property var queued: []
-
     function run(code: string, done: var): void {
-        queued = [...queued, { code: code, done: done }];
-        runNext();
-    }
-
-    function runNext(): void {
-        if (evaluate.running || queued.length === 0)
-            return;
-        lastError = "";
-        evaluate.current = queued[0];
-        evaluate.command = ["hyprctl", "eval", queued[0].code];
-        queued = queued.slice(1);
-        evaluate.running = true;
+        HyprLua.run(code, (ok, output) => {
+            root.lastError = ok ? "" : output;
+            done?.(ok);
+        });
     }
 
     Component.onCompleted: refresh()
@@ -206,37 +199,6 @@ Singleton {
         }
     }
 
-    // hyprctl eval prints "ok", or the Lua error
-    Process {
-        id: evaluate
-
-        // The queued change running now
-        property var current: null
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const output = text.trim();
-                const ok = output === "ok" || output === "";
-                if (!ok)
-                    root.lastError = output;
-                const done = evaluate.current?.done;
-                evaluate.current = null;
-                if (done)
-                    done(ok);
-            }
-        }
-        onExited: root.runNext()
-    }
-
-    // After a reset has rewritten the file
-    Timer {
-        id: reload
-        interval: 300
-        onTriggered: {
-            Exec.run("hyprctl reload");
-            refreshTimer.restart();
-        }
-    }
 
     Timer {
         id: refreshTimer
@@ -247,6 +209,7 @@ Singleton {
     FileView {
         id: savedFile
         path: root.savedPath
+        blockWrites: true
         printErrors: false
         onLoaded: {
             root.hasSaved = true;
