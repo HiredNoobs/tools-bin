@@ -13,6 +13,9 @@ Singleton {
     // [{ uuid, name, type ("802-11-wireless", "802-3-ethernet"…), autoconnect, active,
     //    device, lastUsed (ms, 0 if never) }]
     property var connections: []
+    // Wi-Fi connections' network names (SSIDs), by uuid: a connection's name can differ (e.g.
+    // "Home", or "MyWifi 1" for a second profile). Read once per connection.
+    property var ssids: ({})
     // The last action's error, "" if it worked
     property string error: ""
     property bool busy: false
@@ -22,6 +25,25 @@ Singleton {
 
     function refresh(): void {
         list.running = true;
+    }
+
+    // Wi-Fi scanning, for whatever wants it while it's open (the network page, the
+    // connectivity panel): [{ holder, device }]. A device scans while anything wants it to, so
+    // one closing doesn't stop the other's scan.
+    property var scanners: []
+
+    function setScanning(holder: var, device: var): void {
+        const before = scanners.find(s => s.holder === holder)?.device ?? null;
+        scanners = [...scanners.filter(s => s.holder !== holder), ...(device ? [{ holder: holder, device: device }] : [])];
+        if (before && before !== device && !scanners.some(s => s.device === before))
+            before.scannerEnabled = false;
+        if (device)
+            device.scannerEnabled = true;
+    }
+
+    // The network a Wi-Fi connection is for (its name until read)
+    function ssidOf(connection: var): string {
+        return ssids[connection.uuid] || connection.name;
     }
 
     // nmcli's terse output separates fields with ":" and escapes ":" and "\" inside them
@@ -63,9 +85,10 @@ Singleton {
 
     // Runs `nmcli <args>` after any action before it, then re-reads the connections. A quiet
     // one's failure isn't reported (e.g. taking down a connection that may not be up).
-    // `extra`: { input (written to its stdin, for secrets), onFail (called if it fails) }
+    // `extra`: { input (written to its stdin, for secrets), onFail (called if it fails),
+    // followUp (a later step of the same change, which leaves an earlier step's error shown) }
     function nmcli(args: var, quiet: var, extra: var): void {
-        queue = [...queue, Object.assign({ args: args, quiet: quiet ?? false, input: "", onFail: null }, extra ?? {})];
+        queue = [...queue, Object.assign({ args: args, quiet: quiet ?? false, input: "", onFail: null, followUp: false }, extra ?? {})];
         next();
     }
 
@@ -73,7 +96,7 @@ Singleton {
         if (busy || queue.length === 0)
             return;
         busy = true;
-        if (!queue[0].quiet)
+        if (!queue[0].quiet && !queue[0].followUp)
             error = "";
         quietAction = queue[0].quiet;
         action.input = queue[0].input;
@@ -99,21 +122,26 @@ Singleton {
         nmcli(["connection", "delete", uuid]);
     }
 
-    // settings: { manual, address ("192.168.1.50/24"), gateway, customDns, dns (list) }.
-    // Reconnects an active connection so the change takes effect.
-    function setIpv4(uuid: string, settings: var, active: bool): void {
+    // changes: { address?: { manual, address ("192.168.1.50/24"), gateway }, dns?: { custom,
+    // servers (list) } }; only the parts given are changed, so anything else set on the
+    // connection stays. Reconnects an active connection so the change takes effect, unless it
+    // couldn't be made.
+    function setIpv4(uuid: string, changes: var, active: bool): void {
         const args = ["connection", "modify", uuid];
-        if (settings.manual)
-            args.push("ipv4.method", "manual", "ipv4.addresses", settings.address, "ipv4.gateway", settings.gateway);
-        else
+        if (changes.address?.manual)
+            args.push("ipv4.method", "manual", "ipv4.addresses", changes.address.address, "ipv4.gateway", changes.address.gateway);
+        else if (changes.address)
             args.push("ipv4.method", "auto", "ipv4.addresses", "", "ipv4.gateway", "");
-        if (settings.customDns)
-            args.push("ipv4.dns", settings.dns.join(" "), "ipv4.ignore-auto-dns", "yes");
-        else
+        if (changes.dns?.custom)
+            args.push("ipv4.dns", changes.dns.servers.join(" "), "ipv4.ignore-auto-dns", "yes");
+        else if (changes.dns)
             args.push("ipv4.dns", "", "ipv4.ignore-auto-dns", "no");
-        nmcli(args);
+        if (args.length === 3)
+            return;
+        // Not changed: don't reconnect (queued right behind)
+        nmcli(args, false, active ? { onFail: () => root.queue = root.queue.slice(1) } : {});
         if (active)
-            connect(uuid);
+            nmcli(["connection", "up", uuid], false, { followUp: true });
     }
 
     // A WireGuard .conf, named after the file (which must make a valid interface name, up to
@@ -140,6 +168,7 @@ Singleton {
         // Not added: don't try to connect it (queued right behind)
         nmcli(args, false, { onFail: () => root.queue = root.queue.slice(1) });
         nmcli(["connection", "up", uuid, ...(password !== "" ? ["passwd-file", "/dev/stdin"] : [])], false, {
+            followUp: true,
             input: password !== "" ? `802-11-wireless-security.psk:${password}\n` : "",
             onFail: () => root.nmcli(["connection", "delete", uuid], true)
         });
@@ -164,6 +193,27 @@ Singleton {
                         lastUsed: Number(timestamp) * 1000
                     };
                 });
+                const unread = root.connections.filter(c => c.type === "802-11-wireless" && root.ssids[c.uuid] === undefined).map(c => c.uuid);
+                if (unread.length > 0 && !ssidQuery.running) {
+                    ssidQuery.command = ["sh", "-c", 'for uuid; do printf "%s\\t%s\\n" "$uuid" "$(nmcli -g 802-11-wireless.ssid connection show "$uuid")"; done', "sh", ...unread];
+                    ssidQuery.running = true;
+                }
+            }
+        }
+    }
+
+    // "uuid<TAB>ssid" per connection; -g escapes ":" and "\" like the terse output
+    Process {
+        id: ssidQuery
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const updated = Object.assign({}, root.ssids);
+                for (const line of text.split("\n")) {
+                    const tab = line.indexOf("\t");
+                    if (tab > 0)
+                        updated[line.slice(0, tab)] = line.slice(tab + 1).replace(/\\(.)/g, "$1");
+                }
+                root.ssids = updated;
             }
         }
     }

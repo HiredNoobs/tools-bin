@@ -25,6 +25,10 @@ Singleton {
     property bool ready: false
     // Paths of the devices seen pairing while they showed a code (not a property to bind to)
     property var seenPairing: ({})
+    // The agent stopping again soon after each start (e.g. python-dbus or python-gobject
+    // missing): restarted less and less often, then not at all
+    property real startedAt: 0
+    property int quickExits: 0
 
     function device(path: string): var {
         return Bluetooth.devices.values.find(d => d.dbusPath === path) ?? null;
@@ -67,6 +71,16 @@ Singleton {
         command: ["python3", "-I", Quickshell.shellPath("scripts/bluetooth-agent.py")]
         running: true
         stdinEnabled: true
+        onStarted: root.startedAt = Date.now()
+
+        // Why it stopped (a Python traceback ends with the error)
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const lines = text.trim().split("\n");
+                if (lines[0] !== "")
+                    console.warn(`Bluetooth agent: ${lines[lines.length - 1]}`);
+            }
+        }
 
         stdout: SplitParser {
             onRead: line => {
@@ -93,10 +107,17 @@ Singleton {
             }
         }
 
-        // Started again if it stops (it shouldn't)
+        // Started again if it stops (it shouldn't): after 5 s, doubling while it keeps stopping
+        // within 10 s of starting, and given up after 5 of those in a row
         onExited: {
             root.ready = false;
             root.requests = [];
+            root.quickExits = Date.now() - root.startedAt < 10000 ? root.quickExits + 1 : 0;
+            if (root.quickExits >= 5) {
+                console.warn("Bluetooth agent: keeps stopping, not started again (pairing needs python-dbus and python-gobject)");
+                return;
+            }
+            restart.interval = 5000 * Math.pow(2, Math.max(0, root.quickExits - 1));
             restart.restart();
         }
     }

@@ -32,6 +32,15 @@ Column {
     readonly property var btDevices: adapter?.devices.values ?? []
     readonly property var pairedDevices: btDevices.filter(d => d.paired || d.bonded)
     readonly property var newDevices: btDevices.filter(d => !d.paired && !d.bonded && d.name !== "")
+    // Scanning for devices was started here (not by Settings › Bluetooth), so closing stops it
+    property bool startedDiscovery: false
+    // The paired device whose Forget was clicked once (a second click within 3 s forgets it)
+    property var forgetArmed: null
+
+    function toggleDiscovery(): void {
+        startedDiscovery = !adapter.discovering;
+        adapter.discovering = !adapter.discovering;
+    }
 
     function connectTo(network: var): void {
         if (network.connected)
@@ -69,16 +78,20 @@ Column {
     width: 360
     spacing: 10
 
-    // Scan only while the panel is open
-    Component.onCompleted: {
-        if (wifiDevice)
-            wifiDevice.scannerEnabled = true;
-    }
+    // Scan only while the panel is open (as well as anything else scanning), also with a Wi-Fi
+    // device that turns up meanwhile
+    onWifiDeviceChanged: NetworkConnections.setScanning(root, wifiDevice)
+    Component.onCompleted: NetworkConnections.setScanning(root, wifiDevice)
     Component.onDestruction: {
-        if (wifiDevice)
-            wifiDevice.scannerEnabled = false;
-        if (adapter?.discovering)
+        NetworkConnections.setScanning(root, null);
+        if (startedDiscovery && adapter?.discovering)
             adapter.discovering = false;
+    }
+
+    Timer {
+        id: disarmForget
+        interval: 3000
+        onTriggered: root.forgetArmed = null
     }
 
     Timer {
@@ -268,9 +281,20 @@ Column {
                 clickable: !busy
                 onClicked: modelData.connected ? modelData.disconnect() : modelData.connect()
 
+                // Twice, within 3 seconds
                 PanelButton {
                     icon: "\u{F1F8}"
-                    onClicked: deviceRow.modelData.forget()
+                    label: root.forgetArmed === deviceRow.modelData ? "Forget?" : ""
+                    highlighted: root.forgetArmed === deviceRow.modelData
+                    onClicked: {
+                        if (root.forgetArmed === deviceRow.modelData) {
+                            root.forgetArmed = null;
+                            deviceRow.modelData.forget();
+                            return;
+                        }
+                        root.forgetArmed = deviceRow.modelData;
+                        disarmForget.restart();
+                    }
                 }
             }
         }
@@ -285,12 +309,13 @@ Column {
             icon: "\u{F002}"
             label: root.adapter?.discovering ? "Stop scanning" : "Scan for devices"
             highlighted: root.adapter?.discovering ?? false
-            onClicked: root.adapter.discovering = !root.adapter.discovering
+            onClicked: root.toggleDiscovery()
         }
 
+        // While scanning, and a device still pairing after it stops
         Repeater {
             model: ScriptModel {
-                values: root.adapter?.discovering ? root.newDevices : []
+                values: root.adapter?.discovering ? root.newDevices : root.newDevices.filter(d => d.pairing)
             }
 
             ListRow {
@@ -388,6 +413,8 @@ Column {
                 font.pixelSize: Theme.panelFontSize
                 clip: true
                 onAccepted: field.submit()
+                // Cancels the password, rather than closing the whole panel
+                Keys.onEscapePressed: root.passwordNetwork = null
 
                 PanelText {
                     anchors.verticalCenter: parent.verticalCenter

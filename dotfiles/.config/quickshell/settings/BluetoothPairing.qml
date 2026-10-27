@@ -5,9 +5,10 @@ import qs.services
 
 // The Bluetooth pairing window's content (PairingWindow), for the request BluetoothAgent is
 // waiting on: check a code matches, allow a device (to pair, or to connect when it isn't
-// trusted), enter a PIN or passkey, or (keyboards) type a code on the device. Enter accepts, Esc
-// rejects (a code to type has nothing to accept: Esc cancels the pairing); answering closes the
-// window.
+// trusted), enter a PIN or passkey, or (keyboards) type a code on the device. Esc rejects (a code
+// to type has nothing to accept: Esc cancels the pairing); a PIN or passkey is accepted with
+// Enter, but allowing a device or a matching code takes a click, as the window can open (and
+// take the keyboard) while you're typing something else. Answering closes the window.
 Column {
     id: root
 
@@ -39,7 +40,7 @@ Column {
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape)
             root.reject();
-        else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && root.type !== "display")
+        else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && root.needsInput)
             root.accept();
         else
             return;

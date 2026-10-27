@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Bluetooth
 import qs
 import qs.components
@@ -17,6 +18,8 @@ Column {
     readonly property var paired: devices.filter(d => d.paired || d.bonded)
         .sort((a, b) => (b.connected - a.connected) || a.name.localeCompare(b.name))
     readonly property var nearby: devices.filter(d => !d.paired && !d.bonded && d.deviceName !== "")
+    // Scanning was started here (not from the connectivity panel), so leaving stops it
+    property bool startedDiscovery: false
 
     // BlueZ's device icon names to glyphs
     function deviceIcon(device: BluetoothDevice): string {
@@ -68,7 +71,7 @@ Column {
 
     // Stop scanning when leaving the page
     Component.onDestruction: {
-        if (adapter?.discovering)
+        if (startedDiscovery && adapter?.discovering)
             adapter.discovering = false;
     }
 
@@ -171,12 +174,18 @@ Column {
                 icon: "\u{F002}"
                 label: root.adapter?.discovering ? "Stop" : "Scan"
                 highlighted: root.adapter?.discovering ?? false
-                onClicked: root.adapter.discovering = !root.adapter.discovering
+                onClicked: {
+                    root.startedDiscovery = !root.adapter.discovering;
+                    root.adapter.discovering = !root.adapter.discovering;
+                }
             }
         }
 
+        // While scanning, and a device still pairing after it stops (so it can be cancelled)
         Repeater {
-            model: root.adapter?.discovering ? root.nearby : []
+            model: ScriptModel {
+                values: root.adapter?.discovering ? root.nearby : root.nearby.filter(d => d.pairing)
+            }
 
             SettingRow {
                 required property BluetoothDevice modelData

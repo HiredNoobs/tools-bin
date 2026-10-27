@@ -57,15 +57,16 @@ Column {
 
     spacing: 24
 
-    // Scan for networks while the page is open
+    // Scan for networks while the page is open, also with a Wi-Fi device that turns up later
+    // (unblocked, or a USB one plugged in)
+    onWifiDeviceChanged: NetworkConnections.setScanning(root, wifiDevice)
+
+    // An error from earlier in the session isn't shown again
     Component.onCompleted: {
-        if (wifiDevice)
-            wifiDevice.scannerEnabled = true;
+        NetworkConnections.error = "";
+        NetworkConnections.setScanning(root, wifiDevice);
     }
-    Component.onDestruction: {
-        if (wifiDevice)
-            wifiDevice.scannerEnabled = false;
-    }
+    Component.onDestruction: NetworkConnections.setScanning(root, null)
 
     Timer {
         interval: 4000
@@ -171,7 +172,7 @@ Column {
                     onVisibleChanged: {
                         if (visible) {
                             passwordField.text = "";
-                            passwordField.forceActiveFocus();
+                            passwordField.focusInput();
                         }
                     }
 
@@ -219,8 +220,10 @@ Column {
             ConnectionBlock {
                 required property var modelData
                 connection: modelData
-                status: modelData.active ? "Connected" : root.inRange.includes(modelData.name) ? "In range" : root.ago(modelData.lastUsed)
-                canConnect: !modelData.active && root.inRange.includes(modelData.name)
+                // By the network it's for, which its name needn't be
+                readonly property bool inRange: root.inRange.includes(NetworkConnections.ssidOf(modelData))
+                status: modelData.active ? "Connected" : inRange ? "In range" : root.ago(modelData.lastUsed)
+                canConnect: !modelData.active && inRange
             }
         }
 
@@ -261,7 +264,7 @@ Column {
                     id: ssid
                     width: 220
                     placeholder: "Network name"
-                    onAccepted: password.forceActiveFocus()
+                    onAccepted: password.focusInput()
                 }
 
                 TextField {
@@ -613,15 +616,29 @@ Column {
         property bool customDns: false
         property bool forgetArmed: false
 
+        // Set up elsewhere as something other than automatic or manual (shared, link-local,
+        // disabled): shown, and left as it is
+        readonly property string method: settings["ipv4.method"] ?? "auto"
+        readonly property bool otherMethod: loaded && method !== "auto" && method !== "manual"
+
+        // IPv4 only: four numbers 0-255, and a prefix 0-32 for the address
+        function isIpv4(text: string): bool {
+            const parts = text.split(".");
+            return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) <= 255);
+        }
         readonly property var dnsList: dnsField.text.split(/[\s,]+/).filter(s => s !== "")
-        readonly property bool addressValid: /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/.test(addressField.text.trim())
-        readonly property bool gatewayValid: gatewayField.text.trim() === "" || /^(\d{1,3}\.){3}\d{1,3}$/.test(gatewayField.text.trim())
-        readonly property bool dnsValid: dnsList.length > 0 && dnsList.every(s => /^(\d{1,3}\.){3}\d{1,3}$/.test(s) || /^[0-9a-fA-F:]+$/.test(s))
+        readonly property bool addressValid: {
+            const [address, prefix, ...rest] = addressField.text.trim().split("/");
+            return rest.length === 0 && isIpv4(address) && /^\d{1,2}$/.test(prefix ?? "") && Number(prefix) <= 32;
+        }
+        readonly property bool gatewayValid: gatewayField.text.trim() === "" || isIpv4(gatewayField.text.trim())
+        readonly property bool dnsValid: dnsList.length > 0 && dnsList.every(s => isIpv4(s))
         readonly property bool valid: (!manual || (addressValid && gatewayValid)) && (!customDns || dnsValid)
-        readonly property bool changed: loaded && (manual !== (settings["ipv4.method"] === "manual")
-            || customDns !== (settings["ipv4.ignore-auto-dns"] === "yes")
-            || (manual && (addressField.text.trim() !== (settings["ipv4.addresses"] ?? "") || gatewayField.text.trim() !== (settings["ipv4.gateway"] ?? "")))
+        readonly property bool addressChanged: loaded && !otherMethod && (manual !== (method === "manual")
+            || (manual && (addressField.text.trim() !== (settings["ipv4.addresses"] ?? "") || gatewayField.text.trim() !== (settings["ipv4.gateway"] ?? ""))))
+        readonly property bool dnsChanged: loaded && (customDns !== (settings["ipv4.ignore-auto-dns"] === "yes")
             || (customDns && dnsList.join(",") !== (settings["ipv4.dns"] ?? "")))
+        readonly property bool changed: addressChanged || dnsChanged
 
         function load(): void {
             show.running = true;
@@ -671,8 +688,14 @@ Column {
             value: (editor.settings["ipv4.dns"] ?? "").split(",").join(", ")
         }
 
+        Detail {
+            visible: !editor.vpn && editor.otherMethod
+            label: "IP address"
+            value: `${editor.method} (set elsewhere)`
+        }
+
         Option {
-            visible: !editor.vpn
+            visible: !editor.vpn && !editor.otherMethod
             label: "IP address"
 
             ChoiceButtons {
@@ -684,7 +707,7 @@ Column {
         }
 
         Row {
-            visible: !editor.vpn && editor.manual
+            visible: !editor.vpn && !editor.otherMethod && editor.manual
             spacing: 8
 
             TextField {
@@ -732,13 +755,13 @@ Column {
                 enabled: editor.valid
                 opacity: enabled ? 1 : 0.4
                 onClicked: {
-                    NetworkConnections.setIpv4(editor.connection.uuid, {
-                        manual: editor.manual,
-                        address: addressField.text.trim(),
-                        gateway: gatewayField.text.trim(),
-                        customDns: editor.customDns,
-                        dns: editor.dnsList
-                    }, editor.connection.active);
+                    // Only what changed: the rest of the connection's settings stay as they are
+                    const changes = {};
+                    if (editor.addressChanged)
+                        changes.address = { manual: editor.manual, address: addressField.text.trim(), gateway: gatewayField.text.trim() };
+                    if (editor.dnsChanged)
+                        changes.dns = { custom: editor.customDns, servers: editor.dnsList };
+                    NetworkConnections.setIpv4(editor.connection.uuid, changes, editor.connection.active);
                     reload.restart();
                 }
             }
