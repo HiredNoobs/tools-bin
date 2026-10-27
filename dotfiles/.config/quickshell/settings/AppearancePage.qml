@@ -226,8 +226,8 @@ Column {
 
         SettingRow {
             label: "Cursor size"
-            changed: Appearance.changed("cursor")
-            onReset: Appearance.revert("cursor")
+            changed: Appearance.changed("cursorSize")
+            onReset: Appearance.revert("cursorSize")
 
             ChoiceButtons {
                 choices: [24, 32, 40, 48]
@@ -252,8 +252,8 @@ Column {
         SettingRow {
             sub: true
             label: "Size"
-            changed: Appearance.changed("font")
-            onReset: Appearance.revert("font")
+            changed: Appearance.changed("fontSize")
+            onReset: Appearance.revert("fontSize")
 
             ChoiceButtons {
                 choices: [9, 10, 11, 12, 13, 14]
@@ -275,8 +275,8 @@ Column {
         SettingRow {
             sub: true
             label: "Size"
-            changed: Appearance.changed("monoFont")
-            onReset: Appearance.revert("monoFont")
+            changed: Appearance.changed("monoSize")
+            onReset: Appearance.revert("monoSize")
 
             ChoiceButtons {
                 choices: [9, 10, 11, 12, 13, 14]
@@ -313,8 +313,8 @@ Column {
             visible: Appearance.qtFont !== ""
             sub: true
             label: "Qt font size"
-            changed: Appearance.changed("qtFont")
-            onReset: Appearance.revert("qtFont")
+            changed: Appearance.changed("qtFontSize")
+            onReset: Appearance.revert("qtFontSize")
 
             ChoiceButtons {
                 choices: [9, 10, 11, 12, 13, 14]

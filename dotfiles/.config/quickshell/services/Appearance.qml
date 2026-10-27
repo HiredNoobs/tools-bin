@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs
 
 // Look and feel for Settings › Appearance, in place of nwg-look, qt6ct and Kvantum Manager.
 // One set of choices goes to every toolkit, in the same places those tools write (so they
@@ -17,7 +18,7 @@ import Quickshell.Io
 // Only the widget style is separate per toolkit (a GTK theme, a Kvantum theme), and Qt can
 // have its own font, as Qt and GTK size fonts differently. Each setting's value from before
 // its first change is kept (in Quickshell's state folder) for the settings window's ↺, and
-// forgotten once it's back to that value.
+// forgotten once it's back to that value; a font's or cursor's size is a setting of its own.
 Singleton {
     id: root
 
@@ -35,12 +36,15 @@ Singleton {
     property string monoFont: ""
     property int monoSize: 10
     property string kvantumTheme: ""
-    // Qt's interface font, if it differs from the one above ("" = the same)
+    // Qt's interface font, if it has its own ("" = the same as above). Its own is remembered
+    // (ShellSettings.qtOwnFont), as it may be the same family and size for now.
     property string qtFont: ""
     property int qtFontSize: 0
     property bool portalDialogs: false
 
-    // Setting -> its value before the first change, for those changed here
+    // Setting -> its value before the first change, for those changed here: dark, gtkTheme,
+    // kvantumTheme, iconTheme, cursor (the theme), cursorSize, font, fontSize, monoFont,
+    // monoSize, qtFont ("" = the shared one), qtFontSize, portalDialogs
     property var originals: ({})
 
     function changed(key: string): bool {
@@ -56,6 +60,23 @@ Singleton {
             delete originals[key];
         root.originals = originals;
         originalsFile.setText(JSON.stringify(originals, null, 2));
+    }
+
+    function current(key: string): var {
+        return key === "cursor" ? cursorTheme : root[key];
+    }
+
+    // Forgets originals that match again (e.g. changed back elsewhere), once all is read
+    function pruneOriginals(): void {
+        const kept = {};
+        for (const key in originals) {
+            if (JSON.stringify(originals[key]) !== JSON.stringify(current(key)))
+                kept[key] = originals[key];
+        }
+        if (Object.keys(kept).length !== Object.keys(originals).length) {
+            originals = kept;
+            originalsFile.setText(JSON.stringify(kept, null, 2));
+        }
     }
 
     function revert(key: string): void {
@@ -74,16 +95,29 @@ Singleton {
             setIconTheme(value);
             break;
         case "cursor":
-            setCursor(value.theme, value.size);
+            setCursor(value, cursorSize);
+            break;
+        case "cursorSize":
+            setCursor(cursorTheme, value);
             break;
         case "font":
-            setFont(value.family, value.size);
+            setFont(value, fontSize);
+            break;
+        case "fontSize":
+            setFont(font, value);
             break;
         case "monoFont":
-            setMonoFont(value.family, value.size);
+            setMonoFont(value, monoSize);
             break;
+        case "monoSize":
+            setMonoFont(monoFont, value);
+            break;
+        // Back to its own font (or the shared one), at the size it had then
         case "qtFont":
-            setQtFont(value.family, value.size);
+            setQtFont(value, originals.qtFontSize ?? (qtFontSize || fontSize));
+            break;
+        case "qtFontSize":
+            setQtFont(qtFont, value);
             break;
         case "portalDialogs":
             setPortalDialogs(value);
@@ -146,14 +180,15 @@ Singleton {
         mismatches = found;
     }
 
-    // Qt's own interface font, if it isn't the shared one (after both are read)
+    // Qt's own interface font, if it has one: chosen here, or set to another elsewhere (after
+    // both are read)
     function readQtFont(): void {
         if (!loaded)
             return;
         const general = ini(qt6ct.text(), "Fonts", "general").replace(/^"|"$/g, "").split(",");
         const family = general[0] ?? "";
         const size = parseInt(general[1] ?? "0");
-        qtFont = family !== "" && (family !== font || size !== fontSize) ? family : "";
+        qtFont = family !== "" && (ShellSettings.qtOwnFont || family !== font || size !== fontSize) ? family : "";
         qtFontSize = qtFont !== "" ? size : 0;
     }
 
@@ -168,7 +203,14 @@ Singleton {
 
     // --- Reading and writing ini files
 
+    // A "key=value" line, or "key = value" as a file edited by hand may have
+    function keyLine(key: string): var {
+        const escaped = key.replace(/[.*+?^$()|[\]\\{}]/g, "\\$&");
+        return new RegExp("^\\s*" + escaped + "\\s*=");
+    }
+
     function ini(text: string, section: string, key: string): string {
+        const pattern = keyLine(key);
         let inSection = false;
         for (const line of text.split("\n")) {
             const header = line.match(/^\[(.*)\]\s*$/);
@@ -176,8 +218,9 @@ Singleton {
                 inSection = header[1] === section;
                 continue;
             }
-            if (inSection && line.startsWith(`${key}=`))
-                return line.slice(key.length + 1).trim();
+            const match = inSection ? line.match(pattern) : null;
+            if (match)
+                return line.slice(match[0].length).trim();
         }
         return "";
     }
@@ -194,7 +237,8 @@ Singleton {
         let end = lines.findIndex((line, i) => i > start && /^\[.*\]\s*$/.test(line));
         if (end === -1)
             end = lines.length;
-        const at = lines.findIndex((line, i) => i > start && i < end && line.startsWith(`${key}=`));
+        const pattern = keyLine(key);
+        const at = lines.findIndex((line, i) => i > start && i < end && pattern.test(line));
         if (at !== -1)
             lines[at] = `${key}=${value}`;
         else
@@ -286,7 +330,8 @@ Singleton {
     }
 
     function setCursor(name: string, size: int): void {
-        track("cursor", { theme: cursorTheme, size: cursorSize }, { theme: name, size: size });
+        track("cursor", cursorTheme, name);
+        track("cursorSize", cursorSize, size);
         cursorTheme = name;
         cursorSize = size;
         gsettings("cursor-theme", name);
@@ -315,7 +360,8 @@ Singleton {
     }
 
     function setFont(family: string, size: int): void {
-        track("font", { family: font, size: fontSize }, { family: family, size: size });
+        track("font", font, family);
+        track("fontSize", fontSize, size);
         font = family;
         fontSize = size;
         gsettings("font-name", `${family} ${size}`);
@@ -326,7 +372,8 @@ Singleton {
     }
 
     function setMonoFont(family: string, size: int): void {
-        track("monoFont", { family: monoFont, size: monoSize }, { family: family, size: size });
+        track("monoFont", monoFont, family);
+        track("monoSize", monoSize, size);
         monoFont = family;
         monoSize = size;
         gsettings("monospace-font-name", `${family} ${size}`);
@@ -335,7 +382,9 @@ Singleton {
 
     // Qt's own interface font; "" goes back to the shared one
     function setQtFont(family: string, size: int): void {
-        track("qtFont", { family: qtFont, size: qtFontSize }, { family: family, size: family === "" ? 0 : size });
+        track("qtFont", qtFont, family);
+        track("qtFontSize", qtFontSize, family === "" ? 0 : size);
+        ShellSettings.qtOwnFont = family !== "";
         qtFont = family;
         qtFontSize = family === "" ? 0 : size;
         editIni(qt6ct, "Fonts", "general", family === "" ? qtFontString(font, fontSize) : qtFontString(family, size));
@@ -349,6 +398,7 @@ Singleton {
 
     // Writes the current choices everywhere, fixing toolkits that disagree
     function applyAll(): void {
+        ShellSettings.qtOwnFont = false;
         qtFont = "";
         qtFontSize = 0;
         setGtkTheme(gtkTheme);
@@ -358,6 +408,15 @@ Singleton {
         setMonoFont(monoFont, monoSize);
         setGtkIni("gtk-application-prefer-dark-theme", dark ? "1" : "0");
         checkMatch();
+    }
+
+    // Its own font remembered once the settings have loaded (after the files were read)
+    Connections {
+        target: ShellSettings
+
+        function onQtOwnFontChanged(): void {
+            root.readQtFont();
+        }
     }
 
     Component.onCompleted: {
@@ -391,6 +450,7 @@ Singleton {
                 [root.monoFont, root.monoSize] = splitFont(values["monospace-font-name"]);
                 root.loaded = true;
                 root.readQtFont();
+                root.pruneOriginals();
                 root.checkMatch();
                 // Icons chosen before the shell followed them (or elsewhere): the shell uses them
                 // from its next start
@@ -499,11 +559,20 @@ Singleton {
         blockLoading: true
         printErrors: false
         onLoaded: {
+            let loaded = {};
             try {
-                root.originals = JSON.parse(text());
-            } catch (e) {
-                root.originals = {};
+                loaded = JSON.parse(text());
+            } catch (e) {}
+            // Saved before sizes were settings of their own: { theme|family, size } pairs
+            const pairs = { cursor: ["theme", "cursorSize"], font: ["family", "fontSize"], monoFont: ["family", "monoSize"], qtFont: ["family", "qtFontSize"] };
+            for (const key in pairs) {
+                const value = loaded[key];
+                if (value !== null && typeof value === "object") {
+                    loaded[key] = value[pairs[key][0]];
+                    loaded[pairs[key][1]] = value.size;
+                }
             }
+            root.originals = loaded;
         }
     }
 

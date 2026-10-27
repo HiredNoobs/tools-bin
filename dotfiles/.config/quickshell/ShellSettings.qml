@@ -34,7 +34,8 @@ Singleton {
             clipboardHistory: true,
             clipboardSkipPasswords: true,
             keepAwake: false,
-            presetCursors: false
+            presetCursors: false,
+            qtOwnFont: false
         })
 
     function isDefault(key: string): bool {
@@ -85,6 +86,8 @@ Singleton {
     property alias keepAwake: adapter.keepAwake
     // Appearance presets also switch to a cursor that suits them (see Presets)
     property alias presetCursors: adapter.presetCursors
+    // Qt apps have their own interface font (Settings › Appearance; see Appearance.qtFont)
+    property alias qtOwnFont: adapter.qtOwnFont
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -125,6 +128,7 @@ Singleton {
             property bool clipboardSkipPasswords: root.defaults.clipboardSkipPasswords
             property bool keepAwake: root.defaults.keepAwake
             property bool presetCursors: root.defaults.presetCursors
+            property bool qtOwnFont: root.defaults.qtOwnFont
         }
     }
 }
