@@ -4,9 +4,31 @@ import Quickshell
 import Quickshell.Hyprland
 
 Singleton {
-    // Locks the session, with hyprlock if the shell can't (hypr/scripts/lock). Not
-    // `loginctl lock-session`, which only locks while hypridle is running.
+    // Power actions, the same wherever they're started (the power menu, the lid, a low battery,
+    // the lock screen):
+    // - lock: with hyprlock if the shell can't (hypr/scripts/lock); not `loginctl lock-session`,
+    //   which only locks while hypridle is running
+    // - sleep: hibernating later where the machine can, otherwise just suspending
+    // - suspend: locked first (hypridle locks before sleep, but only while it's running)
+    // - log out, reboot and power off: through hyprshutdown, so apps close properly
     readonly property string lockCommand: "~/.config/hypr/scripts/lock"
+    readonly property string sleepCommand: "systemctl suspend-then-hibernate || systemctl suspend"
+    readonly property string suspendCommand: `${lockCommand}; ${sleepCommand}`
+    readonly property string logoutCommand: "hyprshutdown -t 'Logging out...'"
+    readonly property string rebootCommand: "hyprshutdown -t 'Rebooting...' --post-cmd 'systemctl reboot'"
+    readonly property string powerOffCommand: "hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'"
+
+    function lock(): void {
+        run(lockCommand);
+    }
+
+    function suspend(): void {
+        run(suspendCommand);
+    }
+
+    function powerOff(): void {
+        run(powerOffCommand);
+    }
 
     // Run through a shell so `~`, quoting and `||` work as on the command line
     function run(command: string): void {

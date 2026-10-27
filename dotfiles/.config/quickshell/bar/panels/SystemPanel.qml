@@ -275,10 +275,10 @@ Column {
 
             readonly property var actions: [
                 { icon: "\u{F023}", name: "Lock", command: Exec.lockCommand, confirm: false },
-                { icon: "\u{23FE}", name: "Sleep", command: `${Exec.lockCommand}; systemctl suspend-then-hibernate || systemctl suspend`, confirm: false },
-                { icon: "\u{F0343}", name: "Logout", command: "hyprshutdown -t 'Logging out...'", confirm: true },
-                { icon: "\u{EAD2}", name: "Reboot", command: "hyprshutdown -t 'Rebooting...' --post-cmd 'systemctl reboot'", confirm: true },
-                { icon: "\u{23FB}", name: "Shutdown", command: "hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'", confirm: true }
+                { icon: "\u{23FE}", name: "Sleep", command: Exec.suspendCommand, confirm: false },
+                { icon: "\u{F0343}", name: "Logout", command: Exec.logoutCommand, confirm: true },
+                { icon: "\u{EAD2}", name: "Reboot", command: Exec.rebootCommand, confirm: true },
+                { icon: "\u{23FB}", name: "Shutdown", command: Exec.powerOffCommand, confirm: true }
             ]
 
             function move(delta: int): void {

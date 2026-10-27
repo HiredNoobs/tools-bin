@@ -49,13 +49,12 @@ Singleton {
         }
     }
 
-    // "suspend" (locked first: hypridle locks before sleep, but only while it's running),
-    // "lock" or "nothing"
+    // "suspend" (locked first), "lock" or "nothing"
     function act(action: string): void {
         if (action === "suspend")
-            Exec.run(`${Exec.lockCommand}; systemctl suspend`);
+            Exec.suspend();
         else if (action === "lock")
-            Exec.run(Exec.lockCommand);
+            Exec.lock();
     }
 
     function setLaptopSpec(spec: var): void {

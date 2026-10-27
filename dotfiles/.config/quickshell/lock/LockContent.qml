@@ -76,10 +76,11 @@ LockLayout {
     onPowerAction: name => {
         if (preview)
             return;
+        // Locked already: sleep without locking again
         Exec.run({
-            "Sleep": "systemctl suspend-then-hibernate || systemctl suspend",
-            "Reboot": "hyprshutdown -t 'Rebooting...' --post-cmd 'systemctl reboot'",
-            "Shut down": "hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'"
+            "Sleep": Exec.sleepCommand,
+            "Reboot": Exec.rebootCommand,
+            "Shut down": Exec.powerOffCommand
         }[name]);
     }
 }
