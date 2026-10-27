@@ -24,16 +24,19 @@ Singleton {
         { label: "Wallpaper", colours: "wallpaper", dark: true, kvantum: "KvDark", icons: "Papirus-Dark", cursor: "" }
     ]
 
+    // Once what's installed is known (not yet when it comes through IPC soon after a start)
     function apply(preset): void {
-        // Also picks the GTK theme's dark or light version
-        Appearance.setDark(preset.dark);
-        if (Appearance.kvantumThemes.includes(preset.kvantum))
-            Appearance.setKvantumTheme(preset.kvantum);
-        ShellSettings.colourSource = preset.colours;
-        if (usesCursor(preset) && preset.cursor !== Appearance.cursorTheme)
-            Appearance.setCursor(preset.cursor, Appearance.cursorSize);
-        if (Appearance.iconThemes.includes(preset.icons) && preset.icons !== Appearance.iconTheme)
-            Appearance.setIconTheme(preset.icons);
+        Appearance.afterListed(() => {
+            // Also picks the GTK theme's dark or light version
+            Appearance.setDark(preset.dark);
+            if (Appearance.kvantumThemes.includes(preset.kvantum))
+                Appearance.setKvantumTheme(preset.kvantum);
+            ShellSettings.colourSource = preset.colours;
+            if (root.usesCursor(preset) && preset.cursor !== Appearance.cursorTheme)
+                Appearance.setCursor(preset.cursor, Appearance.cursorSize);
+            if (Appearance.iconThemes.includes(preset.icons) && preset.icons !== Appearance.iconTheme)
+                Appearance.setIconTheme(preset.icons);
+        });
     }
 
     function usesCursor(preset): bool {

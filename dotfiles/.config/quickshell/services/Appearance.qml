@@ -59,7 +59,7 @@ Singleton {
         if (JSON.stringify(originals[key]) === JSON.stringify(after))
             delete originals[key];
         root.originals = originals;
-        originalsFile.setText(JSON.stringify(originals, null, 2));
+        originalsFile.save(originals);
     }
 
     function current(key: string): var {
@@ -75,7 +75,7 @@ Singleton {
         }
         if (Object.keys(kept).length !== Object.keys(originals).length) {
             originals = kept;
-            originalsFile.setText(JSON.stringify(kept, null, 2));
+            originalsFile.save(kept);
         }
     }
 
@@ -125,7 +125,13 @@ Singleton {
         }
     }
 
-    // What's installed
+    // What's installed: read when first needed (Settings › Appearance, a preset), not at every
+    // start of the shell, which only needs the current icons
+    property bool listed: false
+    // Waiting for the lists (see afterListed)
+    property var listWaiters: []
+    // The theme pictures are only for the page, and take a couple of seconds
+    property bool wantPreviews: false
     property var gtkThemes: []
     property var iconThemes: []
     property var cursorThemes: []
@@ -143,6 +149,21 @@ Singleton {
     function rescan(): void {
         if (!lists.running)
             lists.running = true;
+    }
+
+    // Runs `then` once what's installed is known (straight away if it is)
+    function afterListed(then: var): void {
+        if (listed) {
+            then();
+            return;
+        }
+        listWaiters = [...listWaiters, then];
+        rescan();
+    }
+
+    // The shell's icons for its next start, in Hyprland's environment (see setIconTheme)
+    function setIconEnv(name: string): void {
+        Quickshell.execDetached(["hyprctl", "eval", `hl.env("QS_ICON_THEME", ${Exec.lua(name)})`]);
     }
 
     // GTK 3 or Qt set to something else than the choices above (as nwg-look and qt6ct allow);
@@ -192,8 +213,10 @@ Singleton {
         qtFontSize = qtFont !== "" ? size : 0;
     }
 
+    // Everything, for the settings page
     function refresh(): void {
         query.running = true;
+        wantPreviews = true;
         lists.running = true;
         gtk3.reload();
         gtk4.reload();
@@ -292,12 +315,15 @@ Singleton {
         root.dark = dark;
         gsettings("color-scheme", dark ? "prefer-dark" : "default");
         setGtkIni("gtk-application-prefer-dark-theme", dark ? "1" : "0");
-        const gtk = variant(gtkTheme, gtkThemes, dark);
-        if (gtk !== gtkTheme)
-            setGtkTheme(gtk);
-        const kv = variant(kvantumTheme, kvantumThemes, dark);
-        if (kvantumTheme !== "" && kv !== kvantumTheme)
-            setKvantumTheme(kv);
+        // The themes' siblings, from what's installed
+        afterListed(() => {
+            const gtk = variant(gtkTheme, gtkThemes, dark);
+            if (gtk !== gtkTheme)
+                setGtkTheme(gtk);
+            const kv = variant(kvantumTheme, kvantumThemes, dark);
+            if (kvantumTheme !== "" && kv !== kvantumTheme)
+                setKvantumTheme(kv);
+        });
     }
 
     function setGtkTheme(name: string): void {
@@ -324,7 +350,7 @@ Singleton {
         // The shell picks its icons at start: restart it with these (and come back here), once
         // whatever else was changed with them is saved
         if (name !== "" && name !== Quickshell.env("QS_ICON_THEME")) {
-            Quickshell.execDetached(["hyprctl", "eval", `hl.env("QS_ICON_THEME", ${Exec.lua(name)})`]);
+            setIconEnv(name);
             RestartState.restartShell();
         }
     }
@@ -419,10 +445,12 @@ Singleton {
         }
     }
 
+    // Only gsettings at start (the ini files read themselves): enough to keep the shell's icons
+    // following the icon theme
     Component.onCompleted: {
         // Kvantum Manager makes this on first use
         Exec.run(`mkdir -p ${Exec.quote(configDir + "/Kvantum")}`);
-        refresh();
+        query.running = true;
     }
 
     // gsettings, one "key value" per line
@@ -456,7 +484,7 @@ Singleton {
                 // from its next start
                 if (root.iconTheme !== "" && root.iconTheme !== Quickshell.env("QS_ICON_THEME")) {
                     root.writeHyprEnv();
-                    Quickshell.execDetached(["hyprctl", "eval", `hl.env("QS_ICON_THEME", ${Exec.lua(root.iconTheme)})`]);
+                    root.setIconEnv(root.iconTheme);
                 }
             }
         }
@@ -491,9 +519,14 @@ Singleton {
                 root.kvantumThemes = sort(found.kvantum);
                 root.fonts = found.font;
                 root.monoFonts = found.mono;
-                // Pictures only for new themes' sake (the script takes a couple of seconds)
+                root.listed = true;
+                const waiting = root.listWaiters;
+                root.listWaiters = [];
+                for (const then of waiting)
+                    then();
+                // Pictures only for the page, and for new themes' sake
                 const themes = JSON.stringify([root.iconThemes, root.cursorThemes]);
-                if (themes !== root.previewedThemes) {
+                if (root.wantPreviews && themes !== root.previewedThemes) {
                     root.previewedThemes = themes;
                     previewer.running = true;
                 }
@@ -553,16 +586,13 @@ Singleton {
         onLoaded: root.kvantumTheme = root.ini(text(), "General", "theme")
     }
 
-    FileView {
+    JsonFile {
         id: originalsFile
         path: Quickshell.statePath("appearance-originals.json")
-        blockLoading: true
-        printErrors: false
-        onLoaded: {
-            let loaded = {};
-            try {
-                loaded = JSON.parse(text());
-            } catch (e) {}
+        blocking: true
+        indent: 2
+        onRead: stored => {
+            const loaded = Object.assign({}, stored);
             // Saved before sizes were settings of their own: { theme|family, size } pairs
             const pairs = { cursor: ["theme", "cursorSize"], font: ["family", "fontSize"], monoFont: ["family", "monoSize"], qtFont: ["family", "qtFontSize"] };
             for (const key in pairs) {
