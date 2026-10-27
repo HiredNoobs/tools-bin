@@ -25,7 +25,7 @@ FloatingWindow {
         { name: "appearance", title: "Appearance", icon: "\u{F03D8}", keywords: "theme gtk qt kvantum icons cursor fonts wallpaper nwg-look qt6ct avatar picture profile lock login sddm" },
         { name: "shell", title: "Shell", icon: "\u{F0493}", keywords: "bar panels launcher attached control centre notifications pop-ups quickshell" }
     ]
-    // Pages built so far; the others show what's coming
+    // Each section's page
     readonly property var pages: ({
             "sound": soundPage,
             "network": networkPage,
@@ -92,22 +92,19 @@ FloatingWindow {
                         dim: true
                     }
 
-                    // Up/Down step through the sections shown, Enter opens the first match,
-                    // Esc clears the search
+                    // Up/Down step through the sections shown (from the first or last when the
+                    // section open isn't among them), Enter opens the first match (Esc: below)
                     Keys.onPressed: event => {
                         const shown = root.shownSections;
                         const index = shown.findIndex(section => section.name === root.page);
                         switch (event.key) {
-                        case Qt.Key_Escape:
-                            search.text = "";
-                            break;
                         case Qt.Key_Down:
                             if (shown.length > 0)
                                 root.pageRequested(shown[(index + 1) % shown.length].name);
                             break;
                         case Qt.Key_Up:
                             if (shown.length > 0)
-                                root.pageRequested(shown[(index - 1 + shown.length) % shown.length].name);
+                                root.pageRequested(shown[index < 0 ? shown.length - 1 : (index - 1 + shown.length) % shown.length].name);
                             break;
                         case Qt.Key_Return:
                         case Qt.Key_Enter:
@@ -198,7 +195,7 @@ FloatingWindow {
                 Loader {
                     id: pageLoader
                     width: parent.width
-                    sourceComponent: root.pages[root.current.name] ?? comingSoon
+                    sourceComponent: root.pages[root.current.name]
                 }
             }
         }
@@ -213,6 +210,28 @@ FloatingWindow {
             height: content.visibleArea.heightRatio * content.height
             radius: 2
             color: Theme.subtext
+        }
+    }
+
+    // Esc goes back to the search box from a page, then clears the search, then closes the
+    // window; Ctrl+F goes to the search box
+    Shortcut {
+        sequence: "Escape"
+        onActivated: {
+            if (!search.activeFocus)
+                search.forceActiveFocus();
+            else if (search.text !== "")
+                search.text = "";
+            else
+                root.visible = false;
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+F"
+        onActivated: {
+            search.forceActiveFocus();
+            search.selectAll();
         }
     }
 
@@ -286,14 +305,5 @@ FloatingWindow {
         id: shellPage
 
         ShellPage {}
-    }
-
-    Component {
-        id: comingSoon
-
-        PanelText {
-            text: "Coming in a later stage."
-            dim: true
-        }
     }
 }

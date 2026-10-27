@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Io
 import qs
 import qs.components
 import qs.services
@@ -12,6 +13,33 @@ Column {
     id: root
 
     readonly property var monitors: Monitors.monitors
+
+    // Each screen's scale and rotation in the saved layout (monitors.lua), which their ↺ go
+    // back to: { name: { scale, transform } }. Without a saved layout they have no ↺, as the
+    // machine config's own (often 1.5× or more on a laptop) isn't read here.
+    property var savedSpecs: ({})
+
+    function parseSaved(text: string): var {
+        const specs = {};
+        for (const line of text.split("\n")) {
+            const output = line.match(/^hl\.monitor\(\{.*\boutput = "([^"]*)"/);
+            if (!output)
+                continue;
+            const scale = line.match(/\bscale = ([\d.]+)/);
+            const transform = line.match(/\btransform = (\d+)/);
+            specs[output[1]] = { scale: scale ? Number(scale[1]) : undefined, transform: transform ? Number(transform[1]) : undefined };
+        }
+        return specs;
+    }
+
+    FileView {
+        path: Monitors.savedPath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: root.savedSpecs = root.parseSaved(text())
+        onLoadFailed: root.savedSpecs = {}
+    }
 
     function displayName(monitor: var): string {
         return Monitors.isBuiltIn(monitor.name) ? "Built-in display" : monitor.model || monitor.name;
@@ -180,6 +208,8 @@ Column {
 
             required property var modelData
             readonly property var monitor: modelData
+            // Its scale and rotation in the saved layout, if there is one
+            readonly property var saved: root.savedSpecs[monitor.name] ?? null
             readonly property var size: root.splitMode(monitor.mode)
             readonly property string resolution: `${size[0]}x${size[1]}`
             // Resolutions largest first, and the refresh rates of the current one
@@ -252,8 +282,8 @@ Column {
                 visible: !monitorGroup.monitor.disabled
                 label: "Scale"
                 description: "Makes everything bigger; the screen then has less room."
-                changed: Math.abs(monitorGroup.monitor.scale - 1) > 0.01
-                onReset: Monitors.setScale(monitorGroup.monitor.name, 1)
+                changed: monitorGroup.saved?.scale !== undefined && Math.abs(monitorGroup.monitor.scale - monitorGroup.saved.scale) > 0.01
+                onReset: Monitors.setScale(monitorGroup.monitor.name, monitorGroup.saved.scale)
 
                 ChoiceButtons {
                     choices: Monitors.allScales
@@ -266,8 +296,8 @@ Column {
             SettingRow {
                 visible: !monitorGroup.monitor.disabled
                 label: "Rotation"
-                changed: monitorGroup.monitor.transform !== 0
-                onReset: Monitors.setTransform(monitorGroup.monitor.name, 0)
+                changed: monitorGroup.saved?.transform !== undefined && monitorGroup.monitor.transform !== monitorGroup.saved.transform
+                onReset: Monitors.setTransform(monitorGroup.monitor.name, monitorGroup.saved.transform)
 
                 ChoiceButtons {
                     choices: [0, 1, 2, 3]
@@ -479,7 +509,9 @@ Column {
         highlighted: open
     }
 
-    // "HH:MM", saved when valid and Enter is pressed or it loses focus
+    // "HH:MM", saved when valid and Enter is pressed or it loses focus; left with something
+    // that isn't a time, it goes back to the saved one. It follows `time` again after each
+    // (a ↺, or "9:05" shown as "09:05").
     component TimeField: TextField {
         id: timeField
 
@@ -492,20 +524,22 @@ Column {
         text: time
         placeholder: "HH:MM"
         valid: validTime
-        onAccepted: commit()
+        onAccepted: commit(false)
         onInputFocusChanged: {
             if (!inputFocus)
-                commit();
+                commit(true);
         }
 
-        function commit(): void {
-            if (!validTime)
+        function commit(leaving: bool): void {
+            if (validTime) {
+                const [hours, minutes] = text.trim().split(":");
+                const value = `${hours.padStart(2, "0")}:${minutes}`;
+                if (value !== time)
+                    picked(value);
+            } else if (!leaving) {
                 return;
-            const [hours, minutes] = text.trim().split(":");
-            const value = `${hours.padStart(2, "0")}:${minutes}`;
-            text = value;
-            if (value !== time)
-                picked(value);
+            }
+            text = Qt.binding(() => timeField.time);
         }
     }
 }

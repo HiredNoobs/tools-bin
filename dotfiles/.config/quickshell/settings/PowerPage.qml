@@ -137,21 +137,23 @@ Column {
         visible: root.battery
         title: "Low battery"
 
+        // The warning always comes before the critical level: each offers only the levels on
+        // its side of the other, and ↺ stops short of it too
         LevelPicker {
             changed: !ShellSettings.isDefault("batteryWarn")
-            onReset: ShellSettings.reset("batteryWarn")
+            onReset: ShellSettings.batteryWarn = Math.max(ShellSettings.defaults.batteryWarn, ShellSettings.batteryCritical + 1)
             label: "Warn at"
             description: "A notification when the battery gets this low."
-            levels: [5, 10, 15, 20, 25, 30, 35, 40]
+            levels: [5, 10, 15, 20, 25, 30, 35, 40].filter(level => level > ShellSettings.batteryCritical)
             current: ShellSettings.batteryWarn
             onPicked: level => ShellSettings.batteryWarn = level
         }
 
         LevelPicker {
             changed: !ShellSettings.isDefault("batteryCritical")
-            onReset: ShellSettings.reset("batteryCritical")
+            onReset: ShellSettings.batteryCritical = Math.min(ShellSettings.defaults.batteryCritical, ShellSettings.batteryWarn - 1)
             label: "Critical at"
-            levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(level => level < ShellSettings.batteryWarn)
             current: ShellSettings.batteryCritical
             onPicked: level => ShellSettings.batteryCritical = level
         }
