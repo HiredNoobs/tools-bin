@@ -17,7 +17,7 @@ function configure_bash {
 }
 
 function configure_hyprland {
-  local cursor_version cursor
+  local cursor_version cursor downloads
 
   log_info "Configuring hyprland."
   log_info "Installing dependencies."
@@ -28,7 +28,7 @@ function configure_hyprland {
     xdg-desktop-portal-gtk udisks2 brightnessctl ddcutil pamixer playerctl quickshell bluez libnotify wl-clipboard libqalculate pacman-contrib power-profiles-daemon \
     starship yazi kitty fish firefox grim slurp swappy htop btop nvtop \
     networkmanager unzip python-dbus python-gobject xdg-terminal-exec \
-    qt5-wayland qt6-wayland qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme papirus-icon-theme capitaine-cursors \
+    qt5-wayland qt6-wayland qt6-imageformats qt5ct qt6ct kvantum-qt5 kvantum adw-gtk-theme papirus-icon-theme capitaine-cursors \
     otf-codenewroman-nerd
 
   log_info "Dependencies installed. Starting configuration."
@@ -44,16 +44,22 @@ function configure_hyprland {
   # Power profiles for the system panel
   sudo systemctl enable power-profiles-daemon --now
 
+  # Networking for the shell, and the dispatcher that runs the login screen's Wi-Fi name script.
+  # From the next boot, so an install still on another network service keeps its connection now
+  sudo systemctl enable NetworkManager NetworkManager-dispatcher
+
   # Not --now, starting it would take over the current TTY
   sudo systemctl enable sddm
 
   # The red one is the default; the others go with Settings › Appearance's presets
   cursor_version=$(get_latest_release "catppuccin/cursors")
+  downloads=$(mktemp -d)
   for cursor in latte-red latte-mauve frappe-blue mocha-mauve; do
     curl -fsSL "https://github.com/catppuccin/cursors/releases/download/$cursor_version/catppuccin-$cursor-cursors.zip" \
-      -o "/tmp/catppuccin-$cursor-cursors.zip"
-    unzip -o "/tmp/catppuccin-$cursor-cursors.zip" -d "$HOME/.local/share/icons/"
+      -o "$downloads/catppuccin-$cursor-cursors.zip"
+    unzip -o "$downloads/catppuccin-$cursor-cursors.zip" -d "$HOME/.local/share/icons/"
   done
+  rm -rf "$downloads"
 
   # Only the first time: after that, Settings › Default apps changes it
   rsync -av --ignore-existing "$ROOT/dotfiles/.config/mimeapps.list" "$HOME/.config/mimeapps.list"
@@ -66,6 +72,7 @@ function configure_hyprland {
   rsync -av "$ROOT/dotfiles/.config/starship.toml"      "$HOME/.config/starship.toml"
 
   # Only the first time: after that, the wallpaper picker changes it
+  mkdir -p "$HOME/.cache"
   rsync -av --ignore-existing "$ROOT/images/wallpapers/nord_scenary.png" "$HOME/.cache/current-wallpaper"
   rsync -av --delete "$ROOT/images/wallpapers/"         "$HOME/Pictures/wallpapers/"
   rsync -av --delete "$ROOT/images/profile-pictures/"   "$HOME/Pictures/profile-pictures/"
