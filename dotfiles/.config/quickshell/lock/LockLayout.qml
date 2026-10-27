@@ -250,6 +250,7 @@ Item {
             anchors.top: avatarItem.bottom
             anchors.topMargin: 14
             text: root.userSwitchable ? `Hi, ${root.userName}  \u{F0140}` : `Hi, ${root.userName}`
+            textFormat: Text.PlainText
             color: greetingMouse.containsMouse ? root.accent : root.text
             font.family: root.fontFamily
             font.pixelSize: 20
@@ -354,6 +355,7 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight
             text: root.busy ? "Checking…" : root.message !== "" ? root.message : root.capsLock ? "\u{F0632}  Caps Lock is on" : ""
+            textFormat: Text.PlainText
             color: root.busy ? root.subtext : root.message !== "" ? root.critical : root.warning
             font.family: root.fontFamily
             font.pixelSize: 14
@@ -540,6 +542,7 @@ Item {
                         anchors.leftMargin: 36
                         anchors.verticalCenter: parent.verticalCenter
                         text: sessionItem.modelData
+                        textFormat: Text.PlainText
                         onImplicitWidthChanged: sessionMenu.widest = Math.max(sessionMenu.widest, implicitWidth)
                         Component.onCompleted: sessionMenu.widest = Math.max(sessionMenu.widest, implicitWidth)
                         color: itemMouse.containsMouse || sessionItem.current ? root.accent : root.text
@@ -580,8 +583,11 @@ Item {
         }
     }
 
+    // Plain text: what's shown (a track's title, a network's name) comes from elsewhere, and
+    // markup in it would otherwise be drawn
     component Label: Text {
         anchors.verticalCenter: parent?.verticalCenter
+        textFormat: Text.PlainText
         color: root.text
         font.family: root.fontFamily
         font.pixelSize: 14

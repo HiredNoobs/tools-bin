@@ -152,7 +152,9 @@ Rectangle {
             PanelText {
                 visible: text !== ""
                 width: parent.width
-                text: root.notification?.body ?? ""
+                // Its markup (bold, links…) without pictures, which could be fetched from
+                // anywhere
+                text: (root.notification?.body ?? "").replace(/<img\b[^>]*>/gi, "")
                 textFormat: Text.StyledText
                 wrapMode: Text.Wrap
                 maximumLineCount: root.maxBodyLines > 0 ? root.maxBodyLines : 1000

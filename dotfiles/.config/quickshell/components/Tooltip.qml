@@ -36,7 +36,7 @@ PopupWindow {
             Text {
                 visible: root.text !== ""
                 text: root.text
-                color: "white"
+                color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
             }
