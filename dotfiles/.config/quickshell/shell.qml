@@ -27,7 +27,8 @@ ShellRoot {
     // pairing agent is there before anything pairs, nightlight's schedule runs, the lid and low
     // battery are handled, the login screen gets the current wallpaper, colours and avatar, and
     // the colour scheme follows the wallpaper if it's set to, drives plugged in are mounted, and
-    // the clipboard history starts, and the shell's icons follow Appearance's
+    // the clipboard history starts, the shell's icons follow Appearance's, and a local
+    // hypridle config gets the current lock commands
     Component.onCompleted: {
         Updates.available;
         StreamTitles.titles;
@@ -41,6 +42,7 @@ ShellRoot {
         RestartState.restored;
         Clipboard.entries;
         Appearance.loaded;
+        IdleSettings.loaded;
     }
 
     // A window for Bluetooth pairing requests, one after another, there until answered (or
