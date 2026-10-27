@@ -138,7 +138,7 @@ PanelWindow {
         if (side === "swap") {
             runLua(keepingView(`hl.dispatch(hl.dsp.window.swap({ window = '${window}', with = 'address:0x${beside.address}' }))`, toplevel));
         } else if (target !== toplevel.workspace?.id) {
-            const move = `hl.dispatch(hl.dsp.window.move({ workspace = ${target}, window = '${window}', follow = false }))`;
+            const move = `hl.dispatch(hl.dsp.window.move({ workspace = ${Exec.workspace(target)}, window = '${window}', follow = false }))`;
             if (beside && side !== "") {
                 const split = side === "l" || side === "t" ? 1 : 2;
                 runLua(keepingView(`
@@ -161,16 +161,18 @@ PanelWindow {
     function keepingView(lua: string, moved: HyprlandToplevel): string {
         return `
             local prev = hl.get_active_window()
+            -- By id, or by name for named workspaces (negative ids), as Exec.workspace
+            local function selector(ws) if ws.id >= 1 then return ws.id end return 'name:' .. ws.name end
             local shown, focusedWs = {}, nil
             for _, m in ipairs(hl.get_monitors()) do
                 if m.active_workspace then
-                    if m.focused then focusedWs = m.active_workspace.id else table.insert(shown, m.active_workspace.id) end
+                    if m.focused then focusedWs = selector(m.active_workspace) else table.insert(shown, selector(m.active_workspace)) end
                 end
             end
             local warps = hl.get_config('cursor.no_warps')
             hl.config({ cursor = { no_warps = true } })
             ${lua}
-            for _, id in ipairs(shown) do hl.dispatch(hl.dsp.focus({ workspace = id })) end
+            for _, ws in ipairs(shown) do hl.dispatch(hl.dsp.focus({ workspace = ws })) end
             if focusedWs then hl.dispatch(hl.dsp.focus({ workspace = focusedWs })) end
             if prev and prev.address ~= '0x${moved.address}' then hl.dispatch(hl.dsp.focus({ window = 'address:' .. prev.address })) end
             hl.config({ cursor = { no_warps = warps } })`;
@@ -193,7 +195,7 @@ PanelWindow {
     }
 
     function goToWorkspace(id: int): void {
-        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${id} })`);
+        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${Exec.workspace(id)} })`);
         close();
     }
 

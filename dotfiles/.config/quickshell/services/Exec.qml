@@ -1,6 +1,7 @@
 pragma Singleton
 
 import Quickshell
+import Quickshell.Hyprland
 
 Singleton {
     // Locks the session, with hyprlock if the shell can't (hypr/scripts/lock). Not
@@ -28,6 +29,15 @@ Singleton {
     // Quote an argument for sh
     function quote(arg: string): string {
         return `'${arg.replace(/'/g, "'\\''")}'`;
+    }
+
+    // A workspace for Hyprland's Lua by its id, or by name for named ones (negative ids), so a
+    // negative number can't be taken for a relative move ("-1" is the previous workspace)
+    function workspace(id: int): string {
+        if (id >= 1)
+            return String(id);
+        const name = Hyprland.workspaces.values.find(ws => ws.id === id)?.name ?? String(id);
+        return lua(`name:${name}`);
     }
 
     // A Lua string literal, for Hyprland's Lua (hyprctl eval, its config files): quotes,

@@ -66,7 +66,7 @@ PanelWindow {
         finish();
         if (id === undefined || id === Hyprland.focusedWorkspace?.id)
             return;
-        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${id} })`);
+        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${Exec.workspace(id)} })`);
         // Straight away, so another Alt+Tab right after comes back here
         WorkspaceHistory.record(id);
     }
