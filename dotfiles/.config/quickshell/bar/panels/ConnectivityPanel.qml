@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Networking
 import qs
@@ -15,9 +16,12 @@ Column {
     readonly property var devices: Networking.devices.values
     readonly property var wifiDevice: devices.find(d => d.type === DeviceType.Wifi) ?? null
     readonly property var wiredDevice: devices.find(d => d.type === DeviceType.Wired) ?? null
+    // Connected first, then by signal in whole bars (so rows don't swap places with every
+    // small change while scanning), then by name
     readonly property var networks: {
         const list = wifiDevice?.networks.values.filter(n => n.name !== "") ?? [];
-        return list.sort((a, b) => (b.connected - a.connected) || (b.signalStrength - a.signalStrength));
+        const bars = n => Math.round(n.signalStrength * 4);
+        return list.sort((a, b) => (b.connected - a.connected) || (bars(b) - bars(a)) || a.name.localeCompare(b.name));
     }
     // Network waiting for a password, if any
     property var passwordNetwork: null
@@ -122,7 +126,11 @@ Column {
             }
 
             Repeater {
-                model: root.networks
+                // Rows are kept for the same networks (not made again with each scan, which
+                // would lose a password being typed)
+                model: ScriptModel {
+                    values: root.networks
+                }
 
                 Column {
                     id: networkEntry
@@ -234,7 +242,9 @@ Column {
         }
 
         Repeater {
-            model: root.pairedDevices
+            model: ScriptModel {
+                values: root.pairedDevices
+            }
 
             ListRow {
                 id: deviceRow
@@ -279,7 +289,9 @@ Column {
         }
 
         Repeater {
-            model: root.adapter?.discovering ? root.newDevices : []
+            model: ScriptModel {
+                values: root.adapter?.discovering ? root.newDevices : []
+            }
 
             ListRow {
                 id: newDeviceRow

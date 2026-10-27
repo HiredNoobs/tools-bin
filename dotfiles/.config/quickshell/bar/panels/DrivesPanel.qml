@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs
 import qs.components
 import qs.services
@@ -11,12 +12,6 @@ Column {
 
     // Close when the last drive is removed (off inside the control centre, which switches tab instead)
     property bool closeWhenEmpty: true
-
-    // The rows are made again whenever udisks reports a change (another partition mounting, a
-    // wrong password), so what's typed in a password field, and which one has the cursor, are
-    // kept here by cryptPath (for as long as the panel is open; not a property to bind to)
-    property var typed: ({})
-    property string typingIn: ""
 
     readonly property int driveCount: Drives.drives.length
     onDriveCountChanged: {
@@ -31,14 +26,20 @@ Column {
         text: "Drives"
     }
 
+    // udisks reports every change, and the drive list is read again each time: rows are kept
+    // by device path (an encrypted partition by its own, which stays the same once unlocked),
+    // so a password being typed isn't lost
     Repeater {
-        model: Drives.drives
+        model: ScriptModel {
+            values: Drives.drives.map(drive => drive.path)
+        }
 
         Column {
             id: driveBlock
 
-            required property var modelData
-            readonly property string error: Drives.errors[modelData.path] ?? ""
+            required property string modelData
+            readonly property var drive: Drives.drives.find(d => d.path === modelData) ?? { path: modelData, model: "", size: "", partitions: [] }
+            readonly property string error: Drives.errors[modelData] ?? ""
 
             width: root.width
             spacing: 2
@@ -48,39 +49,40 @@ Column {
                 width: parent.width
                 clickable: false
                 icon: "\u{F02CA}"
-                label: driveBlock.modelData.model
-                sublabel: driveBlock.modelData.size
+                label: driveBlock.drive.model
+                sublabel: driveBlock.drive.size
 
                 PanelButton {
                     icon: "\u{F052}"
                     label: "Eject"
-                    onClicked: Drives.eject(driveBlock.modelData)
+                    onClicked: Drives.eject(driveBlock.drive)
                 }
             }
 
             // Its partitions: open, mount/unmount; encrypted ones unlock first (a password field
             // opens under the row) and can be locked again
             Repeater {
-                model: driveBlock.modelData.partitions
+                model: ScriptModel {
+                    values: driveBlock.drive.partitions.map(partition => partition.cryptPath || partition.path)
+                }
 
                 Column {
                     id: partitionBlock
 
-                    required property var modelData
-                    readonly property bool mounted: modelData.mountpoint !== ""
-                    readonly property bool locked: modelData.locked
-                    readonly property string encryptionName: modelData.encryption === "crypto_LUKS" ? "LUKS" : modelData.encryption
+                    required property string modelData
+                    readonly property var partition: driveBlock.drive.partitions.find(p => (p.cryptPath || p.path) === modelData) ?? { path: modelData, label: "", size: "", fstype: "", mountpoint: "", encryption: "", cryptPath: "", locked: false }
+                    readonly property bool mounted: partition.mountpoint !== ""
+                    readonly property bool locked: partition.locked
+                    readonly property string encryptionName: partition.encryption === "crypto_LUKS" ? "LUKS" : partition.encryption
                     // Whether the password field is open, in PanelState so it stays open when
-                    // the drive list is read again (udisks reports every change)
-                    readonly property bool askingPassword: PanelState.isOpen("unlock", modelData.cryptPath)
+                    // the panel closes and opens again (until it's unlocked or unplugged)
+                    readonly property bool askingPassword: PanelState.isOpen("unlock", partition.cryptPath)
 
                     function setAsking(open: bool): void {
                         if (open !== askingPassword)
-                            PanelState.toggle("unlock", modelData.cryptPath);
+                            PanelState.toggle("unlock", partition.cryptPath);
                         if (open)
                             Qt.callLater(passwordField.focusInput);
-                        else if (root.typingIn === modelData.cryptPath)
-                            root.typingIn = "";
                     }
 
                     x: 16
@@ -88,7 +90,7 @@ Column {
                     spacing: 4
 
                     function unlock(): void {
-                        if (passwordField.text !== "" && Drives.unlock(modelData, driveBlock.modelData, passwordField.text))
+                        if (passwordField.text !== "" && Drives.unlock(partition, driveBlock.drive, passwordField.text))
                             passwordField.text = "";
                     }
 
@@ -96,23 +98,23 @@ Column {
                     Connections {
                         target: Drives
                         function onUnlocked(cryptPath: string): void {
-                            if (cryptPath === partitionBlock.modelData.cryptPath)
+                            if (cryptPath === partitionBlock.partition.cryptPath)
                                 partitionBlock.setAsking(false);
                         }
                     }
 
                     ListRow {
                         width: parent.width
-                        icon: partitionBlock.modelData.encryption === "" ? "" : partitionBlock.locked ? "\u{F033E}" : "\u{F0FC6}"
-                        label: partitionBlock.modelData.label
+                        icon: partitionBlock.partition.encryption === "" ? "" : partitionBlock.locked ? "\u{F033E}" : "\u{F0FC6}"
+                        label: partitionBlock.partition.label
                         sublabel: {
-                            const parts = [partitionBlock.modelData.size];
-                            if (partitionBlock.modelData.encryption !== "")
+                            const parts = [partitionBlock.partition.size];
+                            if (partitionBlock.partition.encryption !== "")
                                 parts.push(partitionBlock.encryptionName);
                             if (partitionBlock.locked)
                                 parts.push("Locked");
                             else
-                                parts.push(partitionBlock.modelData.fstype, partitionBlock.mounted ? partitionBlock.modelData.mountpoint : "Not mounted");
+                                parts.push(partitionBlock.partition.fstype, partitionBlock.mounted ? partitionBlock.partition.mountpoint : "Not mounted");
                             return parts.filter(p => p).join(" · ");
                         }
                         selected: partitionBlock.mounted || partitionBlock.askingPassword
@@ -121,7 +123,7 @@ Column {
                                 partitionBlock.setAsking(!partitionBlock.askingPassword);
                                 return;
                             }
-                            Drives.open(partitionBlock.modelData, driveBlock.modelData);
+                            Drives.open(partitionBlock.partition, driveBlock.drive);
                             root.closeRequested();
                         }
 
@@ -131,7 +133,7 @@ Column {
                             PanelButton {
                                 visible: partitionBlock.locked
                                 icon: "\u{F0FC6}"
-                                label: Drives.unlocking === partitionBlock.modelData.cryptPath ? "Unlocking…" : "Unlock"
+                                label: Drives.unlocking === partitionBlock.partition.cryptPath ? "Unlocking…" : "Unlock"
                                 onClicked: {
                                     if (partitionBlock.askingPassword && passwordField.text !== "") {
                                         partitionBlock.unlock();
@@ -144,14 +146,14 @@ Column {
                             PanelButton {
                                 visible: !partitionBlock.locked
                                 label: partitionBlock.mounted ? "Unmount" : "Mount"
-                                onClicked: partitionBlock.mounted ? Drives.unmount(partitionBlock.modelData, driveBlock.modelData) : Drives.mount(partitionBlock.modelData, driveBlock.modelData)
+                                onClicked: partitionBlock.mounted ? Drives.unmount(partitionBlock.partition, driveBlock.drive) : Drives.mount(partitionBlock.partition, driveBlock.drive)
                             }
 
                             PanelButton {
-                                visible: partitionBlock.modelData.encryption !== "" && !partitionBlock.locked
+                                visible: partitionBlock.partition.encryption !== "" && !partitionBlock.locked
                                 icon: "\u{F033E}"
                                 label: "Lock"
-                                onClicked: Drives.lock(partitionBlock.modelData, driveBlock.modelData)
+                                onClicked: Drives.lock(partitionBlock.partition, driveBlock.drive)
                             }
                         }
                     }
@@ -162,26 +164,14 @@ Column {
                         visible: partitionBlock.locked && partitionBlock.askingPassword
                         width: parent.width
                         password: true
-                        placeholder: partitionBlock.modelData.encryption === "BitLocker" ? "Password or recovery key" : "Password"
+                        placeholder: partitionBlock.partition.encryption === "BitLocker" ? "Password or recovery key" : "Password"
                         onAccepted: partitionBlock.unlock()
-                        onTextChanged: root.typed[partitionBlock.modelData.cryptPath] = passwordField.text
-                        onInputFocusChanged: {
-                            if (passwordField.inputFocus)
-                                root.typingIn = partitionBlock.modelData.cryptPath;
-                        }
-
-                        Component.onCompleted: {
-                            const cryptPath = partitionBlock.modelData.cryptPath;
-                            passwordField.text = root.typed[cryptPath] ?? "";
-                            if (passwordField.visible && root.typingIn === cryptPath)
-                                Qt.callLater(passwordField.focusInput);
-                        }
                     }
                 }
             }
 
             PanelText {
-                visible: driveBlock.modelData.partitions.length === 0
+                visible: driveBlock.drive.partitions.length === 0
                 x: 16
                 text: "No readable partitions"
                 dim: true

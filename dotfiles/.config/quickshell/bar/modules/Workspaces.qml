@@ -82,28 +82,32 @@ Row {
     rightPadding: 5
     spacing: 4
 
+    // Kept by name, so a workspace coming or going doesn't make every pill (and icon) again
     Repeater {
-        model: root.entries
+        model: ScriptModel {
+            values: root.entries.map(shown => shown.name)
+        }
 
         Item {
             id: entry
 
-            required property var modelData
-            readonly property HyprlandWorkspace workspace: modelData.workspace
-            readonly property bool active: root.monitor?.activeWorkspace?.name === modelData.name
+            required property string modelData
+            readonly property var shown: root.entries.find(e => e.name === modelData) ?? { name: modelData, workspace: null }
+            readonly property HyprlandWorkspace workspace: shown.workspace
+            readonly property bool active: root.monitor?.activeWorkspace?.name === modelData
             readonly property var apps: root.appsIn(workspace)
             readonly property bool occupied: apps.length > 0
             // Has windows, but none with an icon: shown as a dot that isn't the "empty" grey
             readonly property bool hasWindows: (workspace?.toplevels.values.length ?? 0) > 0
 
             // Room for the divider before workspaces from another monitor's range
-            readonly property int inset: modelData.dividerBefore ? 12 : 0
+            readonly property int inset: shown.dividerBefore ? 12 : 0
 
             width: inset + (occupied ? pill.width : dot.width)
             height: root.height
 
             Rectangle {
-                visible: entry.modelData.dividerBefore ?? false
+                visible: entry.shown.dividerBefore ?? false
                 anchors.verticalCenter: parent.verticalCenter
                 x: 4
                 width: 1
@@ -140,7 +144,7 @@ Row {
                     id: dotMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: root.focusWorkspace(entry.modelData.name)
+                    onClicked: root.focusWorkspace(entry.modelData)
                 }
             }
 
@@ -167,7 +171,7 @@ Row {
                     id: pillMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: root.focusWorkspace(entry.modelData.name)
+                    onClicked: root.focusWorkspace(entry.modelData)
                 }
 
                 Row {

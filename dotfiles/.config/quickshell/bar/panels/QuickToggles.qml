@@ -22,13 +22,14 @@ Column {
         objects: [root.mic].filter(node => node)
     }
 
+    // Rebuilt with every change (a click included); the tiles below are kept by label
     readonly property var toggles: [
-        {
+        ...(Networking.devices.values.some(d => d.type === DeviceType.Wifi) ? [{
             icon: Networking.wifiEnabled ? "\u{F05A9}" : "\u{F05AA}",
             label: "Wi-Fi",
             on: Networking.wifiEnabled,
             toggle: () => Networking.wifiEnabled = !Networking.wifiEnabled
-        },
+        }] : []),
         ...(root.adapter ? [{
             icon: root.adapter.enabled ? "\u{F00AF}" : "\u{F00B2}",
             label: "Bluetooth",
@@ -68,17 +69,20 @@ Column {
         spacing: 8
 
         Repeater {
-            model: root.toggles
+            model: ScriptModel {
+                values: root.toggles.map(toggle => toggle.label)
+            }
 
             Rectangle {
                 id: tile
 
-                required property var modelData
+                required property string modelData
+                readonly property var spec: root.toggles.find(toggle => toggle.label === modelData) ?? { icon: "", label: modelData, on: false, toggle: () => {} }
 
                 width: (grid.width - grid.spacing * (grid.columns - 1)) / grid.columns
                 height: 64
                 radius: Theme.radius
-                color: modelData.on ? Qt.alpha(Theme.accent, mouse.containsMouse ? 0.35 : 0.25) : mouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                color: spec.on ? Qt.alpha(Theme.accent, mouse.containsMouse ? 0.35 : 0.25) : mouse.containsMouse ? Theme.surfaceHover : Theme.surface
 
                 Behavior on color {
                     ColorAnimation { duration: 150 }
@@ -93,17 +97,17 @@ Column {
                     spacing: 4
 
                     PanelText {
-                        text: tile.modelData.icon
-                        color: tile.modelData.on ? Theme.accent : Theme.text
+                        text: tile.spec.icon
+                        color: tile.spec.on ? Theme.accent : Theme.text
                         font.pixelSize: 18
                     }
 
                     PanelText {
                         width: parent.width
-                        text: tile.modelData.label
+                        text: tile.spec.label
                         elide: Text.ElideRight
                         font.pixelSize: Theme.panelFontSize - 1
-                        color: tile.modelData.on ? Theme.accent : Theme.text
+                        color: tile.spec.on ? Theme.accent : Theme.text
                     }
                 }
 
@@ -112,7 +116,7 @@ Column {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: tile.modelData.toggle()
+                    onClicked: tile.spec.toggle()
                 }
             }
         }

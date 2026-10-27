@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Services.Pipewire
 import qs
 import qs.components
@@ -99,13 +100,17 @@ Column {
         text: "Apps"
     }
 
+    // By app name, so an app's row (and a slider being dragged) stays when streams come and
+    // go; the groups themselves are made again each time
     Repeater {
-        model: root.appGroups
+        model: ScriptModel {
+            values: root.appGroups.map(group => group.name)
+        }
 
         AppVolume {
-            required property var modelData
-            name: modelData.name
-            streams: modelData.streams
+            required property string modelData
+            name: modelData
+            streams: root.appGroups.find(group => group.name === modelData)?.streams ?? []
         }
     }
 
@@ -197,7 +202,9 @@ Column {
             spacing: 8
 
             Repeater {
-                model: appVolume.grouped ? appVolume.streams : []
+                model: ScriptModel {
+                    values: appVolume.grouped ? appVolume.streams : []
+                }
 
                 VolumeRow {
                     required property PwNode modelData

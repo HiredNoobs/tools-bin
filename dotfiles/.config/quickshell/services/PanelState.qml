@@ -10,6 +10,7 @@ import Quickshell.Services.SystemTray
 // they belong to is gone (e.g. an app's audio streams or notifications, a monitor, a note).
 // Sections: "audio" (app names with several streams), "devices" ("output", "input"),
 // "notifications" (app names), "monitors" and "modes" (monitor names), "notes" (note ids),
+// "unlock" (locked partitions' paths, see DrivesPanel),
 // "updates" ("list"), "trayApps" (tray app ids), "trayMenus" ("<app id>/<entry>/…") and
 // "settings" (the settings window's expandable rows, e.g. "attach").
 // Drop-down choices (devices, modes) still close once something is chosen.
@@ -71,6 +72,9 @@ Singleton {
         prune("trayApps", trayApps);
         prune("trayMenus", trayApps, true);
     }
+
+    readonly property var lockedPartitions: [].concat(...Drives.drives.map(drive => drive.partitions)).filter(p => p.locked).map(p => p.cryptPath)
+    onLockedPartitionsChanged: prune("unlock", lockedPartitions)
 
     readonly property bool hasUpdates: Updates.packages.length > 0
     onHasUpdatesChanged: {

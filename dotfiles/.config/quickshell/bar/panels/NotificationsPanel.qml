@@ -85,24 +85,28 @@ Column {
             width: parent.width
             spacing: 8
 
+            // Kept by app, so a new notification doesn't make every group and card again
             Repeater {
-                model: Notifications.groups
+                model: ScriptModel {
+                    values: Notifications.groups.map(group => group.app)
+                }
 
                 Column {
                     id: group
 
-                    required property var modelData
-                    readonly property bool open: PanelState.isOpen("notifications", modelData.app)
+                    required property string modelData
+                    readonly property var info: Notifications.groups.find(g => g.app === modelData) ?? { app: modelData, notifications: [] }
+                    readonly property bool open: PanelState.isOpen("notifications", modelData)
 
                     width: groupColumn.width
                     spacing: 4
 
                     ListRow {
                         width: parent.width
-                        iconSource: root.iconFor(group.modelData)
-                        label: group.modelData.app
-                        sublabel: `${group.modelData.notifications.length} notification${group.modelData.notifications.length === 1 ? "" : "s"}`
-                        onClicked: root.toggleGroup(group.modelData.app)
+                        iconSource: root.iconFor(group.info)
+                        label: group.modelData
+                        sublabel: `${group.info.notifications.length} notification${group.info.notifications.length === 1 ? "" : "s"}`
+                        onClicked: root.toggleGroup(group.modelData)
 
                         Row {
                             spacing: 10
@@ -126,14 +130,16 @@ Column {
                                     anchors.margins: -4
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: Notifications.dismissGroup(group.modelData.app)
+                                    onClicked: Notifications.dismissGroup(group.modelData)
                                 }
                             }
                         }
                     }
 
                     Repeater {
-                        model: group.open ? group.modelData.notifications : []
+                        model: ScriptModel {
+                            values: group.open ? group.info.notifications : []
+                        }
 
                         NotificationCard {
                             required property var modelData
