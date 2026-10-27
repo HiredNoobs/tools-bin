@@ -25,35 +25,14 @@ Column {
     }
 
     // Toolkits set apart by other tools (nwg-look, qt6ct)
-    Rectangle {
-        visible: Appearance.mismatched
-        width: parent.width
-        height: mismatchRow.implicitHeight + 24
-        radius: Theme.radius
-        color: Qt.alpha(Theme.warning, 0.15)
+    Banner {
+        tone: "warning"
+        text: Appearance.mismatched ? `Some apps don't use the choices below (another tool or an older change set them):\n${Appearance.mismatches.map(m => `• ${m}`).join("\n")}\n"Use everywhere" gives them the choices below too.` : ""
 
-        Row {
-            id: mismatchRow
-            anchors.verticalCenter: parent.verticalCenter
-            x: 16
-            width: parent.width - 32
-            spacing: 12
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - fixButton.width - parent.spacing
-                text: `Some apps don't use the choices below (another tool or an older change set them):\n${Appearance.mismatches.map(m => `• ${m}`).join("\n")}\n"Use everywhere" gives them the choices below too.`
-                wrapMode: Text.WordWrap
-                color: Theme.warning
-            }
-
-            PanelButton {
-                id: fixButton
-                anchors.verticalCenter: parent.verticalCenter
-                label: "Use everywhere"
-                highlighted: true
-                onClicked: Appearance.applyAll()
-            }
+        PanelButton {
+            label: "Use everywhere"
+            highlighted: true
+            onClicked: Appearance.applyAll()
         }
     }
 
@@ -142,34 +121,25 @@ Column {
             }
         }
 
-        SettingRow {
+        ToggleRow {
+            setting: "presetCursors"
             label: "Change the cursor too"
             description: "Presets pick a cursor that suits them. Off, the cursor stays as it is."
-            changed: !ShellSettings.isDefault("presetCursors")
-            onReset: ShellSettings.reset("presetCursors")
-
-            Toggle {
-                checked: ShellSettings.presetCursors
-                onToggled: ShellSettings.presetCursors = !checked
-            }
         }
     }
 
     SettingsGroup {
         title: "Style"
 
-        SettingRow {
+        ChoiceRow {
             label: "Mode"
             changed: Appearance.changed("dark")
             onReset: Appearance.revert("dark")
             description: "Also switches the themes below to their dark or light version, where they have one."
-
-            ChoiceButtons {
-                choices: [true, false]
-                current: Appearance.dark
-                format: dark => dark ? "Dark" : "Light"
-                onChosen: dark => Appearance.setDark(dark)
-            }
+            choices: [true, false]
+            current: Appearance.dark
+            format: dark => dark ? "Dark" : "Light"
+            onChosen: dark => Appearance.setDark(dark)
         }
 
         ListPicker {
@@ -224,16 +194,13 @@ Column {
             onPicked: value => Appearance.setCursor(value, Appearance.cursorSize)
         }
 
-        SettingRow {
+        ChoiceRow {
             label: "Cursor size"
             changed: Appearance.changed("cursorSize")
             onReset: Appearance.revert("cursorSize")
-
-            ChoiceButtons {
-                choices: [24, 32, 40, 48]
-                current: Appearance.cursorSize
-                onChosen: size => Appearance.setCursor(Appearance.cursorTheme, size)
-            }
+            choices: [24, 32, 40, 48]
+            current: Appearance.cursorSize
+            onChosen: size => Appearance.setCursor(Appearance.cursorTheme, size)
         }
     }
 
@@ -249,17 +216,14 @@ Column {
             onPicked: value => Appearance.setFont(value, Appearance.fontSize)
         }
 
-        SettingRow {
+        ChoiceRow {
             sub: true
             label: "Size"
             changed: Appearance.changed("fontSize")
             onReset: Appearance.revert("fontSize")
-
-            ChoiceButtons {
-                choices: [9, 10, 11, 12, 13, 14]
-                current: Appearance.fontSize
-                onChosen: size => Appearance.setFont(Appearance.font, size)
-            }
+            choices: [9, 10, 11, 12, 13, 14]
+            current: Appearance.fontSize
+            onChosen: size => Appearance.setFont(Appearance.font, size)
         }
 
         ListPicker {
@@ -272,30 +236,24 @@ Column {
             onPicked: value => Appearance.setMonoFont(value, Appearance.monoSize)
         }
 
-        SettingRow {
+        ChoiceRow {
             sub: true
             label: "Size"
             changed: Appearance.changed("monoSize")
             onReset: Appearance.revert("monoSize")
-
-            ChoiceButtons {
-                choices: [9, 10, 11, 12, 13, 14]
-                current: Appearance.monoSize
-                onChosen: size => Appearance.setMonoFont(Appearance.monoFont, size)
-            }
+            choices: [9, 10, 11, 12, 13, 14]
+            current: Appearance.monoSize
+            onChosen: size => Appearance.setMonoFont(Appearance.monoFont, size)
         }
 
         // Qt sizes fonts differently, so it can have its own: the rows below show while it does
-        SettingRow {
+        ToggleRow {
             label: "Qt apps use the interface font"
             changed: Appearance.changed("qtFont")
             onReset: Appearance.revert("qtFont")
             description: Appearance.qtFont === "" ? "Off gives them their own, as Qt sizes fonts a little differently." : `Their own for now: ${Appearance.qtFont} ${Appearance.qtFontSize}.`
-
-            Toggle {
-                checked: Appearance.qtFont === ""
-                onToggled: Appearance.setQtFont(checked ? Appearance.font : "", Appearance.fontSize)
-            }
+            checked: Appearance.qtFont === ""
+            onToggled: on => Appearance.setQtFont(on ? "" : Appearance.font, Appearance.fontSize)
         }
 
         ListPicker {
@@ -309,18 +267,15 @@ Column {
             onPicked: value => Appearance.setQtFont(value, Appearance.qtFontSize)
         }
 
-        SettingRow {
+        ChoiceRow {
             visible: Appearance.qtFont !== ""
             sub: true
             label: "Qt font size"
             changed: Appearance.changed("qtFontSize")
             onReset: Appearance.revert("qtFontSize")
-
-            ChoiceButtons {
-                choices: [9, 10, 11, 12, 13, 14]
-                current: Appearance.qtFontSize
-                onChosen: size => Appearance.setQtFont(Appearance.qtFont, size)
-            }
+            choices: [9, 10, 11, 12, 13, 14]
+            current: Appearance.qtFontSize
+            onChosen: size => Appearance.setQtFont(Appearance.qtFont, size)
         }
     }
 
@@ -365,16 +320,13 @@ Column {
     SettingsGroup {
         title: "More"
 
-        SettingRow {
+        ToggleRow {
             label: "Desktop file chooser in Qt apps"
             changed: Appearance.changed("portalDialogs")
             onReset: Appearance.revert("portalDialogs")
             description: "Qt apps open files with the same dark chooser as everything else, rather than Qt's own. Apps pick it up when next opened."
-
-            Toggle {
-                checked: Appearance.portalDialogs
-                onToggled: Appearance.setPortalDialogs(!checked)
-            }
+            checked: Appearance.portalDialogs
+            onToggled: on => Appearance.setPortalDialogs(on)
         }
 
         SettingRow {
@@ -496,86 +448,21 @@ Column {
     }
 
     // A setting picked from a list that opens below the row, with a search box for long lists
-    component ListPicker: Column {
+    component ListPicker: DropdownRow {
         id: picker
 
-        property string label
-        property string description: ""
-        property bool sub: false
         property var choices: []
         property string current
         property string placeholder: "Default"
-        property bool open: false
-        property bool changed: false
         signal picked(string value)
-        signal reset
 
-        // Open again after a restart if it was before (RestartState)
-        onOpenChanged: RestartState.setPicker(label, open)
-        Component.onCompleted: {
-            if (RestartState.pickerOpen(label)) {
-                open = true;
-                list.setExpanded(true);
-            }
-        }
-
-        readonly property bool searchable: choices.length > 15
-        readonly property var shown: {
-            const query = search.text.trim().toLowerCase();
-            return (query === "" ? choices : choices.filter(c => c.toLowerCase().includes(query))).slice(0, 200);
-        }
-
-        width: parent.width
-
-        SettingRow {
-            sub: picker.sub
-            label: picker.label
-            description: picker.description
-            changed: picker.changed
-            onReset: picker.reset()
-
-            PanelButton {
-                width: 240
-                label: picker.current || picker.placeholder
-                icon: picker.open ? "\u{F077}" : "\u{F078}"
-                highlighted: picker.open
-                onClicked: {
-                    picker.open = !picker.open;
-                    if (picker.open) {
-                        search.text = "";
-                        list.setExpanded(true);
-                        if (picker.searchable)
-                            Qt.callLater(search.focusInput);
-                    }
-                }
-            }
-        }
-
-        Column {
-            visible: picker.open
-            x: 16
-            width: parent.width - 32
-            spacing: 6
-            bottomPadding: 12
-
-            TextField {
-                id: search
-                visible: picker.searchable
-                width: parent.width
-                placeholder: "Search…"
-            }
-
-            DropdownList {
-                id: list
-                width: parent.width
-                maxHeight: 240
-                items: picker.shown.map(choice => ({ label: choice, selected: choice === picker.current, value: choice }))
-                onChosen: item => {
-                    picker.picked(item.value);
-                    picker.open = false;
-                }
-            }
-        }
+        buttonLabel: current || placeholder
+        stateKey: `picker:appearance:${label}`
+        searchable: choices.length > 15
+        items: (query === "" ? choices : choices.filter(c => c.toLowerCase().includes(query)))
+            .slice(0, 200)
+            .map(choice => ({ label: choice, selected: choice === picker.current, value: choice }))
+        onChosen: item => picker.picked(item.value)
     }
 
     // Like ListPicker, but the choices open as tiles with pictures of each (`pictures` gives a
@@ -592,14 +479,13 @@ Column {
         property bool cursors: false
         // How a choice's name shows
         property var format: name => name
-        property bool open: false
         property bool changed: false
         signal picked(string value)
         signal reset
 
-        // Open again after a restart if it was before (RestartState)
-        onOpenChanged: RestartState.setPicker(label, open)
-        Component.onCompleted: open = RestartState.pickerOpen(label)
+        // Open or not kept like DropdownRow's (it comes back after a restart)
+        readonly property string stateKey: `picker:appearance:${label}`
+        readonly property bool open: PanelState.isOpen("settings", stateKey)
 
         width: parent.width
 
@@ -633,13 +519,12 @@ Column {
                     }
                 }
 
-                PanelButton {
+                PickerButton {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 240
                     label: gallery.current ? gallery.format(gallery.current) : "Default"
-                    icon: gallery.open ? "\u{F077}" : "\u{F078}"
-                    highlighted: gallery.open
-                    onClicked: gallery.open = !gallery.open
+                    open: gallery.open
+                    onClicked: PanelState.toggle("settings", gallery.stateKey)
                 }
             }
         }

@@ -38,18 +38,15 @@ Column {
         visible: root.profilesAvailable
         title: "Power mode"
 
-        SettingRow {
+        ChoiceRow {
             label: "Power mode"
             description: "Saver lowers performance for battery life; Performance the opposite."
             changed: PowerProfiles.profile !== PowerProfile.Balanced
             onReset: PowerProfiles.profile = PowerProfile.Balanced
-
-            ChoiceButtons {
-                choices: [PowerProfile.PowerSaver, PowerProfile.Balanced, ...(PowerProfiles.hasPerformanceProfile ? [PowerProfile.Performance] : [])]
-                current: PowerProfiles.profile
-                format: profile => profile === PowerProfile.PowerSaver ? "Saver" : profile === PowerProfile.Balanced ? "Balanced" : "Performance"
-                onChosen: profile => PowerProfiles.profile = profile
-            }
+            choices: [PowerProfile.PowerSaver, PowerProfile.Balanced, ...(PowerProfiles.hasPerformanceProfile ? [PowerProfile.Performance] : [])]
+            current: PowerProfiles.profile
+            format: profile => profile === PowerProfile.PowerSaver ? "Saver" : profile === PowerProfile.Balanced ? "Balanced" : "Performance"
+            onChosen: profile => PowerProfiles.profile = profile
         }
     }
 
@@ -105,31 +102,19 @@ Column {
         visible: Lid.hasLid
         title: "Lid"
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("lidAction")
-            onReset: ShellSettings.reset("lidAction")
+        ChoiceRow {
+            setting: "lidAction"
             label: "When the lid closes"
-
-            ChoiceButtons {
-                choices: ["suspend", "lock", "nothing"]
-                current: ShellSettings.lidAction
-                format: action => ({ suspend: "Suspend", lock: "Lock", nothing: "Nothing" })[action]
-                onChosen: action => ShellSettings.lidAction = action
-            }
+            choices: ["suspend", "lock", "nothing"]
+            format: action => ({ suspend: "Suspend", lock: "Lock", nothing: "Nothing" })[action]
         }
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("lidDocked")
-            onReset: ShellSettings.reset("lidDocked")
+        ChoiceRow {
+            setting: "lidDocked"
             label: "With another screen connected"
             description: "Screen off keeps working on the other screen with the laptop closed."
-
-            ChoiceButtons {
-                choices: ["screen-off", "suspend", "lock", "nothing"]
-                current: ShellSettings.lidDocked
-                format: action => ({ "screen-off": "Screen off", suspend: "Suspend", lock: "Lock", nothing: "Nothing" })[action]
-                onChosen: action => ShellSettings.lidDocked = action
-            }
+            choices: ["screen-off", "suspend", "lock", "nothing"]
+            format: action => ({ "screen-off": "Screen off", suspend: "Suspend", lock: "Lock", nothing: "Nothing" })[action]
         }
     }
 
@@ -140,6 +125,7 @@ Column {
         // The warning always comes before the critical level: each offers only the levels on
         // its side of the other, and ↺ stops short of it too
         LevelPicker {
+            stateKey: "picker:battery:warn"
             changed: !ShellSettings.isDefault("batteryWarn")
             onReset: ShellSettings.batteryWarn = Math.max(ShellSettings.defaults.batteryWarn, ShellSettings.batteryCritical + 1)
             label: "Warn at"
@@ -150,6 +136,7 @@ Column {
         }
 
         LevelPicker {
+            stateKey: "picker:battery:critical"
             changed: !ShellSettings.isDefault("batteryCritical")
             onReset: ShellSettings.batteryCritical = Math.min(ShellSettings.defaults.batteryCritical, ShellSettings.batteryWarn - 1)
             label: "Critical at"
@@ -158,23 +145,18 @@ Column {
             onPicked: level => ShellSettings.batteryCritical = level
         }
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("batteryCriticalAction")
-            onReset: ShellSettings.reset("batteryCriticalAction")
+        ChoiceRow {
+            setting: "batteryCriticalAction"
             label: "Then"
             description: "What happens at the critical level, before the battery runs out."
-
-            ChoiceButtons {
-                choices: ["nothing", "suspend", "poweroff"]
-                current: ShellSettings.batteryCriticalAction
-                format: action => ({ nothing: "Nothing", suspend: "Suspend", poweroff: "Power off" })[action]
-                onChosen: action => ShellSettings.batteryCriticalAction = action
-            }
+            choices: ["nothing", "suspend", "poweroff"]
+            format: action => ({ nothing: "Nothing", suspend: "Suspend", poweroff: "Power off" })[action]
         }
     }
 
-    // A timeout on battery and plugged in, each a picker; ↺ when it differs from hypridle.conf
-    component IdleRow: Item {
+    // A timeout on battery and plugged in, each a picker opening its list below the row (one
+    // at a time); ↺ when either differs from hypridle.conf
+    component IdleRow: Column {
         id: idleRow
 
         property string kind
@@ -182,97 +164,62 @@ Column {
         property string description: ""
 
         width: parent.width
-        implicitHeight: column.implicitHeight
 
-        Column {
-            id: column
-            width: parent.width
+        SettingRow {
+            label: idleRow.label
+            description: idleRow.description
+            changed: IdleSettings.isCustom(idleRow.kind)
+            onReset: IdleSettings.reset(idleRow.kind)
 
-            SettingRow {
-                label: idleRow.label
-                description: idleRow.description
+            Row {
+                spacing: 8
 
-                Row {
-                    spacing: 8
+                IdlePicker {
+                    visible: root.battery
+                    kind: idleRow.kind
+                    power: "battery"
+                    list: batteryList
+                    other: acList
+                }
 
-                    PanelButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: IdleSettings.isCustom(idleRow.kind)
-                        icon: "\u{F0E2}"
-                        onClicked: IdleSettings.reset(idleRow.kind)
-                    }
-
-                    Picker {
-                        visible: root.battery
-                        kind: idleRow.kind
-                        power: "battery"
-                        list: batteryList
-                        other: acList
-                    }
-
-                    Picker {
-                        kind: idleRow.kind
-                        power: "ac"
-                        list: acList
-                        other: batteryList
-                    }
+                IdlePicker {
+                    kind: idleRow.kind
+                    power: "ac"
+                    list: acList
+                    other: batteryList
                 }
             }
+        }
 
-            DurationList {
-                id: batteryList
-                kind: idleRow.kind
-                power: "battery"
-            }
+        DurationList {
+            id: batteryList
+            kind: idleRow.kind
+            power: "battery"
+        }
 
-            DurationList {
-                id: acList
-                kind: idleRow.kind
-                power: "ac"
-            }
+        DurationList {
+            id: acList
+            kind: idleRow.kind
+            power: "ac"
         }
     }
 
     // A battery level, picked from a list that opens below the row
-    component LevelPicker: Column {
+    component LevelPicker: DropdownRow {
         id: levelPicker
 
-        property string label
-        property string description: ""
         property var levels: []
         property int current
-        property bool changed: false
         signal picked(int level)
-        signal reset
 
-        width: parent.width
-
-        SettingRow {
-            label: levelPicker.label
-            description: levelPicker.description
-            changed: levelPicker.changed
-            onReset: levelPicker.reset()
-
-            PanelButton {
-                width: 90
-                label: `${levelPicker.current}%`
-                icon: levelList.expanded ? "\u{F077}" : "\u{F078}"
-                highlighted: levelList.expanded
-                onClicked: levelList.toggle()
-            }
-        }
-
-        DropdownList {
-            id: levelList
-            x: 16
-            width: parent.width - 32
-            items: levelPicker.levels.map(level => ({ label: `${level}%`, selected: level === levelPicker.current, level: level }))
-            onChosen: item => levelPicker.picked(item.level)
-        }
+        buttonWidth: 90
+        buttonLabel: `${current}%`
+        items: levels.map(level => ({ label: `${level}%`, selected: level === levelPicker.current, level: level }))
+        onChosen: item => levelPicker.picked(item.level)
     }
 
-    // The timeout for one kind and power source, opening its list below the row
-    component Picker: PanelButton {
+    // The timeout for one kind and power source
+    component IdlePicker: PickerButton {
         property string kind
         property string power
         property DropdownList list
@@ -280,10 +227,8 @@ Column {
 
         width: 120
         label: root.formatDuration(IdleSettings.get(kind, power))
-        icon: list.expanded ? "\u{F077}" : "\u{F078}"
-        highlighted: list.expanded
+        open: list.expanded
         onClicked: {
-            // One list open at a time in a row
             other.setExpanded(false);
             list.toggle();
         }

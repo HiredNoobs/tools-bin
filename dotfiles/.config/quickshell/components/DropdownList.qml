@@ -6,7 +6,8 @@ import qs.services
 // (e.g. a monitor's 28 resolutions) and open scrolled to the selected choice.
 // items: [{ label, sublabel, iconSource, selected, ... }] - the whole item is passed back in `chosen`.
 // With `stateSection` and `stateKey`, whether it's open is kept in PanelState, so it stays open
-// across reopening the panel; choosing an item closes it either way.
+// across reopening the panel; choosing an item closes it either way, unless `closeOnChoose` is
+// off (the owner then closes it, e.g. not for an item that lists more).
 Item {
     id: root
 
@@ -14,6 +15,7 @@ Item {
     property int maxHeight: 240
     property string stateSection: ""
     property string stateKey: ""
+    property bool closeOnChoose: true
 
     property bool localExpanded: false
     readonly property bool expanded: stateSection !== "" ? PanelState.isOpen(stateSection, stateKey) : localExpanded
@@ -83,7 +85,8 @@ Item {
                     selected: modelData.selected ?? false
                     onClicked: {
                         root.chosen(modelData);
-                        root.setExpanded(false);
+                        if (root.closeOnChoose)
+                            root.setExpanded(false);
                     }
 
                     PanelText {

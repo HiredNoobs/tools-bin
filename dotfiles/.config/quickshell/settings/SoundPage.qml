@@ -6,9 +6,9 @@ import qs.services
 
 // Settings › Sound, in place of pavucontrol: every output and input with its volume (up to
 // 150% if boosting is allowed), port and a level meter for inputs; apps recording, each
-// movable to another input; and the sound cards' profiles. Apps playing are in the audio panel. PipeWire covers the volumes; ports, profiles and
-// moving streams go through pactl (AudioCards), re-read every few seconds while open so
-// plugging in headphones shows up.
+// movable to another input; and the sound cards' profiles. Apps playing are in the audio
+// panel. PipeWire covers the volumes; ports, profiles and moving streams go through pactl
+// (AudioCards), re-read every few seconds while open so plugging in headphones shows up.
 Column {
     id: root
 
@@ -139,7 +139,6 @@ Column {
             StreamBlock {
                 required property PwNode modelData
                 stream: modelData
-                devices: root.inputs
             }
         }
     }
@@ -151,17 +150,17 @@ Column {
         Repeater {
             model: AudioCards.cards
 
-            Block {
+            SettingsBlock {
                 id: cardBlock
 
                 required property var modelData
                 readonly property var active: modelData.profiles.find(p => p.name === modelData.activeProfile)
 
-                Header {
+                BlockHeader {
                     title: cardBlock.modelData.description
                     detail: "Profile"
 
-                    Picker {
+                    PickerButton {
                         label: cardBlock.active?.description ?? cardBlock.modelData.activeProfile
                         open: profileList.expanded
                         onClicked: profileList.toggle()
@@ -189,84 +188,11 @@ Column {
     SettingsGroup {
         title: "Options"
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("volumeBoost")
-            onReset: ShellSettings.reset("volumeBoost")
+        ToggleRow {
+            setting: "volumeBoost"
             label: "Allow volume above 100%"
             description: "Boosts quiet sound up to 150%, in software. Loud sounds may distort."
-
-            Toggle {
-                checked: ShellSettings.volumeBoost
-                onToggled: ShellSettings.volumeBoost = !checked
-            }
         }
-    }
-
-    // A block of rows inside a SettingsGroup, padded like a SettingRow
-    component Block: Item {
-        default property alias content: column.data
-
-        width: parent?.width ?? 0
-        implicitHeight: column.implicitHeight + 28
-
-        Column {
-            id: column
-            x: 16
-            y: 14
-            width: parent.width - 32
-            spacing: 10
-        }
-    }
-
-    // Title and dim detail on the left, anything (a button, a picker) on the right
-    component Header: Item {
-        id: header
-
-        property string title
-        property string detail: ""
-        property bool accent: false
-        default property alias trailing: trailingArea.data
-
-        width: parent.width
-        implicitHeight: Math.max(titleText.implicitHeight, trailingArea.childrenRect.height)
-
-        Row {
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - trailingArea.width - 16
-            spacing: 8
-
-            PanelText {
-                id: titleText
-                width: Math.min(implicitWidth, parent.width)
-                text: header.title
-                elide: Text.ElideRight
-                color: header.accent ? Theme.accent : Theme.text
-            }
-
-            PanelText {
-                visible: header.detail !== ""
-                width: parent.width - titleText.width - parent.spacing
-                text: `·  ${header.detail}`
-                elide: Text.ElideRight
-                dim: true
-            }
-        }
-
-        Item {
-            id: trailingArea
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: childrenRect.width
-            height: childrenRect.height
-        }
-    }
-
-    // A button naming the current choice, with a chevron, that opens a DropdownList below
-    component Picker: PanelButton {
-        property bool open: false
-
-        icon: open ? "\u{F077}" : "\u{F078}"
-        highlighted: open
     }
 
     // Mute, a slider up to 100% (150% with boosting allowed, marked at 100%), and the percentage
@@ -326,7 +252,7 @@ Column {
     }
 
     // An output or input: name, default or "Make default", volume, port and (inputs) level
-    component DeviceBlock: Block {
+    component DeviceBlock: SettingsBlock {
         id: deviceBlock
 
         property PwNode device
@@ -336,13 +262,14 @@ Column {
 
         readonly property var portInfo: AudioCards.ports[device?.name ?? ""] ?? null
 
-        Header {
+        BlockHeader {
             title: root.nodeName(deviceBlock.device)
             detail: root.deviceKind(deviceBlock.device)
             accent: deviceBlock.isDefault
 
             PanelText {
                 visible: deviceBlock.isDefault
+                anchors.verticalCenter: parent.verticalCenter
                 text: "\u{F00C}  Default"
                 color: Theme.accent
             }
@@ -413,11 +340,10 @@ Column {
     }
 
     // An app's recording stream: the app, the input it records from, and its volume
-    component StreamBlock: Block {
+    component StreamBlock: SettingsBlock {
         id: streamBlock
 
         property PwNode stream
-        property var devices: []
 
         readonly property string app: stream?.properties["application.name"] ?? stream?.name ?? ""
         // What it's playing, if known (Firefox renames its streams "AudioStream"; see StreamTitles)
@@ -427,17 +353,17 @@ Column {
         readonly property PwNode device: {
             for (const group of Pipewire.linkGroups.values) {
                 const other = group.source === stream ? group.target : group.target === stream ? group.source : null;
-                if (other && devices.includes(other))
+                if (other && root.inputs.includes(other))
                     return other;
             }
             return null;
         }
 
-        Header {
+        BlockHeader {
             title: streamBlock.app
             detail: streamBlock.title !== streamBlock.app ? streamBlock.title : ""
 
-            Picker {
+            PickerButton {
                 label: streamBlock.device ? root.nodeName(streamBlock.device) : "Not connected"
                 open: deviceList.expanded
                 onClicked: deviceList.toggle()
@@ -447,7 +373,7 @@ Column {
         DropdownList {
             id: deviceList
             width: parent.width
-            items: streamBlock.devices.map(device => ({
+            items: root.inputs.map(device => ({
                         label: root.nodeName(device),
                         sublabel: root.deviceKind(device),
                         selected: device === streamBlock.device,
@@ -456,11 +382,11 @@ Column {
             onChosen: item => AudioCards.moveStream(streamBlock.stream, item.device)
         }
 
+        // Recording: a mic
         VolumeControl {
             node: streamBlock.stream
-            icon: streamBlock.stream?.type === PwNodeType.AudioInStream ? "\u{F130}" : "\u{F028}"
-            mutedIcon: streamBlock.stream?.type === PwNodeType.AudioInStream ? "\u{F131}" : "\u{EEE8}"
+            icon: "\u{F130}"
+            mutedIcon: "\u{F131}"
         }
-
     }
 }

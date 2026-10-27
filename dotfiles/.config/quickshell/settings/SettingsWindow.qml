@@ -14,29 +14,18 @@ FloatingWindow {
     property string page: "shell"
     signal pageRequested(string name)
 
+    // Each section, with its page (a file beside this one)
     readonly property var sections: [
-        { name: "sound", title: "Sound", icon: "\u{F057E}", keywords: "audio volume output input microphone speakers headphones devices apps pavucontrol" },
-        { name: "network", title: "Network", icon: "\u{F05A9}", keywords: "wifi wi-fi wireless wired ethernet internet ip dns nm-connection-editor" },
-        { name: "bluetooth", title: "Bluetooth", icon: "\u{F00AF}", keywords: "devices pair headphones blueman" },
-        { name: "displays", title: "Displays", icon: "\u{F0379}", keywords: "monitors screens resolution refresh rate scale arrangement nightlight brightness" },
-        { name: "input", title: "Keyboard and mouse", icon: "\u{F030C}", keywords: "keyboard layout repeat mouse pointer speed touchpad scrolling tap" },
-        { name: "power", title: "Power and idle", icon: "\u{F0425}", keywords: "idle lock screen off suspend sleep lid battery power profile hypridle" },
-        { name: "apps", title: "Default apps", icon: "\u{F003B}", keywords: "default applications open with browser email mail files folders text editor images video music audio pdf mime xdg-open mimeapps" },
-        { name: "appearance", title: "Appearance", icon: "\u{F03D8}", keywords: "theme gtk qt kvantum icons cursor fonts wallpaper nwg-look qt6ct avatar picture profile lock login sddm" },
-        { name: "shell", title: "Shell", icon: "\u{F0493}", keywords: "bar panels launcher attached control centre notifications pop-ups quickshell" }
+        { name: "sound", file: "SoundPage.qml", title: "Sound", icon: "\u{F057E}", keywords: "audio volume output input microphone speakers headphones devices apps pavucontrol" },
+        { name: "network", file: "NetworkPage.qml", title: "Network", icon: "\u{F05A9}", keywords: "wifi wi-fi wireless wired ethernet internet ip dns nm-connection-editor" },
+        { name: "bluetooth", file: "BluetoothPage.qml", title: "Bluetooth", icon: "\u{F00AF}", keywords: "devices pair headphones blueman" },
+        { name: "displays", file: "DisplaysPage.qml", title: "Displays", icon: "\u{F0379}", keywords: "monitors screens resolution refresh rate scale arrangement nightlight brightness" },
+        { name: "input", file: "InputPage.qml", title: "Keyboard and mouse", icon: "\u{F030C}", keywords: "keyboard layout repeat mouse pointer speed touchpad scrolling tap" },
+        { name: "power", file: "PowerPage.qml", title: "Power and idle", icon: "\u{F0425}", keywords: "idle lock screen off suspend sleep lid battery power profile hypridle" },
+        { name: "apps", file: "DefaultAppsPage.qml", title: "Default apps", icon: "\u{F003B}", keywords: "default applications open with browser email mail files folders text editor images video music audio pdf mime xdg-open mimeapps" },
+        { name: "appearance", file: "AppearancePage.qml", title: "Appearance", icon: "\u{F03D8}", keywords: "theme gtk qt kvantum icons cursor fonts wallpaper nwg-look qt6ct avatar picture profile lock login sddm" },
+        { name: "shell", file: "ShellPage.qml", title: "Shell", icon: "\u{F0493}", keywords: "bar panels launcher attached control centre notifications pop-ups quickshell" }
     ]
-    // Each section's page
-    readonly property var pages: ({
-            "sound": soundPage,
-            "network": networkPage,
-            "bluetooth": bluetoothPage,
-            "displays": displaysPage,
-            "input": inputPage,
-            "power": powerPage,
-            "apps": defaultAppsPage,
-            "appearance": appearancePage,
-            "shell": shellPage
-        })
     readonly property var current: sections.find(section => section.name === page) ?? sections[0]
 
     readonly property string query: search.text.trim().toLowerCase()
@@ -195,7 +184,7 @@ FloatingWindow {
                 Loader {
                     id: pageLoader
                     width: parent.width
-                    sourceComponent: root.pages[root.current.name]
+                    source: Qt.resolvedUrl(root.current.file)
                 }
             }
         }
@@ -251,59 +240,11 @@ FloatingWindow {
             restoreTimer.start();
         }
     }
-    Component.onDestruction: RestartState.windowClosed()
 
-    Component {
-        id: soundPage
-
-        SoundPage {}
-    }
-
-    Component {
-        id: networkPage
-
-        NetworkPage {}
-    }
-
-    Component {
-        id: bluetoothPage
-
-        BluetoothPage {}
-    }
-
-    Component {
-        id: displaysPage
-
-        DisplaysPage {}
-    }
-
-    Component {
-        id: inputPage
-
-        InputPage {}
-    }
-
-    Component {
-        id: powerPage
-
-        PowerPage {}
-    }
-
-    Component {
-        id: defaultAppsPage
-
-        DefaultAppsPage {}
-    }
-
-    Component {
-        id: appearancePage
-
-        AppearancePage {}
-    }
-
-    Component {
-        id: shellPage
-
-        ShellPage {}
+    // Lists opened in it close with it (DropdownRow); other open sections stay for the session
+    Component.onDestruction: {
+        RestartState.windowClosed();
+        const keys = Object.keys(PanelState.open.settings ?? {});
+        PanelState.prune("settings", keys.filter(key => !key.startsWith("picker:")));
     }
 }

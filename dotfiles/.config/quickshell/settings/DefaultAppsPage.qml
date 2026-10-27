@@ -15,22 +15,8 @@ Column {
     Component.onCompleted: DefaultApps.refresh()
 
     // A desktop's own list is read first, so what it sets wins over the choices here
-    Rectangle {
-        visible: DefaultApps.overridingList !== ""
-        width: parent.width
-        height: listWarning.implicitHeight + 20
-        radius: Theme.radius
-        color: Qt.alpha(Theme.critical, 0.15)
-
-        PanelText {
-            id: listWarning
-            x: 14
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - 28
-            text: `\u{F0026}  ${DefaultApps.overridingList.replace(DefaultApps.home, "~")} is read before these choices, so what it sets wins. Move its lines into ~/.config/mimeapps.list, or delete it.`
-            wrapMode: Text.WordWrap
-            color: Theme.critical
-        }
+    Banner {
+        text: DefaultApps.overridingList !== "" ? `${DefaultApps.overridingList.replace(DefaultApps.home, "~")} is read before these choices, so what it sets wins. Move its lines into ~/.config/mimeapps.list, or delete it.` : ""
     }
 
     SettingsGroup {
@@ -43,6 +29,7 @@ Column {
                 required property var modelData
                 readonly property int separate: DefaultApps.overridesIn(modelData.key)
 
+                stateKey: `picker:apps:${modelData.key}`
                 label: modelData.title
                 description: [modelData.description ?? "", separate > 0 ? `${separate} file type${separate > 1 ? "s" : ""} set separately below.` : ""].filter(s => s !== "").join(" ")
                 current: DefaultApps.defaults[modelData.key] ?? ""
@@ -108,6 +95,7 @@ Column {
         readonly property var info: DefaultApps.typeInfo(type)
         readonly property var opener: DefaultApps.typeDefault(type)
 
+        stateKey: `picker:type:${type}`
         label: info.name
         description: [type, info.globs.slice(0, 5).map(glob => glob.replace(/^\*\./, ".")).join(" "), opener.automatic && opener.id !== "" ? "picked automatically" : ""].filter(s => s !== "").join(" · ")
         current: opener.id
@@ -118,98 +106,51 @@ Column {
 
     // A row with its apps sliding open under it. With `allowOther`, "Other apps…" lists every
     // installed app, for one that can open the type without saying so.
-    component AppChooser: Column {
+    component AppChooser: DropdownRow {
         id: chooser
 
-        property string label
-        property string description
         property string current
         property var apps: []
         property bool allowOther: false
-        property bool changed: false
-        property bool open: false
         property bool showAll: false
         signal picked(string id)
-        signal reset
 
-        readonly property var shown: {
-            if (!showAll)
-                return apps;
-            const query = otherSearch.text.trim().toLowerCase();
-            return DefaultApps.allApps().filter(app => query === "" || app.name.toLowerCase().includes(query));
+        readonly property var shown: showAll ? DefaultApps.allApps().filter(app => query === "" || app.name.toLowerCase().includes(query)) : apps
+
+        buttonLabel: DefaultApps.appName(current) || (apps.length > 0 || allowOther ? "Not set" : "No apps installed")
+        searchable: showAll
+        searchPlaceholder: "Search apps…"
+        // "Other apps…" keeps it open, to list them all
+        closeOnChoose: false
+        onOpenChanged: {
+            if (!open)
+                showAll = false;
+        }
+        items: [
+            ...shown.map(app => ({
+                        label: app.name,
+                        sublabel: app.id,
+                        iconSource: Quickshell.iconPath(app.icon, "application-x-executable"),
+                        selected: app.id === chooser.current,
+                        value: app.id
+                    })),
+            ...(allowOther && !showAll ? [{ label: "Other apps…", sublabel: "Any installed app", value: "" }] : [])
+        ]
+        onChosen: item => {
+            if (item.value === "") {
+                chooser.showAll = true;
+                chooser.focusSearch();
+                return;
+            }
+            chooser.picked(item.value);
+            chooser.setOpen(false);
         }
 
-        width: parent?.width ?? 0
-
-        SettingRow {
-            label: chooser.label
-            description: chooser.description
-            changed: chooser.changed
-            onReset: chooser.reset()
-
-            PanelButton {
-                width: 240
-                label: DefaultApps.appName(chooser.current) || (chooser.apps.length > 0 || chooser.allowOther ? "Not set" : "No apps installed")
-                icon: chooser.open ? "\u{F077}" : "\u{F078}"
-                highlighted: chooser.open
-                onClicked: {
-                    chooser.open = !chooser.open;
-                    chooser.showAll = false;
-                    if (chooser.open)
-                        list.setExpanded(true);
-                }
-            }
-        }
-
-        Column {
-            visible: chooser.open
-            x: 16
-            width: parent.width - 32
-            spacing: 6
-            bottomPadding: 12
-
-            TextField {
-                id: otherSearch
-                visible: chooser.showAll
-                width: parent.width
-                placeholder: "Search apps…"
-            }
-
-            DropdownList {
-                id: list
-                width: parent.width
-                maxHeight: 240
-                items: [
-                    ...chooser.shown.map(app => ({
-                                label: app.name,
-                                sublabel: app.id,
-                                iconSource: Quickshell.iconPath(app.icon, "application-x-executable"),
-                                selected: app.id === chooser.current,
-                                value: app.id
-                            })),
-                    ...(chooser.allowOther && !chooser.showAll ? [{ label: "Other apps…", sublabel: "Any installed app", value: "" }] : [])
-                ]
-                onChosen: item => {
-                    if (item.value === "") {
-                        chooser.showAll = true;
-                        otherSearch.text = "";
-                        Qt.callLater(() => {
-                            list.setExpanded(true);
-                            otherSearch.focusInput();
-                        });
-                        return;
-                    }
-                    chooser.picked(item.value);
-                    chooser.open = false;
-                }
-            }
-
-            PanelText {
-                visible: chooser.shown.length === 0 && !chooser.allowOther
-                leftPadding: 10
-                text: "No installed app opens these."
-                dim: true
-            }
+        PanelText {
+            visible: chooser.shown.length === 0 && !chooser.allowOther
+            leftPadding: 10
+            text: "No installed app opens these."
+            dim: true
         }
     }
 }

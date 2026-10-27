@@ -39,7 +39,11 @@ Column {
 
     spacing: 24
 
-    Component.onCompleted: InputSettings.refresh()
+    // An error from earlier in the session isn't shown again
+    Component.onCompleted: {
+        InputSettings.lastError = "";
+        InputSettings.refresh();
+    }
 
     // xkb's list of layouts ("! layout") and variants ("! variant": "  intl  us: English (US, intl.)")
     Process {
@@ -74,18 +78,16 @@ Column {
         }
     }
 
-    PanelText {
-        visible: InputSettings.lastError !== ""
-        width: parent.width
-        text: `\u{F0026}  ${InputSettings.lastError}`
-        wrapMode: Text.WordWrap
-        color: Theme.critical
+    Banner {
+        text: InputSettings.lastError
+        closable: true
+        onClosed: InputSettings.lastError = ""
     }
 
     SettingsGroup {
         title: "Keyboard"
 
-        Item {
+        SettingsBlock {
             id: layoutBlock
 
             property bool adding: false
@@ -95,113 +97,92 @@ Column {
                 return list.slice(0, 60);
             }
 
-            width: parent.width
-            implicitHeight: layoutColumn.implicitHeight + 28
+            BlockHeader {
+                title: root.layouts.length > 1 ? "Layouts" : "Layout"
 
-            Column {
-                id: layoutColumn
-                x: 16
-                y: 14
-                width: parent.width - 32
-                spacing: 10
+                // ↺ for the layouts, their variants and the switching key together
+                PanelButton {
+                    visible: ["input.kb_layout", "input.kb_variant", "input.kb_options"].some(option => InputSettings.isCustom(option))
+                    icon: "\u{F0E2}"
+                    onClicked: InputSettings.reset(["input.kb_layout", "input.kb_variant", "input.kb_options"])
+                }
 
-                Item {
-                    width: parent.width
-                    height: addButton.height
-
-                    PanelText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.layouts.length > 1 ? "Layouts" : "Layout"
+                PanelButton {
+                    icon: layoutBlock.adding ? "\u{F077}" : "\u{F0415}"
+                    label: "Add"
+                    highlighted: layoutBlock.adding
+                    onClicked: {
+                        layoutBlock.adding = !layoutBlock.adding;
+                        if (layoutBlock.adding) {
+                            search.text = "";
+                            Qt.callLater(search.focusInput);
+                        }
                     }
+                }
+            }
 
-                    Reset {
-                        anchors.right: addButton.left
-                        anchors.rightMargin: 8
-                        options: ["input.kb_layout", "input.kb_variant", "input.kb_options"]
-                    }
+            // The layouts in use, first is the default; × removes one
+            Flow {
+                width: parent.width
+                spacing: 6
+
+                Repeater {
+                    model: root.layouts
 
                     PanelButton {
-                        id: addButton
-                        anchors.right: parent.right
-                        icon: layoutBlock.adding ? "\u{F077}" : "\u{F0415}"
-                        label: "Add"
-                        highlighted: layoutBlock.adding
+                        required property string modelData
+                        required property int index
+                        label: `${root.layoutName(modelData, root.variants[index])}${root.layouts.length > 1 ? "  \u{F0156}" : ""}`
+                        highlighted: index === 0
                         onClicked: {
-                            layoutBlock.adding = !layoutBlock.adding;
-                            if (layoutBlock.adding) {
-                                search.text = "";
-                                Qt.callLater(search.focusInput);
-                            }
-                        }
-                    }
-                }
-
-                // The layouts in use, first is the default; × removes one
-                Flow {
-                    width: parent.width
-                    spacing: 6
-
-                    Repeater {
-                        model: root.layouts
-
-                        PanelButton {
-                            required property string modelData
-                            required property int index
-                            label: `${root.layoutName(modelData, root.variants[index])}${root.layouts.length > 1 ? "  \u{F0156}" : ""}`
-                            highlighted: index === 0
-                            onClicked: {
-                                if (root.layouts.length <= 1)
-                                    return;
-                                const layouts = [...root.layouts];
-                                const variants = root.layouts.map((_, i) => root.variants[i] ?? "");
-                                layouts.splice(index, 1);
-                                variants.splice(index, 1);
-                                root.setLayouts(layouts, variants);
-                            }
-                        }
-                    }
-                }
-
-                // Adding: search, then pick
-                Column {
-                    visible: layoutBlock.adding
-                    width: parent.width
-                    spacing: 6
-
-                    TextField {
-                        id: search
-                        width: parent.width
-                        placeholder: "Search layouts, e.g. \"US\" or \"Dvorak\""
-                    }
-
-                    DropdownList {
-                        width: parent.width
-                        maxHeight: 220
-                        localExpanded: true
-                        items: layoutBlock.matches.map(l => ({ label: l.name, sublabel: l.variant ? `${l.layout} · ${l.variant}` : l.layout, entry: l }))
-                        onChosen: item => {
+                            if (root.layouts.length <= 1)
+                                return;
+                            const layouts = [...root.layouts];
                             const variants = root.layouts.map((_, i) => root.variants[i] ?? "");
-                            root.setLayouts([...root.layouts, item.entry.layout], [...variants, item.entry.variant]);
-                            layoutBlock.adding = false;
+                            layouts.splice(index, 1);
+                            variants.splice(index, 1);
+                            root.setLayouts(layouts, variants);
                         }
+                    }
+                }
+            }
+
+            // Adding: search, then pick
+            Column {
+                visible: layoutBlock.adding
+                width: parent.width
+                spacing: 6
+
+                TextField {
+                    id: search
+                    width: parent.width
+                    placeholder: "Search layouts, e.g. \"US\" or \"Dvorak\""
+                }
+
+                DropdownList {
+                    width: parent.width
+                    maxHeight: 220
+                    localExpanded: true
+                    items: layoutBlock.matches.map(l => ({ label: l.name, sublabel: l.variant ? `${l.layout} · ${l.variant}` : l.layout, entry: l }))
+                    onChosen: item => {
+                        const variants = root.layouts.map((_, i) => root.variants[i] ?? "");
+                        root.setLayouts([...root.layouts, item.entry.layout], [...variants, item.entry.variant]);
+                        layoutBlock.adding = false;
                     }
                 }
             }
         }
 
-        SettingRow {
+        ChoiceRow {
             visible: root.layouts.length > 1
             label: "Switch layouts with"
-
-            ChoiceButtons {
-                choices: ["grp:alt_shift_toggle", "grp:ctrl_shift_toggle", "grp:shifts_toggle", "grp:caps_toggle"]
-                current: root.switchOption
-                format: option => ({ "grp:alt_shift_toggle": "Alt+Shift", "grp:ctrl_shift_toggle": "Ctrl+Shift", "grp:shifts_toggle": "Both Shifts", "grp:caps_toggle": "Caps Lock" })[option]
-                onChosen: option => root.setOption("grp:", option)
-            }
+            choices: ["grp:alt_shift_toggle", "grp:ctrl_shift_toggle", "grp:shifts_toggle", "grp:caps_toggle"]
+            current: root.switchOption
+            format: option => ({ "grp:alt_shift_toggle": "Alt+Shift", "grp:ctrl_shift_toggle": "Ctrl+Shift", "grp:shifts_toggle": "Both Shifts", "grp:caps_toggle": "Caps Lock" })[option]
+            onChosen: option => root.setOption("grp:", option)
         }
 
-        SliderRow {
+        OptionSlider {
             label: "Repeat delay"
             description: "How long a key is held before it repeats."
             option: "input.repeat_delay"
@@ -211,7 +192,7 @@ Column {
             format: value => `${value} ms`
         }
 
-        SliderRow {
+        OptionSlider {
             label: "Repeat rate"
             description: "Characters per second while a key is held."
             option: "input.repeat_rate"
@@ -221,23 +202,9 @@ Column {
             format: value => `${value} /s`
         }
 
-        SettingRow {
+        OptionToggle {
             label: "Num Lock on at login"
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.numlock_by_default"]
-                }
-
-                Toggle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: InputSettings.get("input.numlock_by_default") ?? false
-                    onToggled: InputSettings.set("input.numlock_by_default", !checked)
-                }
-            }
+            option: "input.numlock_by_default"
         }
 
         SettingRow {
@@ -253,7 +220,7 @@ Column {
     SettingsGroup {
         title: "Mouse"
 
-        SliderRow {
+        OptionSlider {
             label: "Pointer speed"
             option: "input.sensitivity"
             from: -1
@@ -262,29 +229,16 @@ Column {
             format: value => value === 0 ? "Default" : value > 0 ? `+${value.toFixed(2)}` : value.toFixed(2)
         }
 
-        SettingRow {
+        OptionChoice {
             label: "Acceleration"
             description: "Adaptive speeds the pointer up on fast movements; flat keeps it constant, which suits games."
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.accel_profile"]
-                }
-
-                ChoiceButtons {
-                    anchors.verticalCenter: parent.verticalCenter
-                    choices: ["adaptive", "flat"]
-                    current: InputSettings.get("input.accel_profile") || "adaptive"
-                    format: profile => profile === "flat" ? "Flat" : "Adaptive"
-                    onChosen: profile => InputSettings.set("input.accel_profile", profile)
-                }
-            }
+            option: "input.accel_profile"
+            fallback: "adaptive"
+            choices: ["adaptive", "flat"]
+            format: profile => profile === "flat" ? "Flat" : "Adaptive"
         }
 
-        SliderRow {
+        OptionSlider {
             label: "Scroll speed"
             option: "input.scroll_factor"
             from: 0.25
@@ -293,44 +247,16 @@ Column {
             format: value => `${value.toFixed(2)}×`
         }
 
-        SettingRow {
+        OptionToggle {
             label: "Natural scrolling"
             description: "Content moves with the wheel, like on a phone."
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.natural_scroll"]
-                }
-
-                Toggle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: InputSettings.get("input.natural_scroll") ?? false
-                    onToggled: InputSettings.set("input.natural_scroll", !checked)
-                }
-            }
+            option: "input.natural_scroll"
         }
 
-        SettingRow {
+        OptionToggle {
             label: "Left-handed"
             description: "Swaps the left and right buttons."
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.left_handed"]
-                }
-
-                Toggle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: InputSettings.get("input.left_handed") ?? false
-                    onToggled: InputSettings.set("input.left_handed", !checked)
-                }
-            }
+            option: "input.left_handed"
         }
     }
 
@@ -338,106 +264,37 @@ Column {
         visible: root.hasTouchpad
         title: "Touchpad"
 
-        SettingRow {
+        OptionToggle {
             label: "Tap to click"
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.touchpad.tap_to_click"]
-                }
-
-                Toggle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: InputSettings.get("input.touchpad.tap_to_click") ?? false
-                    onToggled: InputSettings.set("input.touchpad.tap_to_click", !checked)
-                }
-            }
+            option: "input.touchpad.tap_to_click"
         }
 
-        SettingRow {
+        OptionToggle {
             label: "Tap and drag"
             description: "Tap, then touch again and move to drag."
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.touchpad.tap_and_drag"]
-                }
-
-                Toggle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: InputSettings.get("input.touchpad.tap_and_drag") ?? false
-                    onToggled: InputSettings.set("input.touchpad.tap_and_drag", !checked)
-                }
-            }
+            option: "input.touchpad.tap_and_drag"
         }
 
-        SettingRow {
+        OptionToggle {
             label: "Natural scrolling"
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.touchpad.natural_scroll"]
-                }
-
-                Toggle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: InputSettings.get("input.touchpad.natural_scroll") ?? false
-                    onToggled: InputSettings.set("input.touchpad.natural_scroll", !checked)
-                }
-            }
+            option: "input.touchpad.natural_scroll"
         }
 
-        SettingRow {
+        OptionToggle {
             label: "Ignore while typing"
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.touchpad.disable_while_typing"]
-                }
-
-                Toggle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: InputSettings.get("input.touchpad.disable_while_typing") ?? false
-                    onToggled: InputSettings.set("input.touchpad.disable_while_typing", !checked)
-                }
-            }
+            option: "input.touchpad.disable_while_typing"
         }
 
-        SettingRow {
+        OptionChoice {
             label: "Right click"
             description: "Press the bottom-right corner, or click with two fingers anywhere."
-
-            Row {
-                spacing: 8
-
-                Reset {
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: ["input.touchpad.clickfinger_behavior"]
-                }
-
-                ChoiceButtons {
-                    anchors.verticalCenter: parent.verticalCenter
-                    choices: [false, true]
-                    current: InputSettings.get("input.touchpad.clickfinger_behavior") ?? false
-                    format: fingers => fingers ? "Two fingers" : "Corner"
-                    onChosen: fingers => InputSettings.set("input.touchpad.clickfinger_behavior", fingers)
-                }
-            }
+            option: "input.touchpad.clickfinger_behavior"
+            fallback: false
+            choices: [false, true]
+            format: fingers => fingers ? "Two fingers" : "Corner"
         }
 
-        SliderRow {
+        OptionSlider {
             label: "Scroll speed"
             option: "input.touchpad.scroll_factor"
             from: 0.25
@@ -447,64 +304,37 @@ Column {
         }
     }
 
-    // Shown once any of `options` has been changed here; puts them back to the config's values
-    component Reset: PanelButton {
-        property var options: []
+    // Rows for one Hyprland option (InputSettings), applied live; ↺ once it's been changed
+    // here puts the config's value back
+    component OptionToggle: ToggleRow {
+        property string option
 
-        visible: options.some(option => InputSettings.isCustom(option))
-        icon: "\u{F0E2}"
-        onClicked: InputSettings.reset(options)
+        checked: InputSettings.get(option) ?? false
+        changed: InputSettings.isCustom(option)
+        onToggled: on => InputSettings.set(option, on)
+        onReset: InputSettings.reset([option])
     }
 
-    // A slider for a number option, applied once it stops moving
-    component SliderRow: SettingRow {
-        id: sliderRow
-
+    component OptionChoice: ChoiceRow {
         property string option
-        property real from
-        property real to
-        property real step: 1
-        property var format: value => `${value}`
+        // Unset options read as nothing (or an empty string)
+        property var fallback
+        readonly property var saved: InputSettings.get(option)
 
-        readonly property real saved: InputSettings.get(option) ?? from
-        property real shown: saved
+        current: saved === undefined || saved === null || saved === "" ? fallback : saved
+        changed: InputSettings.isCustom(option)
+        onChosen: value => InputSettings.set(option, value)
+        onReset: InputSettings.reset([option])
+    }
 
-        onSavedChanged: shown = saved
+    // Applied once it stops moving
+    component OptionSlider: SliderRow {
+        property string option
 
-        Row {
-            spacing: 10
-
-            Reset {
-                anchors.verticalCenter: parent.verticalCenter
-                options: [sliderRow.option]
-            }
-
-            Slider {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 220
-                from: sliderRow.from
-                to: sliderRow.to
-                value: sliderRow.shown
-                onMoved: value => {
-                    sliderRow.shown = Math.round(value / sliderRow.step) * sliderRow.step;
-                    commit.restart();
-                }
-            }
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 70
-                horizontalAlignment: Text.AlignRight
-                text: sliderRow.format(Math.round(sliderRow.shown / sliderRow.step) * sliderRow.step)
-                dim: true
-            }
-        }
-
-        Timer {
-            id: commit
-            interval: 300
-            // Whole numbers, or two decimals for fractional steps
-            onTriggered: InputSettings.set(sliderRow.option, Number(sliderRow.shown.toFixed(sliderRow.step < 1 ? 2 : 0)))
-        }
+        value: InputSettings.get(option) ?? from
+        commitDelay: 300
+        changed: InputSettings.isCustom(option)
+        onCommitted: value => InputSettings.set(option, value)
+        onReset: InputSettings.reset([option])
     }
 }

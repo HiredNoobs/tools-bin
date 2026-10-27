@@ -16,16 +16,10 @@ Column {
     SettingsGroup {
         title: "Bar"
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("controlCentre")
-            onReset: ShellSettings.reset("controlCentre")
+        ToggleRow {
+            setting: "controlCentre"
             label: "Control centre"
             description: "The icons on the right of the bar open one panel with a tab for each. Off, each icon opens its own panel."
-
-            Toggle {
-                checked: ShellSettings.controlCentre
-                onToggled: ShellSettings.controlCentre = !checked
-            }
         }
     }
 
@@ -34,140 +28,86 @@ Column {
     SettingsGroup {
         title: "Attach to the bar"
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("attachToBar")
-            onReset: ShellSettings.reset("attachToBar")
+        ToggleRow {
+            setting: "attachToBar"
             label: "Attach to the bar"
             description: "Drop-downs hang from the bar's bottom edge, joined by curved corners. Off, none of them are."
             expandable: true
             expanded: root.attachExpanded
             onExpandToggled: PanelState.toggle("settings", "attach")
-
-            Toggle {
-                checked: ShellSettings.attachToBar
-                onToggled: ShellSettings.attachToBar = !checked
-            }
         }
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("attachPanels")
-            onReset: ShellSettings.reset("attachPanels")
+        ToggleRow {
+            setting: "attachPanels"
             visible: root.attachExpanded
             sub: true
             enabled: ShellSettings.attachToBar
             label: "Bar icon panels"
             description: "Off, they float just below their icon."
-
-            Toggle {
-                checked: ShellSettings.attachPanels
-                onToggled: ShellSettings.attachPanels = !checked
-            }
         }
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("attachLauncher")
-            onReset: ShellSettings.reset("attachLauncher")
+        ToggleRow {
+            setting: "attachLauncher"
             visible: root.attachExpanded
             sub: true
             enabled: ShellSettings.attachToBar
             label: "Launcher and menus"
             description: "The launcher (Super+Space), screenshot menu (Print) and wallpaper picker, under the clock. Off, they open in the middle of the screen."
-
-            Toggle {
-                checked: ShellSettings.attachLauncher
-                onToggled: ShellSettings.attachLauncher = !checked
-            }
         }
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("attachPopups")
-            onReset: ShellSettings.reset("attachPopups")
+        ToggleRow {
+            setting: "attachPopups"
             visible: root.attachExpanded
             sub: true
             enabled: ShellSettings.attachToBar
             label: "Notification pop-ups"
             description: "Off, they float in the top-right corner."
-
-            Toggle {
-                checked: ShellSettings.attachPopups
-                onToggled: ShellSettings.attachPopups = !checked
-            }
         }
 
-        SettingRow {
+        ToggleRow {
+            setting: "attachOsd"
             visible: root.attachExpanded
             sub: true
             enabled: ShellSettings.attachToBar
-            changed: !ShellSettings.isDefault("attachOsd")
-            onReset: ShellSettings.reset("attachOsd")
             label: "Volume and brightness pop-up"
             description: "Off, it floats near the bottom of the screen."
-
-            Toggle {
-                checked: ShellSettings.attachOsd
-                onToggled: ShellSettings.attachOsd = !checked
-            }
         }
     }
 
     SettingsGroup {
         title: "Notifications"
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("popupSeconds")
-            onReset: ShellSettings.reset("popupSeconds")
+        ChoiceRow {
+            setting: "popupSeconds"
             label: "Pop-up duration"
             description: "How long a notification stays on screen, unless it asks for longer. Urgent ones stay until dismissed."
-
-            ChoiceButtons {
-                choices: [3, 5, 8, 10]
-                current: ShellSettings.popupSeconds
-                format: seconds => `${seconds} s`
-                onChosen: value => ShellSettings.popupSeconds = value
-            }
+            choices: [3, 5, 8, 10]
+            format: seconds => `${seconds} s`
         }
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("maxPopups")
-            onReset: ShellSettings.reset("maxPopups")
+        ChoiceRow {
+            setting: "maxPopups"
             label: "Pop-ups at once"
             description: "More wait their turn."
-
-            ChoiceButtons {
-                choices: [1, 2, 3, 4, 5]
-                current: ShellSettings.maxPopups
-                onChosen: value => ShellSettings.maxPopups = value
-            }
+            choices: [1, 2, 3, 4, 5]
         }
     }
 
     SettingsGroup {
         title: "Clipboard"
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("clipboardHistory")
-            onReset: ShellSettings.reset("clipboardHistory")
+        ToggleRow {
+            setting: "clipboardHistory"
             label: "Clipboard history"
             description: "Super+V lists what you've copied. Kept in memory only, until the shell restarts; copies a password manager marks as secret are never kept."
-
-            Toggle {
-                checked: ShellSettings.clipboardHistory
-                onToggled: ShellSettings.clipboardHistory = !checked
-            }
         }
 
-        SettingRow {
+        ToggleRow {
+            setting: "clipboardSkipPasswords"
             visible: ShellSettings.clipboardHistory
             sub: true
-            changed: !ShellSettings.isDefault("clipboardSkipPasswords")
-            onReset: ShellSettings.reset("clipboardSkipPasswords")
             label: "Skip anything that looks like a password"
             description: "Text with no spaces that mixes at least three of capitals, small letters, numbers and symbols (generated passwords, keys, tokens), for password managers that don't mark what they copy as secret. Passphrases can slip through: an app clearing the clipboard (Bitwarden's \"Clear clipboard\" option) also removes what it held."
-
-            Toggle {
-                checked: ShellSettings.clipboardSkipPasswords
-                onToggled: ShellSettings.clipboardSkipPasswords = !checked
-            }
         }
 
         SettingRow {

@@ -21,6 +21,15 @@ Column {
     // Scanning was started here (not from the connectivity panel), so leaving stops it
     property bool startedDiscovery: false
 
+    // Devices opened here stay open for the session (PanelState); forgotten ones are dropped
+    readonly property var deviceKeys: paired.map(d => `bluetooth:${d.address}`)
+    onDeviceKeysChanged: {
+        if (deviceKeys.length === 0)
+            return;
+        const keys = Object.keys(PanelState.open.settings ?? {});
+        PanelState.prune("settings", keys.filter(key => !key.startsWith("bluetooth:") || deviceKeys.includes(key)));
+    }
+
     // BlueZ's device icon names to glyphs
     function deviceIcon(device: BluetoothDevice): string {
         const icon = device?.icon ?? "";
@@ -93,14 +102,11 @@ Column {
         visible: root.adapter !== null
         title: "This computer"
 
-        SettingRow {
+        ToggleRow {
             label: "Bluetooth"
             description: root.adapter?.state === BluetoothAdapterState.Blocked ? "Blocked (airplane mode or a hardware switch); switching on unblocks it." : ""
-
-            Toggle {
-                checked: root.on
-                onToggled: root.setPower(!checked)
-            }
+            checked: root.on
+            onToggled: on => root.setPower(on)
         }
 
         SettingRow {
@@ -111,33 +117,29 @@ Column {
             Row {
                 spacing: 8
 
-                TextField {
+                CommitField {
                     id: adapterName
                     width: 220
-                    text: root.adapter?.name ?? ""
-                    onAccepted: rename.clicked()
+                    value: root.adapter?.name ?? ""
+                    onCommitted: name => Exec.run(`busctl --system set-property org.bluez ${Exec.quote(root.adapter.dbusPath)} org.bluez.Adapter1 Alias s ${Exec.quote(name)}`)
                 }
 
                 PanelButton {
-                    id: rename
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: adapterName.text.trim() !== "" && adapterName.text.trim() !== (root.adapter?.name ?? "")
+                    visible: adapterName.edited && adapterName.text.trim() !== ""
                     label: "Rename"
                     highlighted: true
-                    onClicked: Exec.run(`busctl --system set-property org.bluez ${Exec.quote(root.adapter.dbusPath)} org.bluez.Adapter1 Alias s ${Exec.quote(adapterName.text.trim())}`)
+                    onClicked: adapterName.commit()
                 }
             }
         }
 
-        SettingRow {
+        ToggleRow {
             enabled: root.on
             label: "Visible to other devices"
             description: "So a phone or another computer can find this one to pair. Turns itself off after a few minutes."
-
-            Toggle {
-                checked: root.adapter?.discoverable ?? false
-                onToggled: root.adapter.discoverable = !checked
-            }
+            checked: root.adapter?.discoverable ?? false
+            onToggled: on => root.adapter.discoverable = on
         }
     }
 
@@ -202,191 +204,93 @@ Column {
 
     // A paired device: icon, name and status with Connect / Disconnect, expanding (remembered
     // for the session) to trust, block, rename and forget
-    component DeviceBlock: Item {
+    component DeviceBlock: SettingsBlock {
         id: block
 
         property BluetoothDevice device
         readonly property bool busy: device.state === BluetoothDeviceState.Connecting || device.state === BluetoothDeviceState.Disconnecting
-        readonly property string stateKey: `bluetooth:${device.address}`
-        readonly property bool expanded: PanelState.isOpen("settings", stateKey)
-        property bool forgetArmed: false
 
-        width: parent?.width ?? 0
-        implicitHeight: column.implicitHeight + 28
+        spacing: 12
+
+        BlockHeader {
+            id: header
+            title: `${root.deviceIcon(block.device)}  ${block.device.name}`
+            detail: root.status(block.device)
+            accent: block.device.connected
+            expandable: true
+            stateKey: `bluetooth:${block.device.address}`
+
+            PanelButton {
+                enabled: !block.busy && root.on
+                opacity: enabled ? 1 : 0.4
+                label: block.device.connected ? "Disconnect" : "Connect"
+                onClicked: block.device.connected ? block.device.disconnect() : block.device.connect()
+            }
+        }
 
         Column {
-            id: column
-            x: 16
-            y: 14
-            width: parent.width - 32
+            visible: header.expanded
+            width: parent.width
             spacing: 12
 
-            Item {
-                width: parent.width
-                height: Math.max(title.implicitHeight, connectButton.height)
+            InlineOption {
+                label: "Trusted"
+                description: "Can connect without asking."
 
-                PanelText {
-                    id: title
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - connectButton.width - chevron.width - 24
-                    text: `${root.deviceIcon(block.device)}  ${block.device.name}  ·  ${root.status(block.device)}`
-                    elide: Text.ElideRight
-                    color: block.device.connected ? Theme.accent : Theme.text
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.rightMargin: connectButton.width + chevron.width + 16
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: PanelState.toggle("settings", block.stateKey)
-                }
-
-                PanelButton {
-                    id: connectButton
-                    anchors.right: chevron.left
-                    anchors.rightMargin: 12
-                    anchors.verticalCenter: parent.verticalCenter
-                    enabled: !block.busy && root.on
-                    opacity: enabled ? 1 : 0.4
-                    label: block.device.connected ? "Disconnect" : "Connect"
-                    onClicked: block.device.connected ? block.device.disconnect() : block.device.connect()
-                }
-
-                PanelText {
-                    id: chevron
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 18
-                    horizontalAlignment: Text.AlignRight
-                    text: block.expanded ? "\u{F077}" : "\u{F078}"
-                    color: block.expanded ? Theme.accent : Theme.subtext
-                    font.pixelSize: Theme.panelFontSize - 3
-
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -6
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: PanelState.toggle("settings", block.stateKey)
-                    }
+                Toggle {
+                    checked: block.device.trusted
+                    onToggled: block.device.trusted = !checked
                 }
             }
 
-            Column {
-                visible: block.expanded
-                width: parent.width
-                spacing: 12
+            InlineOption {
+                label: "Blocked"
+                description: "Refuses all connections from it."
 
-                Option {
-                    label: "Trusted"
-                    description: "Can connect without asking."
-
-                    Toggle {
-                        checked: block.device.trusted
-                        onToggled: block.device.trusted = !checked
-                    }
+                Toggle {
+                    checked: block.device.blocked
+                    onToggled: block.device.blocked = !checked
                 }
+            }
 
-                Option {
-                    label: "Blocked"
-                    description: "Refuses all connections from it."
-
-                    Toggle {
-                        checked: block.device.blocked
-                        onToggled: block.device.blocked = !checked
-                    }
-                }
-
-                Option {
-                    label: "Name"
-                    description: block.device.deviceName !== block.device.name ? `Calls itself "${block.device.deviceName}"` : ""
-
-                    Row {
-                        spacing: 8
-
-                        TextField {
-                            id: deviceName
-                            width: 200
-                            text: block.device.name
-                            onAccepted: renameDevice.clicked()
-                        }
-
-                        PanelButton {
-                            id: renameDevice
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: deviceName.text.trim() !== "" && deviceName.text.trim() !== block.device.name
-                            label: "Rename"
-                            highlighted: true
-                            onClicked: block.device.name = deviceName.text.trim()
-                        }
-                    }
-                }
+            InlineOption {
+                label: "Name"
+                description: block.device.deviceName !== block.device.name ? `Calls itself "${block.device.deviceName}"` : ""
 
                 Row {
-                    spacing: 12
+                    spacing: 8
 
-                    PanelText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: block.device.address
-                        dim: true
+                    CommitField {
+                        id: deviceName
+                        width: 200
+                        value: block.device.name
+                        onCommitted: name => block.device.name = name
                     }
 
-                    // Twice, within 3 seconds
                     PanelButton {
-                        label: block.forgetArmed ? "Forget? Click again" : "Forget"
-                        highlighted: block.forgetArmed
-                        onClicked: {
-                            if (block.forgetArmed)
-                                block.device.forget();
-                            block.forgetArmed = !block.forgetArmed;
-                            disarm.restart();
-                        }
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: deviceName.edited && deviceName.text.trim() !== ""
+                        label: "Rename"
+                        highlighted: true
+                        onClicked: deviceName.commit()
                     }
                 }
             }
-        }
 
-        Timer {
-            id: disarm
-            interval: 3000
-            onTriggered: block.forgetArmed = false
-        }
-    }
+            Row {
+                spacing: 12
 
-    // A label (and dim description) on the left and its control on the right
-    component Option: Item {
-        property string label
-        property string description: ""
-        default property alias control: controlArea.data
+                PanelText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: block.device.address
+                    dim: true
+                }
 
-        width: parent.width
-        implicitHeight: Math.max(optionText.implicitHeight, controlArea.childrenRect.height)
-
-        Column {
-            id: optionText
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - controlArea.width - 16
-            spacing: 2
-
-            PanelText {
-                text: parent.parent.label
+                ConfirmButton {
+                    text: "Forget"
+                    onConfirmed: block.device.forget()
+                }
             }
-
-            PanelText {
-                visible: text !== ""
-                width: parent.width
-                text: parent.parent.description
-                wrapMode: Text.WordWrap
-                dim: true
-                font.pixelSize: Theme.panelFontSize - 1
-            }
-        }
-
-        Item {
-            id: controlArea
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: childrenRect.width
-            height: childrenRect.height
         }
     }
 }

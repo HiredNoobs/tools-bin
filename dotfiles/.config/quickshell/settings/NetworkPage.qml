@@ -34,6 +34,16 @@ Column {
     // The network whose password field is open
     property var passwordNetwork: null
 
+    // Saved connections opened here stay open for the session (PanelState); forgotten ones
+    // are dropped (once the list has been read)
+    readonly property var connectionKeys: NetworkConnections.connections.map(c => `network:${c.uuid}`)
+    onConnectionKeysChanged: {
+        if (connectionKeys.length === 0)
+            return;
+        const keys = Object.keys(PanelState.open.settings ?? {});
+        PanelState.prune("settings", keys.filter(key => !key.startsWith("network:") || connectionKeys.includes(key)));
+    }
+
     function connectTo(network: var): void {
         if (network.security === WifiSecurityType.Open) {
             passwordNetwork = null;
@@ -77,43 +87,28 @@ Column {
     }
 
     // An action that failed (wrong password, bad address…)
-    Rectangle {
-        visible: NetworkConnections.error !== ""
-        width: parent.width
-        height: errorText.implicitHeight + 20
-        radius: Theme.radius
-        color: Qt.alpha(Theme.critical, 0.15)
-
-        PanelText {
-            id: errorText
-            x: 14
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - 28
-            text: `\u{F0026}  ${NetworkConnections.error}`
-            wrapMode: Text.WordWrap
-            color: Theme.critical
-        }
+    Banner {
+        text: NetworkConnections.error
+        closable: true
+        onClosed: NetworkConnections.error = ""
     }
 
     SettingsGroup {
         visible: root.wifiDevice !== null
         title: "Wi-Fi"
 
-        SettingRow {
+        ToggleRow {
             label: "Wi-Fi"
             description: !Networking.wifiHardwareEnabled ? "Switched off by the hardware switch or airplane mode key." : ""
-
-            Toggle {
-                checked: Networking.wifiEnabled
-                onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
-            }
+            checked: Networking.wifiEnabled
+            onToggled: on => Networking.wifiEnabled = on
         }
 
         // The network connected to now, and its details
-        Block {
+        SettingsBlock {
             visible: root.currentNetwork !== null
 
-            Header {
+            BlockHeader {
                 title: root.currentNetwork?.name ?? ""
                 detail: "Connected"
                 accent: true
@@ -138,7 +133,7 @@ Column {
         Repeater {
             model: root.available
 
-            Block {
+            SettingsBlock {
                 id: availableBlock
 
                 required property var modelData
@@ -154,7 +149,7 @@ Column {
                     root.passwordNetwork = null;
                 }
 
-                Header {
+                BlockHeader {
                     title: availableBlock.modelData.name
                     detail: availableBlock.connecting ? "Connecting…" : `${availableBlock.secured ? "\u{F023}  Secured" : "Open"} · ${Math.round(availableBlock.modelData.signalStrength * 100)}%`
 
@@ -238,7 +233,7 @@ Column {
         visible: root.wifiDevice !== null
         title: "Hidden network"
 
-        Block {
+        SettingsBlock {
             id: hidden
 
             function submit(): void {
@@ -290,12 +285,12 @@ Column {
         visible: root.wiredDevice !== null
         title: "Wired"
 
-        Block {
+        SettingsBlock {
             id: wired
 
             readonly property bool connected: root.wiredDevice?.connected ?? false
 
-            Header {
+            BlockHeader {
                 title: root.wiredDevice?.name ?? ""
                 detail: wired.connected ? "Connected" : (root.wiredDevice?.hasLink ?? false) ? "Cable plugged in, not connected" : "Cable unplugged"
                 accent: wired.connected
@@ -333,7 +328,7 @@ Column {
             }
         }
 
-        Block {
+        SettingsBlock {
             id: importer
 
             function submit(): void {
@@ -384,64 +379,6 @@ Column {
                 currentFolder: `file://${Quickshell.env("HOME")}/Downloads`
                 onAccepted: path.text = decodeURIComponent(selectedFile.toString().replace(/^file:\/\//, ""))
             }
-        }
-    }
-
-    // A block of rows inside a SettingsGroup, padded like a SettingRow
-    component Block: Item {
-        default property alias content: column.data
-
-        width: parent?.width ?? 0
-        implicitHeight: column.implicitHeight + 28
-
-        Column {
-            id: column
-            x: 16
-            y: 14
-            width: parent.width - 32
-            spacing: 10
-        }
-    }
-
-    // Title and dim detail on the left, buttons on the right
-    component Header: Item {
-        id: header
-
-        property string title
-        property string detail: ""
-        property bool accent: false
-        default property alias trailing: trailingArea.data
-
-        width: parent.width
-        implicitHeight: Math.max(titleText.implicitHeight, trailingArea.childrenRect.height)
-
-        Row {
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - trailingArea.width - 16
-            spacing: 8
-
-            PanelText {
-                id: titleText
-                width: Math.min(implicitWidth, parent.width)
-                text: header.title
-                elide: Text.ElideRight
-                color: header.accent ? Theme.accent : Theme.text
-            }
-
-            PanelText {
-                visible: header.detail !== ""
-                width: parent.width - titleText.width - parent.spacing
-                text: `·  ${header.detail}`
-                elide: Text.ElideRight
-                dim: true
-            }
-        }
-
-        Row {
-            id: trailingArea
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 6
         }
     }
 
@@ -535,7 +472,7 @@ Column {
 
     // A saved connection: name and status, expanding (remembered for the session) to its
     // auto-connect, IP and DNS settings, and Connect / Disconnect / Forget
-    component ConnectionBlock: Block {
+    component ConnectionBlock: SettingsBlock {
         id: block
 
         property var connection
@@ -544,54 +481,30 @@ Column {
         // A VPN: an on/off switch in place of Connect, and no IP settings (the config has them)
         property bool vpn: false
 
-        readonly property string stateKey: `network:${connection.uuid}`
-        readonly property bool expanded: PanelState.isOpen("settings", stateKey)
+        BlockHeader {
+            id: blockHeader
+            title: block.connection.name
+            detail: block.status
+            accent: block.connection.active
+            expandable: true
+            stateKey: `network:${block.connection.uuid}`
 
-        // Click the title area to expand
-        Item {
-            width: parent.width
-            height: blockHeader.height
-
-            Header {
-                id: blockHeader
-                title: block.connection.name
-                detail: block.status
-                accent: block.connection.active
-
-                PanelButton {
-                    visible: block.canConnect
-                    label: "Connect"
-                    onClicked: NetworkConnections.connect(block.connection.uuid)
-                }
-
-                Toggle {
-                    visible: block.vpn
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: block.connection.active
-                    onToggled: checked ? NetworkConnections.disconnect(block.connection.uuid) : NetworkConnections.connect(block.connection.uuid)
-                }
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 24
-                    horizontalAlignment: Text.AlignRight
-                    text: block.expanded ? "\u{F077}" : "\u{F078}"
-                    color: block.expanded ? Theme.accent : Theme.subtext
-                    font.pixelSize: Theme.panelFontSize - 3
-                }
+            PanelButton {
+                visible: block.canConnect
+                label: "Connect"
+                onClicked: NetworkConnections.connect(block.connection.uuid)
             }
 
-            MouseArea {
-                anchors.fill: parent
-                // The Connect button or switch keeps its own clicks
-                anchors.rightMargin: block.canConnect ? 120 : block.vpn ? 80 : 0
-                cursorShape: Qt.PointingHandCursor
-                onClicked: PanelState.toggle("settings", block.stateKey)
+            Toggle {
+                visible: block.vpn
+                anchors.verticalCenter: parent.verticalCenter
+                checked: block.connection.active
+                onToggled: checked ? NetworkConnections.disconnect(block.connection.uuid) : NetworkConnections.connect(block.connection.uuid)
             }
         }
 
         Loader {
-            active: block.expanded
+            active: blockHeader.expanded
             visible: active
             width: parent.width
 
@@ -614,7 +527,6 @@ Column {
         // The form, filled from `settings` once read
         property bool manual: false
         property bool customDns: false
-        property bool forgetArmed: false
 
         // Set up elsewhere as something other than automatic or manual (shared, link-local,
         // disabled): shown, and left as it is
@@ -666,7 +578,7 @@ Column {
             }
         }
 
-        Option {
+        InlineOption {
             label: "Connect automatically"
 
             Toggle {
@@ -694,7 +606,7 @@ Column {
             value: `${editor.method} (set elsewhere)`
         }
 
-        Option {
+        InlineOption {
             visible: !editor.vpn && !editor.otherMethod
             label: "IP address"
 
@@ -725,7 +637,7 @@ Column {
             }
         }
 
-        Option {
+        InlineOption {
             visible: !editor.vpn
             label: "DNS servers"
 
@@ -772,23 +684,10 @@ Column {
                 onClicked: NetworkConnections.disconnect(editor.connection.uuid)
             }
 
-            // Twice, within 3 seconds
-            PanelButton {
-                label: editor.forgetArmed ? "Forget? Click again" : "Forget"
-                highlighted: editor.forgetArmed
-                onClicked: {
-                    if (editor.forgetArmed)
-                        NetworkConnections.forget(editor.connection.uuid);
-                    editor.forgetArmed = !editor.forgetArmed;
-                    disarm.restart();
-                }
+            ConfirmButton {
+                text: "Forget"
+                onConfirmed: NetworkConnections.forget(editor.connection.uuid)
             }
-        }
-
-        Timer {
-            id: disarm
-            interval: 3000
-            onTriggered: editor.forgetArmed = false
         }
 
         // Re-read the settings once the change has gone through
@@ -796,29 +695,6 @@ Column {
             id: reload
             interval: 1500
             onTriggered: editor.load()
-        }
-    }
-
-    // A label on the left and its control on the right, inside an editor
-    component Option: Item {
-        property string label
-        default property alias control: controlArea.data
-
-        width: parent.width
-        implicitHeight: Math.max(optionLabel.implicitHeight, controlArea.childrenRect.height)
-
-        PanelText {
-            id: optionLabel
-            anchors.verticalCenter: parent.verticalCenter
-            text: parent.label
-        }
-
-        Item {
-            id: controlArea
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: childrenRect.width
-            height: childrenRect.height
         }
     }
 }

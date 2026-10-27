@@ -98,12 +98,13 @@ Column {
 
     spacing: 24
 
-    PanelText {
-        visible: Monitors.lastError !== ""
-        width: parent.width
-        text: `\u{F0026}  ${Monitors.lastError}`
-        wrapMode: Text.WordWrap
-        color: Theme.critical
+    // An error from earlier in the session isn't shown again
+    Component.onCompleted: Monitors.lastError = ""
+
+    Banner {
+        text: Monitors.lastError
+        closable: true
+        onClosed: Monitors.lastError = ""
     }
 
     // The layout: screens drawn to scale, dragged into place
@@ -225,114 +226,83 @@ Column {
 
             title: `${root.displayName(monitor)}  ·  ${monitor.name}`
 
-            SettingRow {
+            ToggleRow {
                 label: "On"
                 description: !monitorGroup.monitor.disabled && Monitors.enabledMonitors.length <= 1 ? "The only screen on, so it can't be turned off." : ""
-
-                Toggle {
-                    checked: !monitorGroup.monitor.disabled
-                    onToggled: Monitors.setEnabled(monitorGroup.monitor.name, !checked)
-                }
+                checked: !monitorGroup.monitor.disabled
+                onToggled: on => Monitors.setEnabled(monitorGroup.monitor.name, on)
             }
 
-            Column {
+            DropdownRow {
                 visible: !monitorGroup.monitor.disabled
-                width: parent.width
-
-                SettingRow {
-                    label: "Resolution"
-                    changed: monitorGroup.monitor.mode !== monitorGroup.monitor.modes[0]
-                    onReset: Monitors.setMode(monitorGroup.monitor.name, monitorGroup.monitor.modes[0])
-
-                    Picker {
-                        label: monitorGroup.resolution.replace("x", " × ")
-                        open: resolutionList.expanded
-                        onClicked: resolutionList.toggle()
-                    }
-                }
-
-                DropdownList {
-                    id: resolutionList
-                    x: 16
-                    width: parent.width - 32
-                    // The best refresh rate at each resolution
-                    items: monitorGroup.resolutions.map(resolution => ({
-                                label: resolution.replace("x", " × "),
-                                selected: resolution === monitorGroup.resolution,
-                                mode: monitorGroup.monitor.modes.filter(mode => mode.startsWith(`${resolution}@`))
-                                    .sort((a, b) => root.splitMode(b)[2] - root.splitMode(a)[2])[0]
-                            }))
-                    onChosen: item => Monitors.setMode(monitorGroup.monitor.name, item.mode)
-                }
+                label: "Resolution"
+                changed: monitorGroup.monitor.mode !== monitorGroup.monitor.modes[0]
+                onReset: Monitors.setMode(monitorGroup.monitor.name, monitorGroup.monitor.modes[0])
+                buttonWidth: 0
+                buttonLabel: monitorGroup.resolution.replace("x", " × ")
+                stateKey: `picker:resolution:${monitorGroup.monitor.name}`
+                // The best refresh rate at each resolution
+                items: monitorGroup.resolutions.map(resolution => ({
+                            label: resolution.replace("x", " × "),
+                            selected: resolution === monitorGroup.resolution,
+                            mode: monitorGroup.monitor.modes.filter(mode => mode.startsWith(`${resolution}@`))
+                                .sort((a, b) => root.splitMode(b)[2] - root.splitMode(a)[2])[0]
+                        }))
+                onChosen: item => Monitors.setMode(monitorGroup.monitor.name, item.mode)
             }
 
-            SettingRow {
+            ChoiceRow {
                 visible: !monitorGroup.monitor.disabled && monitorGroup.rates.length > 1
                 label: "Refresh rate"
-
-                ChoiceButtons {
-                    choices: monitorGroup.rates
-                    current: monitorGroup.rates.find(mode => Math.abs(root.splitMode(mode)[2] - monitorGroup.size[2]) < 0.05)
-                    format: mode => root.formatRate(root.splitMode(mode)[2])
-                    onChosen: mode => Monitors.setMode(monitorGroup.monitor.name, mode)
-                }
+                choices: monitorGroup.rates
+                current: monitorGroup.rates.find(mode => Math.abs(root.splitMode(mode)[2] - monitorGroup.size[2]) < 0.05)
+                format: mode => root.formatRate(root.splitMode(mode)[2])
+                onChosen: mode => Monitors.setMode(monitorGroup.monitor.name, mode)
             }
 
-            SettingRow {
+            ChoiceRow {
                 visible: !monitorGroup.monitor.disabled
                 label: "Scale"
                 description: "Makes everything bigger; the screen then has less room."
                 changed: monitorGroup.saved?.scale !== undefined && Math.abs(monitorGroup.monitor.scale - monitorGroup.saved.scale) > 0.01
                 onReset: Monitors.setScale(monitorGroup.monitor.name, monitorGroup.saved.scale)
-
-                ChoiceButtons {
-                    choices: Monitors.allScales
-                    current: Monitors.allScales.find(scale => Math.abs(scale - monitorGroup.monitor.scale) < 0.01)
-                    format: scale => `${scale}×`
-                    onChosen: scale => Monitors.setScale(monitorGroup.monitor.name, scale)
-                }
+                choices: Monitors.allScales
+                current: Monitors.allScales.find(scale => Math.abs(scale - monitorGroup.monitor.scale) < 0.01)
+                format: scale => `${scale}×`
+                onChosen: scale => Monitors.setScale(monitorGroup.monitor.name, scale)
             }
 
-            SettingRow {
+            ChoiceRow {
                 visible: !monitorGroup.monitor.disabled
                 label: "Rotation"
                 changed: monitorGroup.saved?.transform !== undefined && monitorGroup.monitor.transform !== monitorGroup.saved.transform
                 onReset: Monitors.setTransform(monitorGroup.monitor.name, monitorGroup.saved.transform)
-
-                ChoiceButtons {
-                    choices: [0, 1, 2, 3]
-                    current: monitorGroup.monitor.transform % 4
-                    format: transform => ["Normal", "90°", "180°", "270°"][transform]
-                    onChosen: transform => Monitors.setTransform(monitorGroup.monitor.name, transform)
-                }
+                choices: [0, 1, 2, 3]
+                current: monitorGroup.monitor.transform % 4
+                format: transform => ["Normal", "90°", "180°", "270°"][transform]
+                onChosen: transform => Monitors.setTransform(monitorGroup.monitor.name, transform)
             }
 
-            SettingRow {
+            ToggleRow {
                 visible: !monitorGroup.monitor.disabled
                 label: "Adaptive sync"
                 description: "Lets the screen match games' frame rate (VRR / FreeSync), if it supports it."
                 changed: monitorGroup.monitor.vrr
                 onReset: Monitors.setVrr(monitorGroup.monitor.name, false)
-
-                Toggle {
-                    checked: monitorGroup.monitor.vrr
-                    onToggled: Monitors.setVrr(monitorGroup.monitor.name, !checked)
-                }
+                checked: monitorGroup.monitor.vrr
+                onToggled: on => Monitors.setVrr(monitorGroup.monitor.name, on)
             }
 
-            SettingRow {
+            ChoiceRow {
                 visible: !monitorGroup.monitor.disabled && monitorGroup.others.length > 0
                 label: "Mirror"
                 description: "Show the same picture as another screen."
                 changed: monitorGroup.monitor.mirrorOf !== ""
                 onReset: Monitors.setMirror(monitorGroup.monitor.name, "")
-
-                ChoiceButtons {
-                    choices: ["", ...monitorGroup.others.map(m => m.name)]
-                    current: monitorGroup.monitor.mirrorOf
-                    format: name => name === "" ? "Off" : name
-                    onChosen: name => Monitors.setMirror(monitorGroup.monitor.name, name)
-                }
+                choices: ["", ...monitorGroup.others.map(m => m.name)]
+                current: monitorGroup.monitor.mirrorOf
+                format: name => name === "" ? "Off" : name
+                onChosen: name => Monitors.setMirror(monitorGroup.monitor.name, name)
             }
         }
     }
@@ -368,64 +338,32 @@ Column {
         visible: Brightness.available || ExternalBrightness.available
         title: "Brightness"
 
-        SettingRow {
+        SliderRow {
             visible: Brightness.available
             label: "Built-in display"
-
-            Row {
-                spacing: 10
-
-                Slider {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 260
-                    value: Brightness.fraction
-                    from: Brightness.minFraction
-                    to: 1
-                    onMoved: value => Brightness.set(value)
-                }
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 40
-                    horizontalAlignment: Text.AlignRight
-                    text: `${Math.round(Brightness.fraction * 100)}%`
-                    dim: true
-                }
-            }
+            value: Brightness.fraction
+            from: Brightness.minFraction
+            to: 1
+            sliderWidth: 260
+            valueWidth: 40
+            format: value => `${Math.round(value * 100)}%`
+            onCommitted: value => Brightness.set(value)
         }
 
         // External monitors, over DDC (ExternalBrightness)
         Repeater {
             model: ExternalBrightness.displays
 
-            SettingRow {
-                id: externalRow
-
+            SliderRow {
                 required property var modelData
 
-                label: externalRow.modelData.name
+                label: modelData.name
                 description: "Over DDC/CI. Changes reach the monitor once the slider stops."
-
-                Row {
-                    spacing: 10
-
-                    Slider {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 260
-                        value: ExternalBrightness.level(externalRow.modelData.name)
-                        from: 0
-                        to: 1
-                        onMoved: value => ExternalBrightness.set(externalRow.modelData.name, value)
-                    }
-
-                    PanelText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 40
-                        horizontalAlignment: Text.AlignRight
-                        text: `${Math.round(ExternalBrightness.level(externalRow.modelData.name) * 100)}%`
-                        dim: true
-                    }
-                }
+                value: ExternalBrightness.level(modelData.name)
+                sliderWidth: 260
+                valueWidth: 40
+                format: value => `${Math.round(value * 100)}%`
+                onCommitted: value => ExternalBrightness.set(modelData.name, value)
             }
         }
     }
@@ -433,40 +371,29 @@ Column {
     SettingsGroup {
         title: "Nightlight"
 
-        SettingRow {
+        ToggleRow {
             label: "Nightlight"
             description: "Warmer colours, easier on the eyes at night."
-
-            Toggle {
-                checked: Nightlight.enabled
-                onToggled: Nightlight.setEnabled(!checked)
-            }
+            checked: Nightlight.enabled
+            onToggled: on => Nightlight.setEnabled(on)
         }
 
-        SettingRow {
+        // Right is warmer: 6000 K down to 2500 K, shown in the description
+        SliderRow {
             changed: !ShellSettings.isDefault("nightlightTemperature")
             onReset: ShellSettings.reset("nightlightTemperature")
             label: "Warmth"
             description: `${ShellSettings.nightlightTemperature} K`
-
-            // Right is warmer: 6000 K down to 2500 K
-            Slider {
-                width: 260
-                value: (6000 - ShellSettings.nightlightTemperature) / 3500
-                onMoved: value => ShellSettings.nightlightTemperature = Math.round((6000 - value * 3500) / 100) * 100
-            }
+            value: (6000 - ShellSettings.nightlightTemperature) / 3500
+            sliderWidth: 260
+            valueWidth: 0
+            onCommitted: value => ShellSettings.nightlightTemperature = Math.round((6000 - value * 3500) / 100) * 100
         }
 
-        SettingRow {
-            changed: !ShellSettings.isDefault("nightlightSchedule")
-            onReset: ShellSettings.reset("nightlightSchedule")
+        ToggleRow {
+            setting: "nightlightSchedule"
             label: "On a schedule"
             description: "Switching it by hand still works, until the next start or end."
-
-            Toggle {
-                checked: ShellSettings.nightlightSchedule
-                onToggled: ShellSettings.nightlightSchedule = !checked
-            }
         }
 
         SettingRow {
@@ -483,8 +410,8 @@ Column {
                 spacing: 8
 
                 TimeField {
-                    time: ShellSettings.nightlightStart
-                    onPicked: value => ShellSettings.nightlightStart = value
+                    value: ShellSettings.nightlightStart
+                    onCommitted: value => ShellSettings.nightlightStart = value
                 }
 
                 PanelText {
@@ -494,52 +421,21 @@ Column {
                 }
 
                 TimeField {
-                    time: ShellSettings.nightlightEnd
-                    onPicked: value => ShellSettings.nightlightEnd = value
+                    value: ShellSettings.nightlightEnd
+                    onCommitted: value => ShellSettings.nightlightEnd = value
                 }
             }
         }
     }
 
-    // A button naming the current choice, with a chevron, that opens a DropdownList
-    component Picker: PanelButton {
-        property bool open: false
-
-        icon: open ? "\u{F077}" : "\u{F078}"
-        highlighted: open
-    }
-
-    // "HH:MM", saved when valid and Enter is pressed or it loses focus; left with something
-    // that isn't a time, it goes back to the saved one. It follows `time` again after each
-    // (a ↺, or "9:05" shown as "09:05").
-    component TimeField: TextField {
-        id: timeField
-
-        property string time
-        signal picked(string value)
-
-        readonly property bool validTime: /^([01]?\d|2[0-3]):[0-5]\d$/.test(text.trim())
-
+    // "HH:MM", saved when valid and Enter is pressed or it loses focus ("9:05" saved as "09:05");
+    // left with something that isn't a time, it goes back to the saved one
+    component TimeField: CommitField {
         width: 80
-        text: time
         placeholder: "HH:MM"
-        valid: validTime
-        onAccepted: commit(false)
-        onInputFocusChanged: {
-            if (!inputFocus)
-                commit(true);
-        }
-
-        function commit(leaving: bool): void {
-            if (validTime) {
-                const [hours, minutes] = text.trim().split(":");
-                const value = `${hours.padStart(2, "0")}:${minutes}`;
-                if (value !== time)
-                    picked(value);
-            } else if (!leaving) {
-                return;
-            }
-            text = Qt.binding(() => timeField.time);
-        }
+        commitOnLeave: true
+        acceptable: text => /^([01]?\d|2[0-3]):[0-5]\d$/.test(text)
+        normalize: text => text.padStart(5, "0")
+        valid: acceptable(text.trim())
     }
 }
