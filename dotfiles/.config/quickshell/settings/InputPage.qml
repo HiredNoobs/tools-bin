@@ -67,7 +67,8 @@ Column {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    root.hasTouchpad = JSON.parse(text).mice.some(m => m.name.includes("touchpad"));
+                    // "…-touchpad", or a trackpad (e.g. Apple's)
+                    root.hasTouchpad = JSON.parse(text).mice.some(m => /touchpad|trackpad/i.test(m.name));
                 } catch (e) {}
             }
         }

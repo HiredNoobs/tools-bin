@@ -9,8 +9,9 @@ import Quickshell.Io
 // ~/.config/hypr/input.lua, which hyprland.lua loads after the machine file. Like
 // monitors.lua it's this machine's own: not in the repo, and kept by the setup script's rsync.
 // Only options you've changed are saved (listed in the file's first line, with the config's
-// value from before the first change); resetting one drops it and reloads Hyprland's config so
-// it goes back to the config's value, and setting it back to that value by hand drops it too.
+// value from before the first change), once Hyprland has taken the change; resetting one drops
+// it and sets that value again live (not a config reload, which would also undo live changes
+// elsewhere, such as the monitors), and setting it back to that value by hand drops it too.
 Singleton {
     id: root
 
@@ -47,37 +48,62 @@ Singleton {
         setMany({ [option]: value });
     }
 
-    // Several at once, in one change (e.g. layouts with their variants)
+    // Several at once, in one change (e.g. layouts with their variants). Shown straight away;
+    // saved once Hyprland has taken it, or read back from Hyprland if it didn't
     function setMany(changes: var): void {
-        const defaults = Object.assign({}, root.defaults);
-        let changed = [...custom];
-        for (const [option, value] of Object.entries(changes)) {
-            if (!changed.includes(option))
-                defaults[option] = values[option];
-            // Back at its original value: no longer a change
-            if (value === defaults[option]) {
-                changed = changed.filter(o => o !== option);
-                delete defaults[option];
-            } else if (!changed.includes(option)) {
-                changed.push(option);
-            }
-        }
-        root.defaults = defaults;
-        custom = changed;
+        const before = {};
+        for (const option of Object.keys(changes))
+            before[option] = values[option];
         values = Object.assign({}, values, changes);
-        run(`hl.config(${lua(nest(changes))})`);
-        save();
+        run(`hl.config(${lua(nest(changes))})`, ok => {
+            if (!ok) {
+                refresh();
+                return;
+            }
+            const defaults = Object.assign({}, root.defaults);
+            let changed = [...custom];
+            for (const [option, value] of Object.entries(changes)) {
+                if (!changed.includes(option))
+                    defaults[option] = before[option];
+                // Back at its original value: no longer a change
+                if (value === defaults[option]) {
+                    changed = changed.filter(o => o !== option);
+                    delete defaults[option];
+                } else if (!changed.includes(option)) {
+                    changed.push(option);
+                }
+            }
+            root.defaults = defaults;
+            custom = changed;
+            save();
+        });
     }
 
-    // Back to the config's values: dropped from input.lua, then Hyprland's config reloaded
+    // Back to the config's values: dropped from input.lua, and the value from before the first
+    // change set again. One without a value kept (an older input.lua) needs the config reloaded.
     function reset(resetOptions: var): void {
-        custom = custom.filter(option => !resetOptions.includes(option));
+        const restore = {};
+        let reloadConfig = false;
         const defaults = Object.assign({}, root.defaults);
-        for (const option of resetOptions)
+        for (const option of resetOptions) {
+            if (option in defaults)
+                restore[option] = defaults[option];
+            else
+                reloadConfig = true;
             delete defaults[option];
+        }
+        custom = custom.filter(option => !resetOptions.includes(option));
         root.defaults = defaults;
         save();
-        reload.restart();
+        if (Object.keys(restore).length > 0) {
+            values = Object.assign({}, values, restore);
+            run(`hl.config(${lua(nest(restore))})`, ok => {
+                if (!ok)
+                    refresh();
+            });
+        }
+        if (reloadConfig)
+            reload.restart();
     }
 
     // { "input.touchpad.x": 1 } -> { input: { touchpad: { x: 1 } } }
@@ -136,11 +162,12 @@ Singleton {
         query.running = true;
     }
 
-    // One at a time, in order: a change made while one is still running waits for it
+    // One at a time, in order: a change made while one is still running waits for it.
+    // `done(ok)` runs once Hyprland has answered.
     property var queued: []
 
-    function run(code: string): void {
-        queued = [...queued, code];
+    function run(code: string, done: var): void {
+        queued = [...queued, { code: code, done: done }];
         runNext();
     }
 
@@ -148,7 +175,8 @@ Singleton {
         if (evaluate.running || queued.length === 0)
             return;
         lastError = "";
-        evaluate.command = ["hyprctl", "eval", queued[0]];
+        evaluate.current = queued[0];
+        evaluate.command = ["hyprctl", "eval", queued[0].code];
         queued = queued.slice(1);
         evaluate.running = true;
     }
@@ -181,11 +209,20 @@ Singleton {
     // hyprctl eval prints "ok", or the Lua error
     Process {
         id: evaluate
+
+        // The queued change running now
+        property var current: null
+
         stdout: StdioCollector {
             onStreamFinished: {
                 const output = text.trim();
-                if (output !== "ok" && output !== "")
+                const ok = output === "ok" || output === "";
+                if (!ok)
                     root.lastError = output;
+                const done = evaluate.current?.done;
+                evaluate.current = null;
+                if (done)
+                    done(ok);
             }
         }
         onExited: root.runNext()
