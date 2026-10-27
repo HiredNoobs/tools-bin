@@ -33,7 +33,16 @@ Column {
     width: 380
     spacing: 10
 
+    // Seen while it's open, including what comes in meanwhile
     Component.onCompleted: Notifications.markRead()
+
+    Connections {
+        target: Notifications
+
+        function onListChanged(): void {
+            Notifications.markRead();
+        }
+    }
 
     // Heading with Do Not Disturb on the right
     Item {

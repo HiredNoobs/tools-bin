@@ -1,4 +1,6 @@
 import QtQuick
+import Quickshell
+import Quickshell.Hyprland
 import qs
 import qs.components
 import qs.services
@@ -16,6 +18,9 @@ Item {
     // Stays clear of the bar's rounded end so the fillet has a straight edge to join
     readonly property real edgeInset: attached ? Theme.radius : 0
     readonly property bool open: shown && Notifications.popups.length > 0
+    // Actually on screen: the bar is up, and no fullscreen window covers it (the popups are in
+    // the bar's layer). While none is, Notifications holds their timeouts.
+    readonly property bool seen: open && (QsWindow.window?.visible ?? false) && !(Hyprland.focusedMonitor?.activeWorkspace?.hasFullscreen ?? false)
     readonly property int padding: 10
     // Notification id -> notification for the cards on screen, kept until the stack has
     // closed so the last cards don't blank out while it shrinks
@@ -32,6 +37,15 @@ Item {
             return;
         }
         clearAfterClose.stop();
+        // Drop the cards that finished going last time (still listed now: fading out)
+        const keep = new Set(ids);
+        for (let i = 0; i < popupModel.count; i++)
+            keep.add(popupModel.get(i).nid);
+        const kept = {};
+        for (const id of Object.keys(held))
+            if (keep.has(Number(id)))
+                kept[id] = held[id];
+        held = kept;
         for (let i = popupModel.count - 1; i >= 0; i--) {
             if (!ids.includes(popupModel.get(i).nid))
                 popupModel.remove(i);
@@ -63,6 +77,18 @@ Item {
     }
 
     Component.onCompleted: sync()
+
+    onSeenChanged: {
+        if (seen)
+            Notifications.popupsSeenAt = Date.now();
+    }
+
+    Timer {
+        interval: 250
+        repeat: true
+        running: root.seen
+        onTriggered: Notifications.popupsSeenAt = Date.now()
+    }
 
     Connections {
         target: Notifications
@@ -116,6 +142,11 @@ Item {
                     if (hovered)
                         Notifications.hovered = notification;
                     else if (Notifications.hovered === notification)
+                        Notifications.hovered = null;
+                }
+                // Gone while under the mouse (e.g. its screen unplugged): no longer held
+                Component.onDestruction: {
+                    if (hovered && Notifications.hovered === notification)
                         Notifications.hovered = null;
                 }
             }
