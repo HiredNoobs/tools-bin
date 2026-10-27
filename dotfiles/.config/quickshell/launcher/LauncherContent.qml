@@ -160,6 +160,11 @@ Item {
     // Enter: what the current mode does with the input (Shift+Enter: `>` runs in the background)
     function accept(shift: bool): void {
         if (mode === "calc") {
+            // Still working out the latest input: copied once that's done, not the last answer
+            if (calculator.answerFor !== calculator.wanted) {
+                calculator.acceptWhenReady = true;
+                return;
+            }
             if (calculator.answer === "")
                 return;
             root.closeRequested();
@@ -200,11 +205,17 @@ Item {
         id: calculator
 
         property string answer: ""
+        // The input `answer` is for, and whether Enter came before it was ready
+        property string answerFor: ""
+        property bool acceptWhenReady: false
         readonly property string wanted: root.mode === "calc" ? root.input : ""
 
         onWantedChanged: {
-            if (wanted === "")
+            acceptWhenReady = false;
+            if (wanted === "") {
                 answer = "";
+                answerFor = "";
+            }
             else if (!qalc.running)
                 qalc.calculate();
         }
@@ -223,8 +234,14 @@ Item {
 
         stdout: StdioCollector {
             onStreamFinished: {
-                if (qalc.expression === calculator.wanted)
+                if (qalc.expression === calculator.wanted) {
                     calculator.answer = text.trim();
+                    calculator.answerFor = qalc.expression;
+                    if (calculator.acceptWhenReady) {
+                        calculator.acceptWhenReady = false;
+                        root.accept(false);
+                    }
+                }
             }
         }
         onExited: {
