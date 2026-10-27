@@ -6,7 +6,6 @@ import Quickshell.Io
 
 Singleton {
     property int cpuUsage: 0
-    property var coreUsage: []
     property real memUsedGiB: 0
     property real memTotalGiB: 0
     property int temperature: 0
@@ -15,7 +14,8 @@ Singleton {
     // which reads far below the CPU)
     property string temperaturePath: ""
 
-    property var lastCpuTimes: []
+    // The last read's { idle, total } jiffies, null before the first
+    property var lastCpuTimes: null
 
     Timer {
         interval: 3000
@@ -34,24 +34,12 @@ Singleton {
         id: stat
         path: "/proc/stat"
         onLoaded: {
-            // Lines "cpu" (total) then "cpu0".."cpuN"
-            const lines = text().split("\n").filter(l => l.startsWith("cpu"));
-            const times = lines.map(l => {
-                const f = l.trim().split(/\s+/).slice(1).map(Number);
-                const idle = f[3] + f[4];
-                return { idle: idle, total: f.reduce((a, b) => a + b, 0) };
-            });
-
-            const usage = times.map((t, i) => {
-                const prev = lastCpuTimes[i];
-                if (!prev || t.total === prev.total)
-                    return 0;
-                return Math.round(100 * (1 - (t.idle - prev.idle) / (t.total - prev.total)));
-            });
-
+            // The first line, "cpu", is all cores together: idle is idle + iowait
+            const f = text().split("\n")[0].trim().split(/\s+/).slice(1).map(Number);
+            const times = { idle: f[3] + f[4], total: f.reduce((a, b) => a + b, 0) };
+            const prev = lastCpuTimes;
+            cpuUsage = !prev || times.total === prev.total ? 0 : Math.round(100 * (1 - (times.idle - prev.idle) / (times.total - prev.total)));
             lastCpuTimes = times;
-            cpuUsage = usage[0];
-            coreUsage = usage.slice(1);
         }
     }
 

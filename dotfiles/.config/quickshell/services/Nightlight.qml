@@ -56,6 +56,12 @@ Singleton {
         return start <= end ? minutes >= start && minutes < end : minutes >= start || minutes < end;
     }
 
+    // As if checked for the first time
+    function reschedule(): void {
+        scheduledOn = null;
+        checkSchedule();
+    }
+
     // Acts only when the schedule's answer changes (and on first check), so a switch by hand
     // holds until the next start or end
     function checkSchedule(): void {
@@ -87,16 +93,13 @@ Singleton {
 
         // Turning the schedule on, or changing its times, applies it now
         function onNightlightScheduleChanged() {
-            root.scheduledOn = null;
-            root.checkSchedule();
+            root.reschedule();
         }
         function onNightlightStartChanged() {
-            root.scheduledOn = null;
-            root.checkSchedule();
+            root.reschedule();
         }
         function onNightlightEndChanged() {
-            root.scheduledOn = null;
-            root.checkSchedule();
+            root.reschedule();
         }
         // A new warmth shows straight away while on
         function onNightlightTemperatureChanged() {
