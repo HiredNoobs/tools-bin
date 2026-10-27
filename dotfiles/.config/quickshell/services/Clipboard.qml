@@ -16,7 +16,7 @@ Singleton {
 
     readonly property bool enabled: ShellSettings.clipboardHistory
     readonly property int limit: 50
-    // Longer text is kept cut short (it's passed back to wl-copy as an argument)
+    // Longer text is kept cut short
     readonly property int maxBytes: 100000
     readonly property string imageDir: `${Quickshell.env("XDG_RUNTIME_DIR")}/quickshell-clipboard`
 
@@ -38,12 +38,22 @@ Singleton {
             entries = entries.filter(e => e.text === undefined || !looksLikePassword(e.text));
     }
 
-    // Puts an entry back on the clipboard (which also moves it to the top)
+    // Puts an entry back on the clipboard (which also moves it to the top). Text goes to
+    // wl-copy on stdin, as anyone can read a command line while it runs.
     function copy(entry): void {
-        if (entry.image)
+        if (entry.image) {
             Quickshell.execDetached(["sh", "-c", `wl-copy --type image/png < "$1"`, "sh", entry.image]);
-        else
-            Quickshell.execDetached(["sh", "-c", `printf '%s' "$1" | wl-copy`, "sh", entry.text]);
+            return;
+        }
+        copier.queued = entry.text;
+        if (!copier.running)
+            copier.next();
+    }
+
+    // A picture the watcher below saved: in imageDir, named after its contents. Anything else
+    // is ignored, so a forged record can't point it at another file to copy or delete.
+    function isSavedImage(path: string): bool {
+        return path.startsWith(imageDir + "/") && /^[0-9a-f]{40}\.png$/.test(path.slice(imageDir.length + 1));
     }
 
     // Entries match by what's in them: the menu's rows hold copies, not these objects
@@ -108,7 +118,8 @@ Singleton {
     // sensitive, not kept), ended by a record separator (\x1e). A clipboard emptied by its app
     // closing prints nothing (an app writing empty text does: see forgetNewest); a picture is
     // kept as a picture only when no text came with it, named after its contents so a repeat is
-    // the same file.
+    // the same file. Other copies with no text (e.g. JPEG only) aren't kept. Copied text can't
+    // contain the separator (it's taken out), so it can't pass for more records.
     Process {
         running: root.enabled
         // The watcher runs until the shell exits (tail --pid; killing qs would orphan it
@@ -122,8 +133,8 @@ Singleton {
             if printf "%s\\n" "$types" | grep -q "^image/png$" && ! printf "%s\\n" "$types" | grep -q "^text/plain"; then
                 file="$0/$(wl-paste --type image/png | sha1sum | cut -c1-40).png"
                 { [ -e "$file" ] || wl-paste --type image/png > "$file"; } && printf "I\\t%s\\036" "$file"
-            else
-                printf "T\\t"; wl-paste --type text --no-newline | head -c ${root.maxBytes}; printf "\\036"
+            elif printf "%s\\n" "$types" | grep -qE "^(text/|UTF8_STRING$|STRING$|TEXT$)"; then
+                printf "T\\t"; wl-paste --type text --no-newline | tr -d "\\036" | head -c ${root.maxBytes}; printf "\\036"
             fi
         ' "$1" &
         watcher=$!
@@ -143,9 +154,37 @@ Singleton {
                 else if (kind === "T")
                     // Without a character cut in half by maxBytes (decoded as U+FFFD)
                     root.add({ text: value.replace(/\uFFFD+$/, "") });
-                else if (kind === "I")
+                else if (kind === "I" && root.isSavedImage(value))
                     root.add({ image: value });
             }
+        }
+    }
+
+    // Text going back on the clipboard; the newest waits if one is still being handed over
+    Process {
+        id: copier
+
+        // Text waiting to go (null when none), and the text going now
+        property var queued: null
+        property string text
+
+        function next(): void {
+            text = queued;
+            queued = null;
+            running = true;
+        }
+
+        command: ["wl-copy"]
+        stdinEnabled: true
+        onStarted: {
+            write(text);
+            text = "";
+            stdinEnabled = false;
+        }
+        onExited: {
+            stdinEnabled = true;
+            if (queued !== null)
+                next();
         }
     }
 }
