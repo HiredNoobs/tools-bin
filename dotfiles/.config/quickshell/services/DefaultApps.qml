@@ -5,13 +5,16 @@ import Quickshell
 import Quickshell.Io
 
 // Default apps for Settings › Default apps, in place of selectdefaultapplication. Which apps
-// can open what comes from the MIME caches pacman keeps up to date (plus ~/.local's own .desktop
-// files, which have no cache); the current defaults from `xdg-mime query default`, which reads
+// can open what comes from the MIME caches pacman and flatpak keep up to date, in every data
+// folder (XDG_DATA_DIRS, flatpak's exports), plus the .desktop files of folders without a cache
+// (~/.local's); the current defaults from `xdg-mime query default`, which reads
 // mimeapps.list the way xdg-open does. Choices go in ~/.config/mimeapps.list. Each category owns
 // its file types: picking an app sets all of a category's listed types, or, for images, video
 // and audio, every one of those types the app can open. It removes the category's other entries,
-// so no type is left on the previous app. The value from before a category's first change is
-// kept (in Quickshell's state folder) for the settings window's ↺.
+// so no type is left on the previous app. A category's lines from before its first change are
+// kept (in Quickshell's state folder) for the settings window's ↺, which puts them back as they
+// were. A desktop's own list (e.g. hyprland-mimeapps.list) is read before mimeapps.list, so
+// while there is one, `overridingList` names it for the page to warn about.
 // Single file types can be set apart from their category (overrides, kept in the state folder
 // too): the category then leaves them alone, until the override is removed and the type goes
 // back to the category's app. Their names and extensions come from the shared MIME database.
@@ -44,6 +47,9 @@ Singleton {
     property var fileTypes: []
     // Types set apart from their category
     property var overrides: []
+    // A desktop-specific mimeapps list that comes before ours ("" if there's none)
+    property string overridingList: ""
+    readonly property var desktopLists: (Quickshell.env("XDG_CURRENT_DESKTOP") ?? "").split(":").filter(name => name !== "").map(name => `${configDir}/${name.toLowerCase()}-mimeapps.list`)
 
     function category(key: string): var {
         return categories.find(c => c.key === key);
@@ -139,7 +145,8 @@ Singleton {
 
     // --- The ↺ buttons
 
-    // Category key -> its default before the first change, for those changed here
+    // Category key -> { id: its default, lines: its own [Default Applications] lines } from
+    // before the first change, for those changed here (older saves hold just the id)
     property var originals: ({})
 
     function changed(key: string): bool {
@@ -147,8 +154,39 @@ Singleton {
     }
 
     function revert(key: string): void {
-        if (key in originals)
-            setDefault(key, originals[key]);
+        const original = originals[key];
+        if (original === undefined)
+            return;
+        if (typeof original === "string") {
+            setDefault(key, original);
+            return;
+        }
+        const cat = category(key);
+        const updated = Object.assign({}, originals);
+        delete updated[key];
+        saveOriginals(updated);
+        writeLines(type => inCategory(cat, type) && !overrides.includes(type), original.lines);
+    }
+
+    function saveOriginals(updated: var): void {
+        root.originals = updated;
+        originalsFile.setText(JSON.stringify(updated, null, 2));
+    }
+
+    // mimeapps.list's [Default Applications] lines for types `own` accepts
+    function ownLines(own: var): var {
+        mimeapps.reload();
+        let inSection = false;
+        const found = [];
+        for (const line of mimeapps.text().split("\n")) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("["))
+                inSection = trimmed === "[Default Applications]";
+            const eq = trimmed.indexOf("=");
+            if (inSection && eq > 0 && own(trimmed.slice(0, eq).trim()))
+                found.push(trimmed);
+        }
+        return found;
     }
 
     // --- Changing a default
@@ -157,14 +195,14 @@ Singleton {
     function setDefault(key: string, id: string): void {
         const cat = category(key);
         const before = defaults[key] ?? "";
+        const own = type => inCategory(cat, type) && !overrides.includes(type);
 
         const originals = Object.assign({}, root.originals);
         if (!(key in originals))
-            originals[key] = before;
-        if (originals[key] === id)
+            originals[key] = { id: before, lines: ownLines(own) };
+        if ((originals[key].id ?? originals[key]) === id)
             delete originals[key];
-        root.originals = originals;
-        originalsFile.setText(JSON.stringify(originals, null, 2));
+        saveOriginals(originals);
 
         // A listed category's types all go to the app (a text editor opens any of them, whatever
         // its .desktop file lists); of a prefix's, only those it can open
@@ -178,7 +216,6 @@ Singleton {
             types = cat.types;
         }
 
-        const own = type => inCategory(cat, type) && !overrides.includes(type);
         writeDefaults(own, types.filter(type => !overrides.includes(type)), id);
     }
 
@@ -204,18 +241,21 @@ Singleton {
     }
 
     function writeDefaults(own: var, types: var, id: string): void {
+        writeLines(own, types.map(type => `${type}=${id}`));
+    }
+
+    function writeLines(own: var, added: var): void {
         mimeapps.reload();
-        mimeapps.setText(withDefaults(mimeapps.text(), own, types, id));
+        mimeapps.setText(withLines(mimeapps.text(), own, added));
         refresh();
     }
 
     // mimeapps.list with the [Default Applications] lines of types `own` accepts replaced by
-    // `types` -> `id`. Other sections and lines are kept as they are.
-    function withDefaults(text: string, own: var, types: var, id: string): string {
+    // `added` ("type=id" lines). Other sections and lines are kept as they are.
+    function withLines(text: string, own: var, added: var): string {
         const lines = text.split("\n");
         while (lines.length > 0 && lines[lines.length - 1].trim() === "")
             lines.pop();
-        const added = types.map(type => `${type}=${id}`);
 
         let start = lines.findIndex(line => line.trim() === "[Default Applications]");
         if (start < 0) {
@@ -248,6 +288,7 @@ Singleton {
         mimeapps.reload();
         readExplicit();
         scan.running = true;
+        desktopList.running = true;
     }
 
     function readExplicit(): void {
@@ -269,19 +310,39 @@ Singleton {
 
     Component.onCompleted: refresh()
 
+    // The first desktop-specific list that exists, if any
+    Process {
+        id: desktopList
+        command: ["sh", "-c", 'for f in "$@"; do [ -f "$f" ] && { printf "%s" "$f"; exit 0; }; done', "sh", ...root.desktopLists]
+        stdout: StdioCollector {
+            onStreamFinished: root.overridingList = text.trim()
+        }
+    }
+
     // "h<TAB>type<TAB>id;id;" for what each app opens, "d<TAB>key<TAB>id" for the defaults,
-    // "g<TAB>type<TAB>glob" and "c<TAB>type<TAB>name" from the MIME database
+    // "g<TAB>type<TAB>glob" and "c<TAB>type<TAB>name" from the MIME database. Every data
+    // folder's applications, in XDG order (the user's first); a folder without a MIME cache has
+    // its .desktop files read instead.
     Process {
         id: scan
         command: ["sh", "-c", `
-            for d in /usr/share/applications /usr/local/share/applications ~/.local/share/applications; do
-                [ -f "$d/mimeinfo.cache" ] && sed -n 's/^\\([^=[]*\\)=\\(.*\\)/h\\t\\1\\t\\2/p' "$d/mimeinfo.cache"
+            IFS=:
+            for base in "\${XDG_DATA_HOME:-$HOME/.local/share}" \${XDG_DATA_DIRS:-/usr/local/share:/usr/share} "$HOME/.local/share/flatpak/exports/share" /var/lib/flatpak/exports/share; do
+                d="$base/applications"
+                case ":$seen:" in *":$d:"*) continue ;; esac
+                seen="$seen:$d"
+                [ -d "$d" ] || continue
+                if [ -f "$d/mimeinfo.cache" ]; then
+                    sed -n 's/^\\([^=[]*\\)=\\(.*\\)/h\\t\\1\\t\\2/p' "$d/mimeinfo.cache"
+                    continue
+                fi
+                for f in "$d"/*.desktop; do
+                    [ -f "$f" ] || continue
+                    id=$(basename "$f")
+                    sed -n 's/^MimeType=//p' "$f" | tr ';' '\\n' | while read -r t; do [ -n "$t" ] && printf 'h\\t%s\\t%s;\\n' "$t" "$id"; done
+                done
             done
-            for f in ~/.local/share/applications/*.desktop; do
-                [ -f "$f" ] || continue
-                id=$(basename "$f")
-                sed -n 's/^MimeType=//p' "$f" | tr ';' '\\n' | while read -r t; do [ -n "$t" ] && printf 'h\\t%s\\t%s;\\n' "$t" "$id"; done
-            done
+            unset IFS
             ${root.categories.map(c => `printf 'd\\t%s\\t%s\\n' ${c.key} "$(xdg-mime query default ${c.primary})"`).join("\n")}
             sed -n 's/^[0-9]*:\\([^:]*\\):\\([^:]*\\).*/g\\t\\1\\t\\2/p' /usr/share/mime/globs2
             grep -m1 -H '<comment>' /usr/share/mime/*/*.xml | sed -n 's|^/usr/share/mime/\\([^:]*\\)\\.xml:.*<comment>\\(.*\\)</comment>.*|c\\t\\1\\t\\2|p'

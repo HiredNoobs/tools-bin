@@ -14,6 +14,25 @@ Column {
 
     Component.onCompleted: DefaultApps.refresh()
 
+    // A desktop's own list is read first, so what it sets wins over the choices here
+    Rectangle {
+        visible: DefaultApps.overridingList !== ""
+        width: parent.width
+        height: listWarning.implicitHeight + 20
+        radius: Theme.radius
+        color: Qt.alpha(Theme.critical, 0.15)
+
+        PanelText {
+            id: listWarning
+            x: 14
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width - 28
+            text: `\u{F0026}  ${DefaultApps.overridingList.replace(DefaultApps.home, "~")} is read before these choices, so what it sets wins. Move its lines into ~/.config/mimeapps.list, or delete it.`
+            wrapMode: Text.WordWrap
+            color: Theme.critical
+        }
+    }
+
     SettingsGroup {
         title: "Open with"
 
