@@ -25,10 +25,13 @@ Singleton {
     property string face: ""
     property var faces: []
 
-    // `name` within the folder, e.g. "faces/<user>"; copied beside it first, then moved over it
+    // `name` within the folder, e.g. "faces/<user>"; copied beside it first, then moved over it.
+    // Each copy has its own temporary file (copies can overlap, e.g. at start and a colour
+    // change), readable by the sddm user like the rest
     function copy(source: string, name: string): void {
-        const temporary = `${dir}/.${name.replace(/\//g, "-")}.new`;
-        Exec.run(`[ -w ${dir} ] && cp -L ${Exec.quote(source)} ${temporary} && mv ${temporary} ${dir}/${name}`);
+        Exec.run(`[ -w ${dir} ] || exit 0
+            t=$(mktemp -p ${dir} .${name.replace(/\//g, "-")}.XXXXXX) || exit 1
+            cp -L ${Exec.quote(source)} "$t" && chmod 644 "$t" && mv "$t" ${dir}/${name} || rm -f "$t"`);
     }
 
     function shareWallpaper(source: string): void {
