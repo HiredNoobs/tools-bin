@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 
 // How often and how recently each app was started from the launcher, so the ones in use come
 // first. Stored in the shell's state directory as { "<desktop id>": { count, last } }.
@@ -10,16 +9,14 @@ Singleton {
     id: root
 
     property var usage: ({})
-    // Read (or there's nothing to read), so writing won't replace what's there
-    property bool loaded: false
 
+    // Saved once the file has been read (launches before that are added on to what it holds)
     function record(id: string): void {
         const entry = usage[id] ?? { count: 0, last: 0 };
         const updated = Object.assign({}, usage);
         updated[id] = { count: entry.count + 1, last: Date.now() };
         usage = updated;
-        if (loaded)
-            file.setText(JSON.stringify(usage));
+        file.save(usage);
     }
 
     // Launch count weighted by how recently it was last used; 0 if never used
@@ -32,19 +29,11 @@ Singleton {
         return entry.count * weight;
     }
 
-    FileView {
+    JsonFile {
         id: file
         path: Quickshell.statePath("launcher.json")
-        printErrors: false
-        onLoaded: {
-            let stored = {};
-            try {
-                stored = JSON.parse(text());
-            } catch (e) {
-                // Unreadable: kept aside before starting again
-                Quickshell.execDetached(["cp", file.path, `${file.path}.broken-${Date.now()}`]);
-            }
-            // With anything recorded before it was read added on
+        // With anything recorded before it was read added on
+        onRead: stored => {
             const merged = Object.assign({}, stored);
             for (const id in root.usage) {
                 const before = stored[id] ?? { count: 0, last: 0 };
@@ -52,13 +41,8 @@ Singleton {
             }
             const recorded = Object.keys(root.usage).length > 0;
             root.usage = merged;
-            root.loaded = true;
             if (recorded)
-                file.setText(JSON.stringify(merged));
-        }
-        onLoadFailed: error => {
-            if (error === FileViewError.FileNotFound)
-                root.loaded = true;
+                file.save(merged);
         }
     }
 }

@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import qs
 
 // What's on screen, kept across a restart the shell does itself (changing its icons, see
@@ -43,14 +42,14 @@ Singleton {
     // With the time, as FileView skips writing the text it last read (deleted since, so the
     // same state twice in a row would be lost)
     function save(): void {
-        file.setText(JSON.stringify({
+        file.save({
             savedAt: Date.now(),
             windowOpen: windowOpen,
             page: page,
             scrollY: scrollY,
             pickers: pickers,
             panels: PanelState.open
-        }));
+        });
     }
 
     // Restarts the shell through Hyprland (so it gets Hyprland's current environment, e.g. new
@@ -68,19 +67,19 @@ Singleton {
         onTriggered: root.restored = null
     }
 
-    FileView {
+    // Read once, then deleted (an unreadable one is kept aside like the others)
+    JsonFile {
         id: file
         path: Quickshell.statePath("restart-state.json")
-        blockLoading: true
-        printErrors: false
-        onLoaded: {
-            try {
-                const state = JSON.parse(text());
-                PanelState.open = state.panels ?? {};
-                root.restored = state;
-                forgetTimer.start();
-            } catch (e) {}
-            Exec.run(`rm -f ${Exec.quote(path)}`);
+        blocking: true
+        fallback: null
+        onRead: state => {
+            Exec.run(`rm -f ${Exec.quote(file.path)}`);
+            if (!state)
+                return;
+            PanelState.open = state.panels ?? {};
+            root.restored = state;
+            forgetTimer.start();
         }
     }
 }

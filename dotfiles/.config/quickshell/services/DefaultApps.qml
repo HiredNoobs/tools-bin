@@ -170,7 +170,7 @@ Singleton {
 
     function saveOriginals(updated: var): void {
         root.originals = updated;
-        originalsFile.setText(JSON.stringify(updated, null, 2));
+        originalsFile.save(updated);
     }
 
     // mimeapps.list's [Default Applications] lines for types `own` accepts
@@ -237,7 +237,7 @@ Singleton {
 
     function saveOverrides(list: var): void {
         root.overrides = list;
-        overridesFile.setText(JSON.stringify(list, null, 2));
+        overridesFile.save(list);
     }
 
     function writeDefaults(own: var, types: var, id: string): void {
@@ -389,31 +389,20 @@ Singleton {
         printErrors: false
     }
 
-    FileView {
+    JsonFile {
         id: overridesFile
         path: Quickshell.statePath("default-apps-overrides.json")
-        blockLoading: true
-        printErrors: false
-        onLoaded: {
-            try {
-                root.overrides = JSON.parse(text());
-            } catch (e) {
-                root.overrides = [];
-            }
-        }
+        blocking: true
+        fallback: []
+        indent: 2
+        onRead: stored => root.overrides = stored
     }
 
-    FileView {
+    JsonFile {
         id: originalsFile
         path: Quickshell.statePath("default-apps-originals.json")
-        blockLoading: true
-        printErrors: false
-        onLoaded: {
-            try {
-                root.originals = JSON.parse(text());
-            } catch (e) {
-                root.originals = {};
-            }
-        }
+        blocking: true
+        indent: 2
+        onRead: stored => root.originals = stored
     }
 }

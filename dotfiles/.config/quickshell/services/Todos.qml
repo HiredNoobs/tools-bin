@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 
 // Notes for the calendar panel, saved in Quickshell's local state folder (not in the repo,
 // not synced between machines).
@@ -13,12 +12,10 @@ Singleton {
 
     // [{ id, text, date: "yyyy-MM-dd" | null, done, doneOn: "yyyy-MM-dd" | null }]
     property var items: []
-    property bool loaded: false
+    readonly property bool loaded: file.loaded
     // The file is there but couldn't be read (not just missing): nothing can be added, as it
     // couldn't be saved
-    property bool loadFailed: false
-
-    readonly property string path: Quickshell.statePath("todos.json")
+    readonly property bool loadFailed: file.failed
     readonly property string today: dayKey(clock.date)
 
     function dayKey(date: date): string {
@@ -71,8 +68,7 @@ Singleton {
 
     // Never before the file has been read, which would replace the notes in it
     function save(): void {
-        if (loaded)
-            file.setText(JSON.stringify(items, null, 2));
+        file.save(items);
     }
 
     SystemClock {
@@ -80,36 +76,22 @@ Singleton {
         precision: SystemClock.Minutes
     }
 
-    // The state folder doesn't exist until something is saved there
-    Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", path.slice(0, path.lastIndexOf("/"))])
-
     // A new day: clear yesterday's ticked notes
     onTodayChanged: {
         if (loaded)
             tidy();
     }
 
-    FileView {
+    // No file yet: start empty. One that can't be parsed is kept aside, so the notes can be
+    // recovered; any other error leaves it alone (and saving off)
+    JsonFile {
         id: file
-        path: root.path
-        printErrors: false
-        onLoaded: {
-            try {
-                root.items = JSON.parse(text());
-            } catch (e) {
-                // Unreadable: kept aside before starting again, so the notes can be recovered
-                Quickshell.execDetached(["cp", root.path, `${root.path}.broken-${Date.now()}`]);
-                root.items = [];
-            }
-            root.loaded = true;
+        path: Quickshell.statePath("todos.json")
+        fallback: []
+        indent: 2
+        onRead: stored => {
+            root.items = stored;
             root.tidy();
-        }
-        // No file yet: start empty. Any other error leaves it alone (and saving off)
-        onLoadFailed: error => {
-            if (error === FileViewError.FileNotFound)
-                root.loaded = true;
-            else
-                root.loadFailed = true;
         }
     }
 }

@@ -59,7 +59,7 @@ Singleton {
 
     function setLaptopSpec(spec: var): void {
         laptopSpec = spec;
-        savedSpec.setText(spec ? JSON.stringify(spec) + "\n" : "");
+        savedSpec.save(spec);
     }
 
     // Each time the monitors are read, while the laptop screen is off for the lid: the other
@@ -104,17 +104,13 @@ Singleton {
         }
     }
 
-    FileView {
+    JsonFile {
         id: savedSpec
         path: Quickshell.statePath("lid-screen.json")
-        blockLoading: true
-        printErrors: false
-        onLoaded: {
-            try {
-                root.laptopSpec = text().trim() !== "" ? JSON.parse(text()) : null;
-            } catch (e) {
-                root.laptopSpec = null;
-            }
+        blocking: true
+        fallback: null
+        onRead: stored => {
+            root.laptopSpec = stored;
             // It may have opened while no shell was running
             if (root.laptopSpec) {
                 root.lidKnown = false;
