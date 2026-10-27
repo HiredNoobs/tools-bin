@@ -55,6 +55,7 @@ ShellRoot {
 
     // The wallpaper, under everything on each monitor
     Variants {
+        id: backgrounds
         model: Quickshell.screens
 
         Background {}
@@ -90,9 +91,10 @@ ShellRoot {
         }
     }
 
-    // The system panel's Keep awake: inhibits idle (hypridle) while on, through the first bar
+    // The system panel's Keep awake: inhibits idle (hypridle) while on, through the first
+    // wallpaper window (always there, unlike the bar, which can be hidden)
     IdleInhibitor {
-        window: bars.instances[0] ?? null
+        window: backgrounds.instances[0] ?? null
         enabled: KeepAwake.enabled
     }
 
