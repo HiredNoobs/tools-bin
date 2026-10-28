@@ -4,30 +4,21 @@ import qs
 import qs.components
 import qs.services
 
-// Notification center: notifications grouped by app, Do Not Disturb and Clear all.
-// Self-contained so it can later become a tab of a combined control centre.
+// Notification center: notifications grouped by app, Do Not Disturb and Clear all. Its own
+// panel, or the control centre's Notifications tab.
 Column {
     id: root
 
     signal closeRequested
 
+    // How tall the groups get before they scroll, under the heading and above Clear all; the
+    // control centre lets them grow, as its tab scrolls already
+    property real maxListHeight: 520
+
     // Expanded app groups (see PanelState). Groups start collapsed, so the center opens as a
     // list of apps rather than filling the screen, and stay open for the session once opened
     function toggleGroup(app: string): void {
         PanelState.toggle("notifications", app);
-    }
-
-    function iconFor(group: var): string {
-        for (const name of [group.icon, DesktopEntries.byId(group.desktopEntry)?.icon ?? ""]) {
-            if (!name)
-                continue;
-            if (name.startsWith("/"))
-                return `file://${name}`;
-            const path = Quickshell.iconPath(name, true);
-            if (path)
-                return path;
-        }
-        return "";
     }
 
     width: 380
@@ -45,32 +36,20 @@ Column {
     }
 
     // Heading with Do Not Disturb on the right
-    Item {
-        width: parent.width
-        height: dndRow.implicitHeight
+    PanelHeading {
+        text: "Notifications"
 
-        PanelSection {
+        PanelText {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Notifications"
+            text: "Do not disturb"
+            dim: true
+            font.pixelSize: Theme.panelFontSize - 1
         }
 
-        Row {
-            id: dndRow
-            anchors.right: parent.right
-            spacing: 8
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Do not disturb"
-                dim: true
-                font.pixelSize: Theme.panelFontSize - 1
-            }
-
-            Toggle {
-                anchors.verticalCenter: parent.verticalCenter
-                checked: Notifications.dnd
-                onToggled: Notifications.dnd = !Notifications.dnd
-            }
+        Toggle {
+            anchors.verticalCenter: parent.verticalCenter
+            checked: Notifications.dnd
+            onToggled: Notifications.dnd = !Notifications.dnd
         }
     }
 
@@ -82,9 +61,10 @@ Column {
 
     // Groups, scrolling when long
     Flickable {
+        id: groupList
         visible: Notifications.list.length > 0
         width: parent.width
-        height: Math.min(groupColumn.implicitHeight, 520)
+        height: Math.min(groupColumn.implicitHeight, root.maxListHeight)
         contentHeight: groupColumn.implicitHeight
         boundsBehavior: Flickable.StopAtBounds
         clip: true
@@ -112,7 +92,7 @@ Column {
 
                     ListRow {
                         width: parent.width
-                        iconSource: root.iconFor(group.info)
+                        iconSource: Icons.resolve([group.info.icon, DesktopEntries.byId(group.info.desktopEntry)?.icon ?? ""])
                         label: group.modelData
                         sublabel: `${group.info.notifications.length} notification${group.info.notifications.length === 1 ? "" : "s"}`
                         onClicked: root.toggleGroup(group.modelData)
@@ -120,27 +100,16 @@ Column {
                         Row {
                             spacing: 10
 
-                            PanelText {
+                            ExpandChevron {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: group.open ? "\u{F077}" : "\u{F078}"
-                                color: Theme.subtext
-                                font.pixelSize: Theme.panelFontSize - 3
+                                expanded: group.open
                             }
 
                             // Dismiss the whole group
-                            PanelText {
+                            IconButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "\u{F00D}"
-                                color: groupDismiss.containsMouse ? Theme.accent : Theme.subtext
-
-                                MouseArea {
-                                    id: groupDismiss
-                                    anchors.fill: parent
-                                    anchors.margins: -4
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: Notifications.dismissGroup(group.modelData)
-                                }
+                                onClicked: Notifications.dismissGroup(group.modelData)
                             }
                         }
                     }
@@ -160,6 +129,10 @@ Column {
                 }
             }
         }
+    }
+
+    ScrollIndicator {
+        flickable: groupList
     }
 
     PanelButton {

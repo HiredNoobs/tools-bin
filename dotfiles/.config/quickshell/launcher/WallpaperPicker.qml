@@ -7,7 +7,7 @@ import qs.services
 
 // Opened from the system panel's Wallpaper button: thumbnails of ~/Pictures/wallpapers, with
 // the current one marked. Type to filter by name; arrows or Tab/Shift+Tab move, Enter or a
-// click sets it (see Wallpaper), Esc closes.
+// click sets it (see Wallpaper), Esc clears the search and then closes.
 Item {
     id: root
 
@@ -45,12 +45,12 @@ Item {
     implicitHeight: body.implicitHeight
 
     // After the panel host has taken focus for itself, so typing goes to the search
-    Component.onCompleted: Qt.callLater(() => search.forceActiveFocus())
+    Component.onCompleted: Qt.callLater(search.focusInput)
 
     // First line: the current wallpaper's size; then "size<TAB>path" per image
     Process {
         running: true
-        command: ["sh", "-c", `stat -c %s "$HOME/.cache/current-wallpaper" 2>/dev/null || echo -1; find ${Exec.quote(root.folder)} -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) -printf '%s\\t%p\\n'`]
+        command: ["sh", "-c", `stat -c %s ${Exec.quote(Wallpaper.path)} 2>/dev/null || echo -1; find ${Exec.quote(root.folder)} -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) -printf '%s\\t%p\\n'`]
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.trim().split("\n");
@@ -74,76 +74,14 @@ Item {
         width: parent.width
         spacing: 10
 
-        // Search
-        Rectangle {
+        SearchField {
+            id: search
             width: parent.width
-            height: 44
-            radius: 12
-            color: Theme.surface
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                x: 16
-                text: "\u{F002}"
-                dim: true
-            }
-
-            TextInput {
-                id: search
-                anchors.verticalCenter: parent.verticalCenter
-                x: 44
-                width: parent.width - 60
-                color: Theme.text
-                selectionColor: Theme.accent
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize
-                clip: true
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: search.text === ""
-                    text: "Search wallpapers…"
-                    dim: true
-                }
-
-                Keys.onPressed: event => {
-                    switch (event.key) {
-                    case Qt.Key_Escape:
-                        root.closeRequested();
-                        break;
-                    case Qt.Key_Return:
-                    case Qt.Key_Enter:
-                        root.apply(root.results[root.selected]);
-                        break;
-                    case Qt.Key_Up:
-                        root.move(-root.columns);
-                        break;
-                    case Qt.Key_Down:
-                        root.move(root.columns);
-                        break;
-                    case Qt.Key_Left:
-                        // Left/Right edit the search text unless it's empty
-                        if (search.text !== "")
-                            return;
-                        root.move(-1);
-                        break;
-                    case Qt.Key_Right:
-                        if (search.text !== "")
-                            return;
-                        root.move(1);
-                        break;
-                    case Qt.Key_Tab:
-                        root.move(1);
-                        break;
-                    case Qt.Key_Backtab:
-                        root.move(-1);
-                        break;
-                    default:
-                        return;
-                    }
-                    event.accepted = true;
-                }
-            }
+            placeholder: "Search wallpapers…"
+            columns: root.columns
+            onAccepted: root.apply(root.results[root.selected])
+            onEscaped: root.closeRequested()
+            onMoved: delta => root.move(delta)
         }
 
         GridView {

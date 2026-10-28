@@ -18,80 +18,18 @@ Column {
     readonly property var paired: devices.filter(d => d.paired || d.bonded)
         .sort((a, b) => (b.connected - a.connected) || a.name.localeCompare(b.name))
     readonly property var nearby: devices.filter(d => !d.paired && !d.bonded && d.deviceName !== "")
-    // Scanning was started here (not from the connectivity panel), so leaving stops it
-    property bool startedDiscovery: false
 
     // Devices opened here stay open for the session (PanelState); forgotten ones are dropped
     readonly property var deviceKeys: paired.map(d => `bluetooth:${d.address}`)
     onDeviceKeysChanged: {
-        if (deviceKeys.length === 0)
-            return;
-        const keys = Object.keys(PanelState.open.settings ?? {});
-        PanelState.prune("settings", keys.filter(key => !key.startsWith("bluetooth:") || deviceKeys.includes(key)));
-    }
-
-    // BlueZ's device icon names to glyphs
-    function deviceIcon(device: BluetoothDevice): string {
-        const icon = device?.icon ?? "";
-        if (icon.includes("headset") || icon.includes("headphone"))
-            return "\u{F02CB}";
-        if (icon.startsWith("audio"))
-            return "\u{F04C3}";
-        if (icon.includes("keyboard"))
-            return "\u{F030C}";
-        if (icon.includes("mouse"))
-            return "\u{F037D}";
-        if (icon.includes("gaming"))
-            return "\u{F0297}";
-        if (icon.includes("phone"))
-            return "\u{F011C}";
-        if (icon.includes("computer"))
-            return "\u{F0322}";
-        if (icon.includes("display") || icon.includes("video"))
-            return "\u{F0379}";
-        return "\u{F00AF}";
-    }
-
-    function status(device: BluetoothDevice): string {
-        switch (device.state) {
-        case BluetoothDeviceState.Connecting:
-            return "Connecting…";
-        case BluetoothDeviceState.Disconnecting:
-            return "Disconnecting…";
-        }
-        if (!device.connected)
-            return root.on ? "Not connected" : "Bluetooth is off";
-        return device.batteryAvailable ? `Connected · battery ${Math.round(device.battery * 100)}%` : "Connected";
-    }
-
-    function setPower(on: bool): void {
-        if (!adapter)
-            return;
-        // The adapter can't power on while rfkill blocks it
-        if (on && adapter.state === BluetoothAdapterState.Blocked) {
-            Exec.run("rfkill unblock bluetooth");
-            powerAfterUnblock.restart();
-            return;
-        }
-        adapter.enabled = on;
+        if (deviceKeys.length > 0)
+            PanelState.pruneByPrefix("settings", "bluetooth:", deviceKeys);
     }
 
     spacing: 24
 
-    // Stop scanning when leaving the page
-    Component.onDestruction: {
-        if (startedDiscovery && adapter?.discovering)
-            adapter.discovering = false;
-    }
-
-    Timer {
-        id: powerAfterUnblock
-        interval: 500
-        onTriggered: {
-            if (root.adapter)
-                root.adapter.enabled = true;
-        }
-    }
+    // A scan started here stops when leaving the page, unless the panel is scanning too
+    Component.onDestruction: BluetoothControl.setDiscovering(root, false)
 
     SettingRow {
         visible: root.adapter === null
@@ -106,7 +44,7 @@ Column {
             label: "Bluetooth"
             description: root.adapter?.state === BluetoothAdapterState.Blocked ? "Blocked (airplane mode or a hardware switch); switching on unblocks it." : ""
             checked: root.on
-            onToggled: on => root.setPower(on)
+            onToggled: on => BluetoothControl.setPowered(on)
         }
 
         SettingRow {
@@ -176,10 +114,7 @@ Column {
                 icon: "\u{F002}"
                 label: root.adapter?.discovering ? "Stop" : "Scan"
                 highlighted: root.adapter?.discovering ?? false
-                onClicked: {
-                    root.startedDiscovery = !root.adapter.discovering;
-                    root.adapter.discovering = !root.adapter.discovering;
-                }
+                onClicked: BluetoothControl.toggleDiscovering(root)
             }
         }
 
@@ -191,7 +126,7 @@ Column {
 
             SettingRow {
                 required property BluetoothDevice modelData
-                label: `${root.deviceIcon(modelData)}  ${modelData.deviceName}`
+                label: `${BluetoothControl.deviceIcon(modelData)}  ${modelData.deviceName}`
                 description: modelData.pairing ? "Pairing…" : modelData.address
 
                 PanelButton {
@@ -214,8 +149,8 @@ Column {
 
         BlockHeader {
             id: header
-            title: `${root.deviceIcon(block.device)}  ${block.device.name}`
-            detail: root.status(block.device)
+            title: `${BluetoothControl.deviceIcon(block.device)}  ${block.device.name}`
+            detail: BluetoothControl.status(block.device)
             accent: block.device.connected
             expandable: true
             stateKey: `bluetooth:${block.device.address}`

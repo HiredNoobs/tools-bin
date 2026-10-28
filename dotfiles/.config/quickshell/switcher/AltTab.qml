@@ -55,7 +55,7 @@ PanelWindow {
         session = id;
         Hyprland.refreshWorkspaces();
         Hyprland.refreshToplevels();
-        targetScreen = Hyprland.focusedMonitor?.name ?? "";
+        targetScreen = Screens.focusedName();
         entries = collect();
         selected = 0;
         active = true;
@@ -91,12 +91,11 @@ PanelWindow {
 
     // "Main 3", "Second 2", or the name of a named workspace ("Games")
     function describe(ws: HyprlandWorkspace): var {
-        const titles = ["Main", "Second", "Third", "Fourth"];
         if (ws.id < 1)
             return { id: ws.id, title: ws.name.charAt(0).toUpperCase() + ws.name.slice(1), number: "", workspace: ws };
         const ranged = Object.keys(WorkspaceRanges.offsets).length > 0;
-        const number = ranged ? String((ws.id - 1) % 10 + 1) : String(ws.id);
-        const title = ranged ? (titles[Math.floor((ws.id - 1) / 10)] ?? "Workspace") : "Workspace";
+        const number = ranged ? WorkspaceRanges.numberOf(ws.id) : String(ws.id);
+        const title = ranged ? (WorkspaceRanges.titleOf(ws.id) || "Workspace") : "Workspace";
         return { id: ws.id, title: `${title} ${number}`, number: number, workspace: ws };
     }
 
@@ -108,7 +107,7 @@ PanelWindow {
 
     readonly property bool shown: active && !showTimer.running
 
-    screen: Quickshell.screens.find(s => s.name === targetScreen) ?? Quickshell.screens[0]
+    screen: Screens.byName(targetScreen)
     visible: shown
     implicitWidth: card.width
     implicitHeight: card.height

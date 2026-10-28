@@ -15,15 +15,13 @@ Column {
     readonly property var outputs: nodes.filter(n => n.type === PwNodeType.AudioSink)
     readonly property var inputs: nodes.filter(n => n.type === PwNodeType.AudioSource)
     readonly property var apps: nodes.filter(n => n.type === PwNodeType.AudioOutStream)
-    // Up to 150% when boosting is allowed (Settings › Sound)
-    readonly property real maxVolume: ShellSettings.volumeBoost ? 1.5 : 1
 
     // App streams grouped by app, in order of appearance: [{ name, streams }]. Each Firefox tab
     // (and the like) is its own stream
     readonly property var appGroups: {
         const groups = [];
         for (const stream of apps) {
-            const name = appName(stream);
+            const name = AudioNodes.appName(stream);
             const group = groups.find(g => g.name === name);
             if (group)
                 group.streams.push(stream);
@@ -32,30 +30,9 @@ Column {
         }
         return groups;
     }
-    function appName(stream: PwNode): string {
-        return stream.properties["application.name"] ?? stream.name;
-    }
-
     // What a stream is playing, e.g. a browser tab's title
     function streamTitle(stream: PwNode): string {
         return StreamTitles.title(stream);
-    }
-
-    function nodeName(node: PwNode): string {
-        return node.description || node.nickname || node.name;
-    }
-
-    // Short tag shown under a device name, e.g. to pick out Bluetooth headphones
-    function deviceKind(node: PwNode): string {
-        const props = node?.properties ?? {};
-        if (props["device.api"] === "bluez5")
-            return "Bluetooth";
-        if (props["device.bus"] === "usb")
-            return "USB";
-        const description = (node?.description ?? "").toLowerCase();
-        if (description.includes("hdmi") || description.includes("displayport"))
-            return "HDMI / DisplayPort";
-        return "";
     }
 
     width: 340
@@ -246,8 +223,8 @@ Column {
         // Drop-down entries: PipeWire devices, then outputs behind another card profile
         readonly property var deviceItems: [
             ...(devices ?? []).map(device => ({
-                label: root.nodeName(device),
-                sublabel: root.deviceKind(device),
+                label: AudioNodes.nodeName(device),
+                sublabel: AudioNodes.deviceKind(device),
                 selected: device === node,
                 device: device
             })),
@@ -309,7 +286,7 @@ Column {
                 id: slider
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 36 - 38 - 20 - volumeRow.dropdownWidth
-                to: root.maxVolume
+                to: AudioNodes.maxVolume
                 value: volumeRow.volume
                 onMoved: value => {
                     if (volumeRow.node?.audio)
@@ -320,8 +297,8 @@ Column {
 
                 // 100%, when the slider goes beyond it: above is boosted and may distort
                 Rectangle {
-                    visible: root.maxVolume > 1
-                    x: slider.width / root.maxVolume - 1
+                    visible: AudioNodes.maxVolume > 1
+                    x: slider.width / AudioNodes.maxVolume - 1
                     anchors.verticalCenter: parent.verticalCenter
                     width: 2
                     height: 12
@@ -338,14 +315,11 @@ Column {
                 color: volumeRow.volume > 1.005 ? Theme.warning : Theme.subtext
             }
 
-            PanelButton {
-                readonly property bool open: volumeRow.expandable ? volumeRow.expanded : devicePicker.expanded
-
+            PickerButton {
                 visible: volumeRow.hasDevices || volumeRow.expandable
                 anchors.verticalCenter: parent.verticalCenter
                 width: 36
-                icon: open ? "\u{F077}" : "\u{F078}"
-                highlighted: open
+                open: volumeRow.expandable ? volumeRow.expanded : devicePicker.expanded
                 onClicked: {
                     if (volumeRow.expandable)
                         volumeRow.expandToggled();

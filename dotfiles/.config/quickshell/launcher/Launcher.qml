@@ -1,8 +1,9 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs
+import qs.components
+import qs.services
 
 // The launcher's menus in the middle of the focused monitor, when Theme.launcherAttached is off:
 // the app launcher (Super+Space), the screenshot menu (Print) and the wallpaper picker; and,
@@ -29,7 +30,7 @@ PanelWindow {
             close();
             return;
         }
-        targetScreen = Hyprland.focusedMonitor?.name ?? "";
+        targetScreen = Screens.focusedName();
         page = name;
         open = true;
     }
@@ -38,7 +39,7 @@ PanelWindow {
         open = false;
     }
 
-    screen: Quickshell.screens.find(s => s.name === targetScreen) ?? Quickshell.screens[0]
+    screen: Screens.byName(targetScreen)
     visible: open
     anchors {
         top: true
@@ -61,30 +62,11 @@ PanelWindow {
     }
 
     // Invisible layers over the other monitors, so clicking them closes it too
-    Variants {
-        model: Quickshell.screens.filter(s => s.name !== root.targetScreen)
-
-        PanelWindow {
-            required property ShellScreen modelData
-
-            screen: modelData
-            visible: root.open
-            anchors {
-                top: true
-                bottom: true
-                left: true
-                right: true
-            }
-            exclusionMode: ExclusionMode.Ignore
-            color: "transparent"
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.namespace: "quickshell-launcher-backdrop"
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: root.close()
-            }
-        }
+    Backdrops {
+        shown: root.open
+        exclude: root.targetScreen
+        namespace: "quickshell-launcher-backdrop"
+        onClicked: root.close()
     }
 
     Rectangle {

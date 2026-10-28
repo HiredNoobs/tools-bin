@@ -98,11 +98,9 @@ Column {
                     }
                 }
 
-                PanelText {
+                ExpandChevron {
                     visible: entry.modelData.hasChildren
-                    text: entry.expanded ? "\u{F078}" : "\u{F054}"
-                    dim: true
-                    font.pixelSize: Theme.panelFontSize - 3
+                    expanded: entry.expanded
                 }
             }
 

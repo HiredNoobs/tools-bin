@@ -38,26 +38,15 @@ Row {
         return shown;
     }
 
-    // Icon path for an app, or "" when there's no real icon (no placeholder images)
-    function iconFor(name: string): string {
-        if (name.startsWith("/"))
-            return `file://${name}`;
-        return Quickshell.iconPath(name, true);
-    }
-
     // One entry per app in the workspace that has an icon: the icon and the first of its windows.
     // Windows without one (e.g. the GPG password prompt) are left out.
     function appsIn(workspace: HyprlandWorkspace): var {
-        // Re-run once desktop entries have loaded, so icons resolve
-        DesktopEntries.applications.values.length;
-
         const apps = [];
         for (const window of workspace?.toplevels.values ?? []) {
-            const appId = window.wayland?.appId || window.lastIpcObject.class || "";
+            const appId = Windows.appIdOf(window);
             if (apps.some(app => app.appId === appId))
                 continue;
-            const entry = DesktopEntries.heuristicLookup(appId);
-            const icon = iconFor(entry?.icon || appId);
+            const icon = Icons.forApp(appId);
             if (icon === "")
                 continue;
             apps.push({
@@ -69,13 +58,9 @@ Row {
         return apps;
     }
 
-    function focusWorkspace(name: string): void {
-        const escaped = name.replace(/["\\]/g, "\\$&");
-        Hyprland.dispatch(`hl.dsp.focus({ workspace = "${escaped}" })`);
-    }
-
-    function focusWindow(window: HyprlandToplevel): void {
-        Hyprland.dispatch(`hl.dsp.focus({ window = "address:0x${window.address}" })`);
+    // By id (Exec.workspace): a named one by its name, so it can't be taken for a relative move
+    function focusWorkspace(id: int): void {
+        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${Exec.workspace(id)} })`);
     }
 
     leftPadding: 5
@@ -144,7 +129,7 @@ Row {
                     id: dotMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: root.focusWorkspace(entry.modelData)
+                    onClicked: root.focusWorkspace(entry.workspace?.id ?? Number(entry.modelData))
                 }
             }
 
@@ -171,7 +156,7 @@ Row {
                     id: pillMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: root.focusWorkspace(entry.modelData)
+                    onClicked: root.focusWorkspace(entry.workspace?.id ?? Number(entry.modelData))
                 }
 
                 Row {
@@ -191,7 +176,7 @@ Row {
                             width: 16
                             height: 16
                             hoverEnabled: true
-                            onClicked: root.focusWindow(modelData.window)
+                            onClicked: Windows.focus(modelData.window)
 
                             IconImage {
                                 anchors.centerIn: parent

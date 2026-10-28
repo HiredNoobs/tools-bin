@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs
 import qs.components
+import qs.services
 
 // Super+V's clipboard history, in a layer of its own ("quickshell-clipboard") sized to the menu,
 // so Hyprland can leave it out of screen sharing (rules.lua) without hiding the bar or the
@@ -23,7 +24,7 @@ PanelWindow {
             close();
             return;
         }
-        targetScreen = Hyprland.focusedMonitor?.name ?? "";
+        targetScreen = Screens.focusedName();
         open = true;
     }
 
@@ -31,7 +32,7 @@ PanelWindow {
         open = false;
     }
 
-    screen: Quickshell.screens.find(s => s.name === targetScreen) ?? Quickshell.screens[0]
+    screen: Screens.byName(targetScreen)
     visible: open
     // Attached: straight under the bar (Bar.qml's top margin plus its height); floating: centred
     anchors.top: attached

@@ -19,12 +19,6 @@ Column {
     // Not level meters (like this page's own), which record only to measure
     readonly property var recording: inStreams.filter(n => !n.properties["stream.monitor"])
 
-    function nodeName(node: PwNode): string {
-        return node ? node.description || node.nickname || node.name : "";
-    }
-
-    readonly property real maxVolume: ShellSettings.volumeBoost ? 1.5 : 1
-
     // What a card profile does, from its name ("output:analog-stereo+input:analog-stereo")
     function describeProfile(name: string): string {
         if (name === "off")
@@ -47,19 +41,6 @@ Column {
         else if (output.includes("mono"))
             to = "the speakers or headphones, in mono";
         return hasInput ? `Sound to ${to}, plus the microphone` : `Sound to ${to}; microphone off`;
-    }
-
-    // Short tag for a device, e.g. to pick out Bluetooth headphones
-    function deviceKind(node: PwNode): string {
-        const props = node?.properties ?? {};
-        if (props["device.api"] === "bluez5")
-            return "Bluetooth";
-        if (props["device.bus"] === "usb")
-            return "USB";
-        const description = (node?.description ?? "").toLowerCase();
-        if (description.includes("hdmi") || description.includes("displayport"))
-            return "HDMI / DisplayPort";
-        return "";
     }
 
     spacing: 24
@@ -223,7 +204,7 @@ Column {
             id: slider
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - 36 - 46 - 20
-            to: root.maxVolume
+            to: AudioNodes.maxVolume
             value: volumeControl.volume
             onMoved: value => {
                 if (volumeControl.node?.audio)
@@ -232,8 +213,8 @@ Column {
 
             // 100%: above it is boosted, and may distort
             Rectangle {
-                visible: root.maxVolume > 1
-                x: slider.width / root.maxVolume - 1
+                visible: AudioNodes.maxVolume > 1
+                x: slider.width / AudioNodes.maxVolume - 1
                 anchors.verticalCenter: parent.verticalCenter
                 width: 2
                 height: 12
@@ -263,8 +244,8 @@ Column {
         readonly property var portInfo: AudioCards.ports[device?.name ?? ""] ?? null
 
         BlockHeader {
-            title: root.nodeName(deviceBlock.device)
-            detail: root.deviceKind(deviceBlock.device)
+            title: AudioNodes.nodeName(deviceBlock.device)
+            detail: AudioNodes.deviceKind(deviceBlock.device)
             accent: deviceBlock.isDefault
 
             PanelText {
@@ -345,7 +326,7 @@ Column {
 
         property PwNode stream
 
-        readonly property string app: stream?.properties["application.name"] ?? stream?.name ?? ""
+        readonly property string app: AudioNodes.appName(stream)
         // What it's playing, if known (Firefox renames its streams "AudioStream"; see StreamTitles)
         readonly property string title: stream ? StreamTitles.title(stream) : ""
         // The input it's linked to (from all links: a PwNodeLinkTracker on the stream reported
@@ -364,7 +345,7 @@ Column {
             detail: streamBlock.title !== streamBlock.app ? streamBlock.title : ""
 
             PickerButton {
-                label: streamBlock.device ? root.nodeName(streamBlock.device) : "Not connected"
+                label: streamBlock.device ? AudioNodes.nodeName(streamBlock.device) : "Not connected"
                 open: deviceList.expanded
                 onClicked: deviceList.toggle()
             }
@@ -374,8 +355,8 @@ Column {
             id: deviceList
             width: parent.width
             items: root.inputs.map(device => ({
-                        label: root.nodeName(device),
-                        sublabel: root.deviceKind(device),
+                        label: AudioNodes.nodeName(device),
+                        sublabel: AudioNodes.deviceKind(device),
                         selected: device === streamBlock.device,
                         device: device
                     }))

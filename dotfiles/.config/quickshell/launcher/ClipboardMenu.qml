@@ -4,7 +4,8 @@ import qs.components
 import qs.services
 
 // Super+V: what's been copied, newest first (see Clipboard). Type to filter; Up/Down or Tab
-// move, Enter or a click copies it again (paste with Ctrl+V), Delete forgets it, Esc closes.
+// move, Enter or a click copies it again (paste with Ctrl+V), Delete forgets it, Esc clears the
+// search and then closes.
 Item {
     id: root
 
@@ -35,7 +36,7 @@ Item {
     implicitHeight: body.implicitHeight
 
     // After the panel host has taken focus for itself, so typing goes to the search
-    Component.onCompleted: Qt.callLater(() => search.forceActiveFocus())
+    Component.onCompleted: Qt.callLater(search.focusInput)
 
     Column {
         id: body
@@ -61,62 +62,17 @@ Item {
             }
         }
 
-        // Search
-        Rectangle {
+        SearchField {
+            id: search
             width: parent.width
-            height: 44
-            radius: 12
-            color: Theme.surface
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                x: 16
-                text: "\u{F002}"
-                dim: true
-            }
-
-            TextInput {
-                id: search
-                anchors.verticalCenter: parent.verticalCenter
-                x: 44
-                width: parent.width - 60
-                color: Theme.text
-                selectionColor: Theme.accent
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize
-                clip: true
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: search.text === ""
-                    text: "Search copied text…"
-                    dim: true
-                }
-
-                Keys.onPressed: event => {
-                    switch (event.key) {
-                    case Qt.Key_Escape:
-                        root.closeRequested();
-                        break;
-                    case Qt.Key_Return:
-                    case Qt.Key_Enter:
-                        root.pick(root.results[root.selected]);
-                        break;
-                    case Qt.Key_Up:
-                    case Qt.Key_Backtab:
-                        root.move(-1);
-                        break;
-                    case Qt.Key_Down:
-                    case Qt.Key_Tab:
-                        root.move(1);
-                        break;
-                    case Qt.Key_Delete:
-                        if (root.results[root.selected])
-                            Clipboard.remove(root.results[root.selected]);
-                        break;
-                    default:
-                        return;
-                    }
+            placeholder: "Search copied text…"
+            columns: 1
+            onAccepted: root.pick(root.results[root.selected])
+            onEscaped: root.closeRequested()
+            onMoved: delta => root.move(delta)
+            onKeyPressed: event => {
+                if (event.key === Qt.Key_Delete && root.results[root.selected]) {
+                    Clipboard.remove(root.results[root.selected]);
                     event.accepted = true;
                 }
             }

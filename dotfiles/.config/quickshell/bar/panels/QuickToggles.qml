@@ -34,7 +34,8 @@ Column {
             icon: root.adapter.enabled ? "\u{F00AF}" : "\u{F00B2}",
             label: "Bluetooth",
             on: root.adapter.enabled,
-            toggle: () => root.adapter.enabled = !root.adapter.enabled
+            // Through rfkill too when it's blocked
+            toggle: () => BluetoothControl.setPowered(!root.adapter.enabled)
         }] : []),
         {
             icon: Notifications.dnd ? "\u{F009B}" : "\u{F009A}",

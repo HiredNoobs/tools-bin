@@ -11,7 +11,7 @@ PanelWindow {
 
     readonly property bool shown: OsdState.shown && !Theme.osdAttached
 
-    screen: Quickshell.screens.find(s => s.name === OsdState.targetScreen) ?? Quickshell.screens[0]
+    screen: Screens.byName(OsdState.targetScreen)
     visible: shown || pill.opacity > 0
     anchors.bottom: true
     margins.bottom: 90

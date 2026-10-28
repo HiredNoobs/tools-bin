@@ -1,10 +1,10 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Services.Polkit
 import Quickshell.Wayland
 import qs
 import qs.components
+import qs.services
 
 // The authentication agent, in place of hyprpolkitagent: when an app asks for an admin action
 // (pkexec, NetworkManager, udisks, …) a card over the focused screen asks for the password.
@@ -51,7 +51,7 @@ Scope {
 
         function onIsActiveChanged(): void {
             if (agent.isActive)
-                root.screenName = Hyprland.focusedMonitor?.name ?? "";
+                root.screenName = Screens.focusedName();
         }
     }
 
@@ -85,7 +85,7 @@ Scope {
         id: window
 
         visible: agent.isActive
-        screen: Quickshell.screens.find(s => s.name === root.screenName) ?? Quickshell.screens[0]
+        screen: Screens.byName(root.screenName)
         anchors.top: true
         anchors.bottom: true
         anchors.left: true

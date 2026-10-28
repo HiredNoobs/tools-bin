@@ -152,7 +152,7 @@ Item {
     implicitWidth: columns * columnWidth + (columns - 1) * columnGap
     implicitHeight: header.height + 14 + Math.min(list.contentHeight, maxListHeight)
 
-    Component.onCompleted: Qt.callLater(() => search.forceActiveFocus())
+    Component.onCompleted: Qt.callLater(search.focusInput)
 
     Process {
         command: ["hyprctl", "binds", "-j"]
@@ -187,58 +187,23 @@ Item {
             font.pixelSize: Theme.fontSize + 2
         }
 
-        Rectangle {
+        SearchField {
+            id: search
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             width: 320
             height: parent.height
-            radius: Theme.radius
-            color: Theme.surface
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                x: 14
-                text: "\u{F0349}"
-                dim: true
-            }
-
-            TextInput {
-                id: search
-                anchors.verticalCenter: parent.verticalCenter
-                x: 40
-                width: parent.width - 54
-                color: Theme.text
-                selectionColor: Theme.accent
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize
-                clip: true
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: search.text === ""
-                    text: "Search keybinds…"
-                    dim: true
-                }
-
-                Keys.onPressed: event => {
-                    switch (event.key) {
-                    case Qt.Key_Escape:
-                        if (search.text !== "")
-                            search.text = "";
-                        else
-                            root.closeRequested();
-                        break;
-                    case Qt.Key_Down:
-                        list.contentY = Math.min(Math.max(0, list.contentHeight - list.height), list.contentY + 60);
-                        break;
-                    case Qt.Key_Up:
-                        list.contentY = Math.max(0, list.contentY - 60);
-                        break;
-                    default:
-                        return;
-                    }
-                    event.accepted = true;
-                }
+            placeholder: "Search keybinds…"
+            onEscaped: root.closeRequested()
+            // Up/Down scroll the list
+            onKeyPressed: event => {
+                if (event.key === Qt.Key_Down)
+                    list.contentY = Math.min(Math.max(0, list.contentHeight - list.height), list.contentY + 60);
+                else if (event.key === Qt.Key_Up)
+                    list.contentY = Math.max(0, list.contentY - 60);
+                else
+                    return;
+                event.accepted = true;
             }
         }
     }

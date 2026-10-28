@@ -5,38 +5,23 @@ import Quickshell
 import qs
 
 // What's on screen, kept across a restart the shell does itself (changing its icons, see
-// Appearance, or Settings › Shell's restart button): whether the settings window is open, its page, scroll position and open pickers,
-// and the panels' open sections (PanelState). Saved just before, read back once at the next
-// start and then deleted, so an ordinary start, or closing the window, begins fresh.
+// Appearance, or Settings › Shell's restart button): whether the settings window is open, its
+// page and scroll position, and the panels' and settings' open sections and pickers
+// (PanelState). Saved just before, read back once at the next start and then deleted, so an
+// ordinary start, or closing the window, begins fresh.
 Singleton {
     id: root
 
-    // While the settings window is open: its page, scroll position, and open pickers by name
+    // While the settings window is open: its page and scroll position
     property bool windowOpen: false
     property string page: ""
     property real scrollY: 0
-    property var pickers: ({})
     // Read back at start, until the window has used it
     property var restored: null
-
-    function setPicker(key: string, open: bool): void {
-        const updated = Object.assign({}, pickers);
-        if (open)
-            updated[key] = true;
-        else
-            delete updated[key];
-        pickers = updated;
-    }
-
-    // A picker's state from before the restart (closed otherwise)
-    function pickerOpen(key: string): bool {
-        return restored?.pickers?.[key] ?? false;
-    }
 
     function windowClosed(): void {
         windowOpen = false;
         scrollY = 0;
-        pickers = {};
     }
 
     // With the time, as FileView skips writing the text it last read (deleted since, so the
@@ -47,7 +32,6 @@ Singleton {
             windowOpen: windowOpen,
             page: page,
             scrollY: scrollY,
-            pickers: pickers,
             panels: PanelState.open
         });
     }

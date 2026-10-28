@@ -129,39 +129,18 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 
-        Loader {
+        // Fading in when the content changes; the panel's own closeRequested closes it
+        FadeLoader {
             id: loader
             x: Theme.panelPadding
             y: Theme.panelPadding
             sourceComponent: root.panels[root.shown] ?? null
-            onLoaded: {
-                scroller.contentY = 0;
-                fadeIn.restart();
-            }
-        }
-
-        // Scrollbar, while it scrolls
-        Rectangle {
-            visible: scroller.interactive
-            parent: scroller
-            anchors.right: parent.right
-            anchors.rightMargin: 2
-            y: scroller.visibleArea.yPosition * scroller.height
-            width: 3
-            height: scroller.visibleArea.heightRatio * scroller.height
-            radius: 1.5
-            color: Theme.subtext
-            opacity: 0.6
+            onLoaded: scroller.contentY = 0
+            onCloseRequested: root.closeRequested()
         }
     }
 
-    // Cross-fade when the content changes
-    NumberAnimation {
-        id: fadeIn
-        target: loader
-        property: "opacity"
-        from: 0
-        to: 1
-        duration: 200
+    ScrollIndicator {
+        flickable: scroller
     }
 }

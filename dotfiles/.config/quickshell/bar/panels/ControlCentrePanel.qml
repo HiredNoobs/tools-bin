@@ -71,7 +71,8 @@ Column {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 
-        Loader {
+        // A tab's own closeRequested closes the whole panel
+        FadeLoader {
             id: content
             width: parent.width
             sourceComponent: ({
@@ -82,65 +83,41 @@ Column {
                 "drives": drivesTab,
                 "apps": appsTab
             })[root.tab] ?? null
-            onLoaded: fadeIn.restart()
-        }
-
-        // Scrollbar, while it scrolls
-        Rectangle {
-            visible: scroller.contentHeight > scroller.height
-            parent: scroller
-            anchors.right: parent.right
-            y: scroller.visibleArea.yPosition * scroller.height
-            width: 3
-            height: scroller.visibleArea.heightRatio * scroller.height
-            radius: 1.5
-            color: Theme.subtext
-            opacity: 0.6
+            onCloseRequested: root.closeRequested()
         }
     }
 
-    NumberAnimation {
-        id: fadeIn
-        target: content
-        property: "opacity"
-        from: 0
-        to: 1
-        duration: 200
+    ScrollIndicator {
+        flickable: scroller
+        margin: 0
     }
 
     Component {
         id: notificationsTab
         NotificationsPanel {
-            onCloseRequested: root.closeRequested()
+            maxListHeight: Number.POSITIVE_INFINITY
         }
     }
 
     Component {
         id: audioTab
-        AudioPanel {
-            onCloseRequested: root.closeRequested()
-        }
+        AudioPanel {}
     }
 
     Component {
         id: connectivityTab
-        ConnectivityPanel {
-            onCloseRequested: root.closeRequested()
-        }
+        ConnectivityPanel {}
     }
 
     Component {
         id: displayTab
-        DisplayPanel {
-            onCloseRequested: root.closeRequested()
-        }
+        DisplayPanel {}
     }
 
     Component {
         id: drivesTab
         DrivesPanel {
             closeWhenEmpty: false
-            onCloseRequested: root.closeRequested()
         }
     }
 
@@ -148,7 +125,6 @@ Column {
         id: appsTab
         AppsPanel {
             closeWhenEmpty: false
-            onCloseRequested: root.closeRequested()
         }
     }
 }

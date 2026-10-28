@@ -13,6 +13,12 @@ Singleton {
 
     readonly property int offTemperature: 6500
     readonly property int warmTemperature: ShellSettings.nightlightTemperature
+    // The warmth as a slider position, right warmer: 6000 K down to 2500 K, in steps of 100 K
+    readonly property real warmth: (6000 - warmTemperature) / 3500
+
+    function setWarmth(position: real): void {
+        ShellSettings.nightlightTemperature = Math.round((6000 - position * 3500) / 100) * 100;
+    }
 
     property int temperature: offTemperature
     readonly property bool enabled: temperature < offTemperature

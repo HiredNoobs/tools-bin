@@ -93,12 +93,6 @@ Rectangle {
         return [toplevel.title, ipc.class, ipc.initialClass].some(part => (part ?? "").toLowerCase().includes(text));
     }
 
-    function iconFor(toplevel: HyprlandToplevel): string {
-        const appId = toplevel.wayland?.appId || toplevel.lastIpcObject.class || "";
-        const name = DesktopEntries.heuristicLookup(appId)?.icon || appId;
-        return name.startsWith("/") ? `file://${name}` : Quickshell.iconPath(name, true);
-    }
-
     implicitWidth: 260
     implicitHeight: width * monitorHeight / monitorWidth
     radius: 8
@@ -158,7 +152,7 @@ Rectangle {
                     visible: !capture.hasContent && source !== ""
                     anchors.centerIn: parent
                     implicitSize: Math.min(32, parent.width / 2, parent.height / 2)
-                    source: root.iconFor(windowItem.modelData)
+                    source: Icons.forApp(Windows.appIdOf(windowItem.modelData))
                 }
             }
 

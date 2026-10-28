@@ -205,19 +205,10 @@ Row {
                     font.bold: true
                 }
 
-                PanelText {
+                IconButton {
                     anchors.right: parent.right
                     text: "\u{F00D}"
-                    color: closeMouse.containsMouse ? Theme.accent : Theme.subtext
-
-                    MouseArea {
-                        id: closeMouse
-                        anchors.fill: parent
-                        anchors.margins: -4
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.selectedDay = ""
-                    }
+                    onClicked: root.selectedDay = ""
                 }
             }
 
@@ -268,15 +259,11 @@ Row {
                 }
             }
 
-            // Scrollbar, when the notes don't fit
-            Rectangle {
-                visible: noteList.contentHeight > noteList.height
-                anchors.right: parent.right
-                y: noteList.y + noteList.visibleArea.yPosition * noteList.height
-                width: 4
-                height: noteList.visibleArea.heightRatio * noteList.height
-                radius: 2
-                color: Theme.subtext
+            // When the notes don't fit
+            ScrollIndicator {
+                flickable: noteList
+                thickness: 4
+                margin: 0
             }
 
             NoteInput {
@@ -301,7 +288,7 @@ Row {
         readonly property bool expanded: hasBody && PanelState.isOpen("notes", String(note.id))
         readonly property bool overdue: note.date && note.date < Todos.today && !note.done
         // Title and arrow light up together when either is hovered
-        readonly property bool toggleHovered: hasBody && (titleHover.hovered || expandMouse.containsMouse)
+        readonly property bool toggleHovered: hasBody && (titleHover.hovered || expandButton.hovered)
 
         width: parent?.width ?? 0
         implicitHeight: content.implicitHeight + 6
@@ -311,17 +298,11 @@ Row {
             id: rowHover
         }
 
-        PanelText {
+        IconButton {
             y: 3
             text: noteRow.note.done ? "\u{F14A}" : "\u{F096}"
-            color: noteRow.note.done ? Theme.accent : Theme.subtext
-
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -4
-                cursorShape: Qt.PointingHandCursor
-                onClicked: Todos.toggle(noteRow.note.id)
-            }
+            lit: noteRow.note.done
+            onClicked: Todos.toggle(noteRow.note.id)
         }
 
         Column {
@@ -388,39 +369,24 @@ Row {
         }
 
         // Show or hide the rest of the note
-        PanelText {
+        IconButton {
+            id: expandButton
             visible: noteRow.hasBody
             x: parent.width - 38
             y: 3
             text: noteRow.expanded ? "\u{F077}" : "\u{F078}"
-            color: noteRow.toggleHovered ? Theme.accent : Theme.subtext
+            lit: noteRow.toggleHovered
+            hitMargin: -6
             font.pixelSize: Theme.panelFontSize - 2
-
-            MouseArea {
-                id: expandMouse
-                anchors.fill: parent
-                anchors.margins: -6
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.toggleNote(noteRow.note.id)
-            }
+            onClicked: root.toggleNote(noteRow.note.id)
         }
 
-        PanelText {
+        IconButton {
             visible: rowHover.hovered
             anchors.right: parent.right
             y: 3
             text: "\u{F00D}"
-            color: deleteMouse.containsMouse ? Theme.accent : Theme.subtext
-
-            MouseArea {
-                id: deleteMouse
-                anchors.fill: parent
-                anchors.margins: -4
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: Todos.remove(noteRow.note.id)
-            }
+            onClicked: Todos.remove(noteRow.note.id)
         }
     }
 

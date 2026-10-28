@@ -4,16 +4,17 @@ import qs
 import qs.components
 import qs.services
 
-// Opened from the now-playing label on the bar, and the control centre's Media tab: the
-// active player (playerctld's, as the media keys use), its seek bar and controls, and any
-// other sources. Clicking a track takes you to its app.
+// Opened from the now-playing label on the bar: the active player (playerctld's, as the media
+// keys use), its seek bar and controls, and any other sources. Clicking a track takes you to
+// its app's window, even on another workspace.
 Column {
     id: root
 
     signal closeRequested
 
     readonly property var player: Media.player
-    property bool othersOpen: false
+    // Stays open for the session, like the other panels' sections (PanelState)
+    readonly property bool othersOpen: PanelState.isOpen("media", "others")
 
     function openApp(target: var): void {
         Media.open(target);
@@ -190,7 +191,6 @@ Column {
         }
     }
 
-    // Takes you to the player's window, even on another workspace
     // Other sources, only when there's more than one; slides open like the other drop-downs
     ListRow {
         visible: Media.others.length > 0
@@ -198,24 +198,16 @@ Column {
         label: "Other sources"
         sublabel: Media.others.map(p => p.identity).join(", ")
         selected: root.othersOpen
-        onClicked: root.othersOpen = !root.othersOpen
+        onClicked: PanelState.toggle("media", "others")
 
-        PanelText {
-            text: root.othersOpen ? "\u{F077}" : "\u{F078}"
-            color: root.othersOpen ? Theme.accent : Theme.subtext
-            font.pixelSize: Theme.panelFontSize - 3
+        ExpandChevron {
+            expanded: root.othersOpen
         }
     }
 
-    Item {
+    Collapsible {
         visible: Media.others.length > 0
-        width: parent.width
-        height: root.othersOpen ? otherList.implicitHeight : 0
-        clip: true
-
-        Behavior on height {
-            NumberAnimation { duration: Theme.panelAnimDuration; easing.type: Easing.OutCubic }
-        }
+        expanded: root.othersOpen
 
         Column {
             id: otherList

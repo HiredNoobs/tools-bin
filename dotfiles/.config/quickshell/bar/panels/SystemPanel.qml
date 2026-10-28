@@ -38,13 +38,8 @@ Column {
     // After the panel host has taken focus for itself, so the keys below reach the panel
     Component.onCompleted: Qt.callLater(forceActiveFocus)
 
+    // The Power tab's keys (Esc goes on to the panel host, which closes the panel)
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape) {
-            closeRequested();
-            event.accepted = true;
-            return;
-        }
-        // The Power tab's keys
         if (content.item?.handleKey?.(event))
             event.accepted = true;
     }
@@ -56,23 +51,13 @@ Column {
         onTabRequested: name => root.tabRequested(name)
     }
 
-    Loader {
+    FadeLoader {
         id: content
         width: parent.width
         sourceComponent: ({
                 "system": systemTab,
                 "power": powerTab
             })[root.tab] ?? null
-        onLoaded: fadeIn.restart()
-    }
-
-    NumberAnimation {
-        id: fadeIn
-        target: content
-        property: "opacity"
-        from: 0
-        to: 1
-        duration: 200
     }
 
     Component {
@@ -228,6 +213,7 @@ Column {
             }
 
             ListView {
+                id: updateList
                 visible: updatesRow.expanded && Updates.packages.length > 0
                 width: parent.width
                 height: Math.min(contentHeight, 200)
@@ -259,6 +245,10 @@ Column {
                         font.pixelSize: Theme.panelFontSize - 2
                     }
                 }
+            }
+
+            ScrollIndicator {
+                flickable: updateList
             }
         }
     }

@@ -13,9 +13,20 @@ Singleton {
 
     // Monitor name -> first id minus one (0 for main, 10 for second, ...)
     property var offsets: ({})
+    // What each range is called, by offset / 10
+    readonly property var titles: ["Main", "Second", "Third", "Fourth"]
 
     function offsetFor(monitorName: string): int {
         return offsets[monitorName] ?? 0;
+    }
+
+    // A workspace's range ("Main", "Second", …; "" past those) and its number in it (1-10)
+    function titleOf(id: int): string {
+        return titles[Math.floor((id - 1) / 10)] ?? "";
+    }
+
+    function numberOf(id: int): string {
+        return String((id - 1) % 10 + 1);
     }
 
     function refresh(): void {

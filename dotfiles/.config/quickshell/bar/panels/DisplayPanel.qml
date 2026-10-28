@@ -129,7 +129,7 @@ Column {
         text: "Nightlight"
     }
 
-    // Warmth, right is warmer (6000 K down to 2500 K, as in Settings › Displays); moving it
+    // Warmth, right is warmer (Nightlight.warmth, as in Settings › Displays); moving it
     // switches nightlight on. The on/off switch is a quick toggle when the control centre is on.
     Row {
         width: parent.width
@@ -144,9 +144,9 @@ Column {
         Slider {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - 100 - (nightlightToggle.visible ? nightlightToggle.width + parent.spacing : 0)
-            value: (6000 - ShellSettings.nightlightTemperature) / 3500
+            value: Nightlight.warmth
             onMoved: value => {
-                ShellSettings.nightlightTemperature = Math.round((6000 - value * 3500) / 100) * 100;
+                Nightlight.setWarmth(value);
                 if (!Nightlight.enabled)
                     Nightlight.setEnabled(true);
             }
@@ -182,12 +182,10 @@ Column {
         }
     }
 
-    PanelText {
-        visible: Monitors.lastError !== ""
-        width: parent.width
+    Banner {
         text: Monitors.lastError
-        color: Theme.accent
-        wrapMode: Text.Wrap
+        closable: true
+        onClosed: Monitors.lastError = ""
     }
 
     // Changes above are live; saving keeps them across Hyprland restarts
@@ -247,24 +245,16 @@ Column {
                 }
 
                 // Always shown, so the toggle doesn't move when the monitor is turned off
-                PanelText {
+                ExpandChevron {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: monitorRow.expanded ? "\u{F077}" : "\u{F078}"
-                    color: monitorRow.expanded ? Theme.accent : Theme.subtext
-                    font.pixelSize: Theme.panelFontSize - 3
+                    expanded: monitorRow.expanded
                 }
             }
         }
 
-        // Settings, sliding open; the panel grows with them. Read-only while the monitor is off
-        Item {
-            width: parent.width
-            height: monitorRow.expanded ? details.implicitHeight : 0
-            clip: true
-
-            Behavior on height {
-                NumberAnimation { duration: Theme.panelAnimDuration; easing.type: Easing.OutCubic }
-            }
+        // Settings, sliding open. Read-only while the monitor is off
+        Collapsible {
+            expanded: monitorRow.expanded
 
             Column {
                 id: details
@@ -290,10 +280,8 @@ Column {
                     selected: modeList.expanded
                     onClicked: modeList.toggle()
 
-                    PanelText {
-                        text: modeList.expanded ? "\u{F077}" : "\u{F078}"
-                        color: modeList.expanded ? Theme.accent : Theme.subtext
-                        font.pixelSize: Theme.panelFontSize - 3
+                    ExpandChevron {
+                        expanded: modeList.expanded
                     }
                 }
 

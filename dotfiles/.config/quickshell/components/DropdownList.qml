@@ -99,14 +99,9 @@ Item {
         }
     }
 
-    // Scrollbar
-    Rectangle {
-        visible: root.scrollable
-        anchors.right: parent.right
-        y: list.visibleArea.yPosition * root.height
-        width: 4
-        height: list.visibleArea.heightRatio * root.height
-        radius: 2
-        color: Theme.subtext
+    ScrollIndicator {
+        flickable: list
+        thickness: 4
+        margin: 0
     }
 }

@@ -12,8 +12,8 @@ import qs.services
 // dropped on, or onto another window of its own workspace to swap them (the overview stays
 // open). Keyboard: arrows move
 // the selection (Tab/Shift+Tab through every workspace in turn), Enter goes there, 1-9/0 jump
-// within the selected row, typing searches windows
-// (then the arrows step through the matches and Enter focuses the selected one), Esc closes.
+// within the selected row, typing searches windows (then the arrows step through the matches
+// and Enter focuses the selected one), Esc clears the search and then closes.
 PanelWindow {
     id: root
 
@@ -60,7 +60,6 @@ PanelWindow {
             named = monitors.map((m, index) => ({ name: m.name, offset: index * 10 }));
         named.sort((a, b) => a.offset - b.offset);
 
-        const titles = ["Main", "Second", "Third", "Fourth"];
         const existing = Hyprland.workspaces.values.filter(ws => !ws.name.startsWith("special:"));
 
         return named.map(({ name, offset }) => {
@@ -76,11 +75,11 @@ PanelWindow {
             // From another range but sitting here (e.g. the second screen's while it's unplugged)
             existing.filter(ws => ws.monitor === monitor && !own(ws.id)).sort((a, b) => a.id - b.id).forEach(ws => entries.push({
                 id: ws.id,
-                label: ws.id > 0 ? String((ws.id - 1) % 10 + 1) : ws.name,
+                label: ws.id > 0 ? WorkspaceRanges.numberOf(ws.id) : ws.name,
                 workspace: ws,
                 foreign: true
             }));
-            return { title: titles[offset / 10] ?? name, monitor: monitor, entries: entries };
+            return { title: WorkspaceRanges.titles[offset / 10] ?? name, monitor: monitor, entries: entries };
         });
     }
 
@@ -94,7 +93,7 @@ PanelWindow {
     }
 
     function show(): void {
-        targetScreen = Hyprland.focusedMonitor?.name ?? "";
+        targetScreen = Screens.focusedName();
         Hyprland.refreshToplevels();
         search.text = "";
         // Start on the current workspace
@@ -108,7 +107,7 @@ PanelWindow {
             }
         }));
         open = true;
-        search.forceActiveFocus();
+        search.focusInput();
     }
 
     function close(): void {
@@ -194,7 +193,7 @@ PanelWindow {
     }
 
     function focusWindow(toplevel: HyprlandToplevel): void {
-        Hyprland.dispatch(`hl.dsp.focus({ window = "address:0x${toplevel.address}" })`);
+        Windows.focus(toplevel);
         close();
     }
 
@@ -235,7 +234,7 @@ PanelWindow {
             goToWorkspace(entry.id);
     }
 
-    screen: Quickshell.screens.find(s => s.name === targetScreen) ?? Quickshell.screens[0]
+    screen: Screens.byName(targetScreen)
     visible: open
     anchors {
         top: true
@@ -265,30 +264,12 @@ PanelWindow {
     }
 
     // The other monitors are dimmed too; clicking them closes the overview
-    Variants {
-        model: Quickshell.screens.filter(s => s.name !== root.targetScreen)
-
-        PanelWindow {
-            required property ShellScreen modelData
-
-            screen: modelData
-            visible: root.open
-            anchors {
-                top: true
-                bottom: true
-                left: true
-                right: true
-            }
-            exclusionMode: ExclusionMode.Ignore
-            color: Qt.alpha(Theme.background, 0.88)
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.namespace: "quickshell-overview-backdrop"
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: root.close()
-            }
-        }
+    Backdrops {
+        shown: root.open
+        exclude: root.targetScreen
+        color: Qt.alpha(Theme.background, 0.88)
+        namespace: "quickshell-overview-backdrop"
+        onClicked: root.close()
     }
 
     // Backdrop; clicking it closes
@@ -309,81 +290,49 @@ PanelWindow {
 
         readonly property real tileWidth: Math.min(280, (root.width - 160 - (root.maxTiles - 1) * 14) / root.maxTiles)
 
-        // Search
-        Rectangle {
+        SearchField {
+            id: search
             anchors.horizontalCenter: parent.horizontalCenter
             width: 420
             height: 40
             radius: 20
             color: Theme.panelBackground
-            border.width: search.activeFocus ? 2 : 0
-            border.color: Theme.accent
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                x: 16
-                text: "\u{F002}"
-                dim: true
-            }
-
-            TextInput {
-                id: search
-                anchors.verticalCenter: parent.verticalCenter
-                x: 42
-                width: parent.width - 58
-                color: Theme.text
-                selectionColor: Theme.accent
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize
-                clip: true
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: search.text === ""
-                    text: "Search windows…"
-                    dim: true
-                }
-
-                Keys.onPressed: event => {
-                    switch (event.key) {
-                    case Qt.Key_Escape:
-                        root.close();
+            focusBorder: true
+            placeholder: "Search windows…"
+            onAccepted: root.activate()
+            onEscaped: root.close()
+            onKeyPressed: event => {
+                switch (event.key) {
+                case Qt.Key_Left:
+                    root.moveSelection(0, -1);
+                    break;
+                case Qt.Key_Right:
+                    root.moveSelection(0, 1);
+                    break;
+                case Qt.Key_Up:
+                    root.moveSelection(-1, 0);
+                    break;
+                case Qt.Key_Down:
+                    root.moveSelection(1, 0);
+                    break;
+                case Qt.Key_Tab:
+                    root.cycle(1);
+                    break;
+                case Qt.Key_Backtab:
+                    root.cycle(-1);
+                    break;
+                default:
+                    // Number keys jump within the selected row, unless typing a search
+                    if (search.text === "" && event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
+                        const n = event.key === Qt.Key_0 ? 10 : event.key - Qt.Key_0;
+                        const row = root.rows[root.selectedRow];
+                        const entry = row?.entries.find(e => !e.foreign && e.label === String(n));
+                        root.goToWorkspace(entry ? entry.id : (row ? row.entries[0].id - 1 + n : n));
                         break;
-                    case Qt.Key_Return:
-                    case Qt.Key_Enter:
-                        root.activate();
-                        break;
-                    case Qt.Key_Left:
-                        root.moveSelection(0, -1);
-                        break;
-                    case Qt.Key_Right:
-                        root.moveSelection(0, 1);
-                        break;
-                    case Qt.Key_Up:
-                        root.moveSelection(-1, 0);
-                        break;
-                    case Qt.Key_Down:
-                        root.moveSelection(1, 0);
-                        break;
-                    case Qt.Key_Tab:
-                        root.cycle(1);
-                        break;
-                    case Qt.Key_Backtab:
-                        root.cycle(-1);
-                        break;
-                    default:
-                        // Number keys jump within the selected row, unless typing a search
-                        if (search.text === "" && event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
-                            const n = event.key === Qt.Key_0 ? 10 : event.key - Qt.Key_0;
-                            const row = root.rows[root.selectedRow];
-                            const entry = row?.entries.find(e => !e.foreign && e.label === String(n));
-                            root.goToWorkspace(entry ? entry.id : (row ? row.entries[0].id - 1 + n : n));
-                            break;
-                        }
-                        return;
                     }
-                    event.accepted = true;
+                    return;
                 }
+                event.accepted = true;
             }
         }
 

@@ -10,7 +10,7 @@ import Quickshell.Services.SystemTray
 // they belong to is gone (e.g. an app's audio streams or notifications, a monitor, a note).
 // Sections: "audio" (app names with several streams), "devices" ("output", "input"),
 // "notifications" (app names), "monitors" and "modes" (monitor names), "notes" (note ids),
-// "unlock" (locked partitions' paths, see DrivesPanel),
+// "unlock" (locked partitions' paths, see DrivesPanel), "media" ("others"),
 // "updates" ("list"), "trayApps" (tray app ids), "trayMenus" ("<app id>/<entry>/…") and
 // "settings" (the settings window's expandable rows, e.g. "attach").
 // Drop-down choices (devices, modes) still close once something is chosen.
@@ -48,6 +48,14 @@ Singleton {
             open = Object.assign({}, open, { [section]: kept });
     }
 
+    // Forget the open sections in `section` whose key starts with `prefix` but isn't in
+    // `present` (e.g. the settings window's saved connections, "network:<uuid>"); other keys
+    // there are left alone. An empty `present` forgets them all.
+    function pruneByPrefix(section: string, prefix: string, present: var): void {
+        const keys = Object.keys(open[section] ?? {});
+        prune(section, keys.filter(key => !key.startsWith(prefix) || present.includes(key)));
+    }
+
     // Pruned as they change, even while the panels are closed (monitors, modes and notes are pruned
     // by their panels, the only place they change from or matter)
 
@@ -56,7 +64,7 @@ Singleton {
         const counts = {};
         for (const node of Pipewire.nodes.values) {
             if (node.type === PwNodeType.AudioOutStream) {
-                const app = node.properties["application.name"] ?? node.name;
+                const app = AudioNodes.appName(node);
                 counts[app] = (counts[app] ?? 0) + 1;
             }
         }

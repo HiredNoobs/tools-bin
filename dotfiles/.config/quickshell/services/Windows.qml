@@ -6,7 +6,8 @@ import Quickshell.Hyprland
 
 // Focuses an app's window when you explicitly ask for it (tray apps, the media panel's Open
 // button), switching workspace if needed. Window rules stop apps like Discord and Firefox
-// from taking focus on their own; choosing one from the bar is explicit.
+// from taking focus on their own; choosing one from the bar is explicit. Also focusing a window
+// already known (the bar's app icons, the overview).
 Singleton {
     id: root
 
@@ -24,6 +25,15 @@ Singleton {
         attemptsLeft = 10;
         Hyprland.refreshToplevels();
         retry.restart();
+    }
+
+    function focus(window: HyprlandToplevel): void {
+        Hyprland.dispatch(`hl.dsp.focus({ window = "address:0x${window.address}" })`);
+    }
+
+    // Its Wayland app id, or its class for XWayland windows ("" with neither)
+    function appIdOf(window: HyprlandToplevel): string {
+        return window.wayland?.appId || window.lastIpcObject.class || "";
     }
 
     function windowFor(names: var, preferTitle: string): var {
@@ -46,7 +56,7 @@ Singleton {
         onTriggered: {
             const window = root.windowFor(root.pendingNames, root.pendingTitle);
             if (window) {
-                Hyprland.dispatch(`hl.dsp.focus({ window = "address:0x${window.address}" })`);
+                root.focus(window);
                 root.attemptsLeft = 0;
             } else if (--root.attemptsLeft > 0) {
                 Hyprland.refreshToplevels();

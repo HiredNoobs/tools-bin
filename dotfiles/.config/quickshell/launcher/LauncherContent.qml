@@ -11,7 +11,7 @@ import qs.services
 // Type to search the installed apps (name first, then generic name, keywords and command); the
 // apps used most and most recently come first. Words matching an app's desktop action (e.g.
 // "private" for Firefox's New Private Window) list that action too. Arrows or Tab/Shift+Tab move
-// the selection, Enter or a click starts it, Esc closes.
+// the selection, Enter or a click starts it, Esc clears the search and then closes.
 //
 // Prefixes switch mode: `=` calculates with qalc (units and currencies too; Enter copies the
 // answer), `>` runs a shell command in a floating terminal that stays open (Shift+Enter runs it
@@ -149,7 +149,7 @@ Item {
         search.text = "";
         selected = 0;
         lastPointer = Qt.point(-1, -1);
-        search.forceActiveFocus();
+        search.focusInput();
     }
 
     function move(delta: int): void {
@@ -260,83 +260,15 @@ Item {
         width: parent.width
         spacing: 10
 
-
-        // Search
-        Rectangle {
+        SearchField {
+            id: search
             width: parent.width
-            height: 44
-            radius: 12
-            color: Theme.surface
-
-            PanelText {
-                anchors.verticalCenter: parent.verticalCenter
-                x: 16
-                text: "\u{F002}"
-                dim: true
-            }
-
-            TextInput {
-                id: search
-                anchors.verticalCenter: parent.verticalCenter
-                x: 44
-                width: parent.width - 60
-                color: Theme.text
-                selectionColor: Theme.accent
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontSize
-                clip: true
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: search.text === ""
-                    text: "Search apps…"
-                    dim: true
-                }
-
-                Keys.onPressed: event => {
-                    switch (event.key) {
-                    case Qt.Key_Escape:
-                        root.closeRequested();
-                        break;
-                    case Qt.Key_Return:
-                    case Qt.Key_Enter:
-                        root.accept((event.modifiers & Qt.ShiftModifier) !== 0);
-                        break;
-                    case Qt.Key_Up:
-                        root.move(-root.columns);
-                        break;
-                    case Qt.Key_Down:
-                        root.move(root.columns);
-                        break;
-                    case Qt.Key_Left:
-                        // Left/Right edit the search text unless it's empty
-                        if (search.text !== "")
-                            return;
-                        root.move(-1);
-                        break;
-                    case Qt.Key_Right:
-                        if (search.text !== "")
-                            return;
-                        root.move(1);
-                        break;
-                    case Qt.Key_Tab:
-                        root.move(1);
-                        break;
-                    case Qt.Key_Backtab:
-                        root.move(-1);
-                        break;
-                    case Qt.Key_PageUp:
-                        root.move(-root.columns * root.visibleRows);
-                        break;
-                    case Qt.Key_PageDown:
-                        root.move(root.columns * root.visibleRows);
-                        break;
-                    default:
-                        return;
-                    }
-                    event.accepted = true;
-                }
-            }
+            placeholder: "Search apps…"
+            columns: root.columns
+            pageRows: root.visibleRows
+            onAccepted: shift => root.accept(shift)
+            onEscaped: root.closeRequested()
+            onMoved: delta => root.move(delta)
         }
 
         GridView {

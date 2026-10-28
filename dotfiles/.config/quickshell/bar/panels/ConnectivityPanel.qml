@@ -31,16 +31,7 @@ Column {
     readonly property bool bluetoothOn: adapter?.enabled ?? false
     readonly property var btDevices: adapter?.devices.values ?? []
     readonly property var pairedDevices: btDevices.filter(d => d.paired || d.bonded)
-    readonly property var newDevices: btDevices.filter(d => !d.paired && !d.bonded && d.name !== "")
-    // Scanning for devices was started here (not by Settings › Bluetooth), so closing stops it
-    property bool startedDiscovery: false
-    // The paired device whose Forget was clicked once (a second click within 3 s forgets it)
-    property var forgetArmed: null
-
-    function toggleDiscovery(): void {
-        startedDiscovery = !adapter.discovering;
-        adapter.discovering = !adapter.discovering;
-    }
+    readonly property var newDevices: btDevices.filter(d => !d.paired && !d.bonded && d.deviceName !== "")
 
     function connectTo(network: var): void {
         if (network.connected)
@@ -58,18 +49,6 @@ Column {
         }
     }
 
-    function setBluetooth(on: bool): void {
-        if (!adapter)
-            return;
-        // The adapter can't power on while rfkill blocks it
-        if (on && adapter.state === BluetoothAdapterState.Blocked) {
-            Exec.run("rfkill unblock bluetooth");
-            enableAfterUnblock.restart();
-            return;
-        }
-        adapter.enabled = on;
-    }
-
     function run(action: var): void {
         action();
         closeRequested();
@@ -79,37 +58,25 @@ Column {
     spacing: 10
 
     // Scan only while the panel is open (as well as anything else scanning), also with a Wi-Fi
-    // device that turns up meanwhile
+    // device that turns up meanwhile. A Bluetooth scan started here stops on closing, unless
+    // Settings › Bluetooth is scanning too.
     onWifiDeviceChanged: NetworkConnections.setScanning(root, wifiDevice)
     Component.onCompleted: NetworkConnections.setScanning(root, wifiDevice)
     Component.onDestruction: {
         NetworkConnections.setScanning(root, null);
-        if (startedDiscovery && adapter?.discovering)
-            adapter.discovering = false;
-    }
-
-    Timer {
-        id: disarmForget
-        interval: 3000
-        onTriggered: root.forgetArmed = null
-    }
-
-    Timer {
-        id: enableAfterUnblock
-        interval: 800
-        onTriggered: {
-            if (root.adapter)
-                root.adapter.enabled = true;
-        }
+        BluetoothControl.setDiscovering(root, false);
     }
 
     // --- Wi-Fi ---
 
-    SectionHeader {
+    PanelHeading {
         visible: root.wifiDevice !== null
         text: "Wi-Fi"
-        checked: Networking.wifiEnabled
-        onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
+
+        Toggle {
+            checked: Networking.wifiEnabled
+            onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
+        }
     }
 
     PanelText {
@@ -120,6 +87,7 @@ Column {
 
     // Network list, scrollable when long
     Flickable {
+        id: networkList
         visible: root.wifiDevice !== null && Networking.wifiEnabled
         width: parent.width
         height: Math.min(networkColumn.implicitHeight, 280)
@@ -190,10 +158,13 @@ Column {
                         }
                     }
 
-                    PasswordField {
+                    WifiPasswordField {
                         visible: networkEntry.askingPassword
                         width: parent.width
+                        fill: true
                         network: networkEntry.modelData
+                        onSubmitted: root.passwordNetwork = null
+                        onCancelled: root.passwordNetwork = null
                     }
 
                     // A saved password that no longer works asks again
@@ -207,6 +178,10 @@ Column {
                 }
             }
         }
+    }
+
+    ScrollIndicator {
+        flickable: networkList
     }
 
     ListRow {
@@ -236,11 +211,14 @@ Column {
 
     // --- Bluetooth ---
 
-    SectionHeader {
+    PanelHeading {
         visible: root.adapter !== null
         text: "Bluetooth"
-        checked: root.bluetoothOn
-        onToggled: root.setBluetooth(!root.bluetoothOn)
+
+        Toggle {
+            checked: root.bluetoothOn
+            onToggled: BluetoothControl.setPowered(!root.bluetoothOn)
+        }
     }
 
     Column {
@@ -266,35 +244,20 @@ Column {
                 readonly property bool busy: modelData.state === BluetoothDeviceState.Connecting || modelData.state === BluetoothDeviceState.Disconnecting
 
                 width: parent.width
-                icon: "\u{F00AF}"
+                icon: BluetoothControl.deviceIcon(modelData)
                 label: modelData.name
-                sublabel: {
-                    if (modelData.state === BluetoothDeviceState.Connecting)
-                        return "Connecting…";
-                    if (modelData.state === BluetoothDeviceState.Disconnecting)
-                        return "Disconnecting…";
-                    if (!modelData.connected)
-                        return "Not connected";
-                    return modelData.batteryAvailable ? `Connected, battery ${Math.round(modelData.battery * 100)}%` : "Connected";
-                }
+                sublabel: BluetoothControl.status(modelData)
                 selected: modelData.connected
                 clickable: !busy
                 onClicked: modelData.connected ? modelData.disconnect() : modelData.connect()
 
                 // Twice, within 3 seconds
-                PanelButton {
+                ConfirmButton {
                     icon: "\u{F1F8}"
-                    label: root.forgetArmed === deviceRow.modelData ? "Forget?" : ""
-                    highlighted: root.forgetArmed === deviceRow.modelData
-                    onClicked: {
-                        if (root.forgetArmed === deviceRow.modelData) {
-                            root.forgetArmed = null;
-                            deviceRow.modelData.forget();
-                            return;
-                        }
-                        root.forgetArmed = deviceRow.modelData;
-                        disarmForget.restart();
-                    }
+                    text: "Forget"
+                    armedLabel: "Forget?"
+                    iconOnly: true
+                    onConfirmed: deviceRow.modelData.forget()
                 }
             }
         }
@@ -309,7 +272,7 @@ Column {
             icon: "\u{F002}"
             label: root.adapter?.discovering ? "Stop scanning" : "Scan for devices"
             highlighted: root.adapter?.discovering ?? false
-            onClicked: root.toggleDiscovery()
+            onClicked: BluetoothControl.toggleDiscovering(root)
         }
 
         // While scanning, and a device still pairing after it stops
@@ -324,8 +287,8 @@ Column {
                 required property BluetoothDevice modelData
 
                 width: parent.width
-                icon: "\u{F00AF}"
-                label: modelData.name
+                icon: BluetoothControl.deviceIcon(modelData)
+                label: modelData.deviceName
                 sublabel: modelData.pairing ? "Pairing…" : "Available"
                 clickable: false
 
@@ -343,92 +306,5 @@ Column {
         icon: "\u{F013}"
         label: "Bluetooth settings"
         onClicked: root.run(() => Exec.run("qs ipc call settings open bluetooth"))
-    }
-
-    // Section heading with an on/off switch on the right
-    component SectionHeader: Item {
-        id: header
-
-        property alias text: title.text
-        property alias checked: toggle.checked
-        signal toggled
-
-        width: root.width
-        height: Math.max(title.implicitHeight, toggle.implicitHeight)
-
-        PanelSection {
-            id: title
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        Toggle {
-            id: toggle
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            onToggled: header.toggled()
-        }
-    }
-
-    // Password entry shown under a secured network; Enter connects
-    component PasswordField: Row {
-        id: field
-
-        property var network
-
-        spacing: 8
-
-        onVisibleChanged: {
-            if (visible) {
-                input.text = "";
-                input.forceActiveFocus();
-            }
-        }
-
-        function submit(): void {
-            if (input.text === "")
-                return;
-            field.network.connectWithPsk(input.text);
-            input.text = "";
-            root.passwordNetwork = null;
-        }
-
-        Rectangle {
-            width: field.width - connectButton.width - field.spacing
-            height: connectButton.height
-            radius: 8
-            color: Theme.surface
-            border.width: input.activeFocus ? 1 : 0
-            border.color: Theme.accent
-
-            TextInput {
-                id: input
-                anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                verticalAlignment: TextInput.AlignVCenter
-                echoMode: TextInput.Password
-                color: Theme.text
-                selectionColor: Theme.accent
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.panelFontSize
-                clip: true
-                onAccepted: field.submit()
-                // Cancels the password, rather than closing the whole panel
-                Keys.onEscapePressed: root.passwordNetwork = null
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: input.text === ""
-                    text: "Password"
-                    dim: true
-                }
-            }
-        }
-
-        PanelButton {
-            id: connectButton
-            label: "Connect"
-            onClicked: field.submit()
-        }
     }
 }

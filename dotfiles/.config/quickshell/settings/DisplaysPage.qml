@@ -378,16 +378,16 @@ Column {
             onToggled: on => Nightlight.setEnabled(on)
         }
 
-        // Right is warmer: 6000 K down to 2500 K, shown in the description
+        // Right is warmer (Nightlight.warmth), the temperature shown in the description
         SliderRow {
             changed: !ShellSettings.isDefault("nightlightTemperature")
             onReset: ShellSettings.reset("nightlightTemperature")
             label: "Warmth"
             description: `${ShellSettings.nightlightTemperature} K`
-            value: (6000 - ShellSettings.nightlightTemperature) / 3500
+            value: Nightlight.warmth
             sliderWidth: 260
             valueWidth: 0
-            onCommitted: value => ShellSettings.nightlightTemperature = Math.round((6000 - value * 3500) / 100) * 100
+            onCommitted: value => Nightlight.setWarmth(value)
         }
 
         ToggleRow {

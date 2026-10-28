@@ -6,7 +6,6 @@ import qs
 Text {
     id: root
 
-    property bool hoverable: true
     // Its panel is open
     property bool active: false
     property string tooltip: ""
@@ -30,7 +29,7 @@ Text {
     // Colour when not open or hovered (e.g. the Arch logo showing low battery)
     property color restingColour: Theme.text
 
-    color: active || (hoverable && hovered) ? Theme.accent : restingColour
+    color: active || hovered ? Theme.accent : restingColour
 
     Behavior on color {
         ColorAnimation { duration: Theme.animDuration }

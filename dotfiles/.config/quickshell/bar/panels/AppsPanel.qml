@@ -61,10 +61,9 @@ Column {
                     }
                 }
 
-                PanelButton {
+                PickerButton {
                     visible: app.modelData.hasMenu
-                    icon: app.expanded ? "\u{F078}" : "\u{F054}"
-                    highlighted: app.expanded
+                    open: app.expanded
                     onClicked: PanelState.toggle("trayApps", app.modelData.id)
                 }
             }

@@ -38,10 +38,8 @@ Column {
     // are dropped (once the list has been read)
     readonly property var connectionKeys: NetworkConnections.connections.map(c => `network:${c.uuid}`)
     onConnectionKeysChanged: {
-        if (connectionKeys.length === 0)
-            return;
-        const keys = Object.keys(PanelState.open.settings ?? {});
-        PanelState.prune("settings", keys.filter(key => !key.startsWith("network:") || connectionKeys.includes(key)));
+        if (connectionKeys.length > 0)
+            PanelState.pruneByPrefix("settings", "network:", connectionKeys);
     }
 
     function connectTo(network: var): void {
@@ -141,14 +139,6 @@ Column {
                 readonly property bool connecting: modelData.state === ConnectionState.Connecting
                 readonly property bool askingPassword: root.passwordNetwork === modelData
 
-                function submit(): void {
-                    if (passwordField.text === "")
-                        return;
-                    modelData.connectWithPsk(passwordField.text);
-                    passwordField.text = "";
-                    root.passwordNetwork = null;
-                }
-
                 BlockHeader {
                     title: availableBlock.modelData.name
                     detail: availableBlock.connecting ? "Connecting…" : `${availableBlock.secured ? "\u{F023}  Secured" : "Open"} · ${Math.round(availableBlock.modelData.signalStrength * 100)}%`
@@ -160,33 +150,11 @@ Column {
                     }
                 }
 
-                Row {
+                WifiPasswordField {
                     visible: availableBlock.askingPassword
-                    spacing: 8
-
-                    onVisibleChanged: {
-                        if (visible) {
-                            passwordField.text = "";
-                            passwordField.focusInput();
-                        }
-                    }
-
-                    TextField {
-                        id: passwordField
-                        width: 300
-                        placeholder: "Password"
-                        password: true
-                        onAccepted: availableBlock.submit()
-                    }
-
-                    PanelButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        label: "Connect"
-                        highlighted: true
-                        enabled: passwordField.text !== ""
-                        opacity: enabled ? 1 : 0.4
-                        onClicked: availableBlock.submit()
-                    }
+                    network: availableBlock.modelData
+                    onSubmitted: root.passwordNetwork = null
+                    onCancelled: root.passwordNetwork = null
                 }
 
                 Connections {

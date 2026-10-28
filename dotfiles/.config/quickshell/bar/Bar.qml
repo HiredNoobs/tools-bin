@@ -275,12 +275,10 @@ PanelWindow {
         screenName: root.screen.name
     }
 
+    // The panels, each made when it opens; a panel's own closeRequested comes through PanelHost
     Component {
         id: calendarPanel
-
-        CalendarPanel {
-            onCloseRequested: root.closePanel()
-        }
+        CalendarPanel {}
     }
 
     Component {
@@ -289,32 +287,22 @@ PanelWindow {
         SystemPanel {
             tab: root.systemTab
             onTabRequested: name => root.systemTab = name
-            onCloseRequested: root.closePanel()
         }
     }
 
     Component {
         id: audioPanel
-
-        AudioPanel {
-            onCloseRequested: root.closePanel()
-        }
+        AudioPanel {}
     }
 
     Component {
         id: connectivityPanel
-
-        ConnectivityPanel {
-            onCloseRequested: root.closePanel()
-        }
+        ConnectivityPanel {}
     }
 
     Component {
         id: mediaPanel
-
-        MediaPanel {
-            onCloseRequested: root.closePanel()
-        }
+        MediaPanel {}
     }
 
     Component {
@@ -324,65 +312,43 @@ PanelWindow {
             maxHeight: root.panelMaxHeight
             tab: root.controlTab
             onTabRequested: name => root.controlTab = name
-            onCloseRequested: root.closePanel()
         }
     }
 
     Component {
         id: notificationsPanel
-
-        NotificationsPanel {
-            onCloseRequested: root.closePanel()
-        }
+        NotificationsPanel {}
     }
 
     Component {
         id: drivesPanel
-
-        DrivesPanel {
-            onCloseRequested: root.closePanel()
-        }
+        DrivesPanel {}
     }
 
     Component {
         id: appsPanel
-
-        AppsPanel {
-            onCloseRequested: root.closePanel()
-        }
+        AppsPanel {}
     }
 
     // With Theme.launcherAttached, hanging under the clock: Super+Space, Print and the system
     // panel's Wallpaper button
     Component {
         id: launcherPanel
-
-        LauncherContent {
-            onCloseRequested: root.closePanel()
-        }
+        LauncherContent {}
     }
 
     Component {
         id: screenshotPanel
-
-        ScreenshotMenu {
-            onCloseRequested: root.closePanel()
-        }
+        ScreenshotMenu {}
     }
 
     Component {
         id: wallpaperPanel
-
-        WallpaperPicker {
-            onCloseRequested: root.closePanel()
-        }
+        WallpaperPicker {}
     }
 
     Component {
         id: displayPanel
-
-        DisplayPanel {
-            onCloseRequested: root.closePanel()
-        }
+        DisplayPanel {}
     }
 }

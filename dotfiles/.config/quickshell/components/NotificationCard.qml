@@ -22,27 +22,7 @@ Rectangle {
 
     // Image if the app sent one (e.g. a screenshot), else the app's icon; nothing rather than
     // a placeholder when neither resolves
-    readonly property string iconSource: {
-        const n = notification;
-        if (!n)
-            return "";
-        for (let name of [n.image, n.appIcon, DesktopEntries.byId(n.desktopEntry)?.icon ?? ""]) {
-            if (!name)
-                continue;
-            if (name.startsWith("/"))
-                return `file://${name}`;
-            // Icon names can also arrive as "image://icon/<name>" (udiskie does this); those
-            // still need checking, or a missing one draws the placeholder texture
-            if (name.startsWith("image://icon/"))
-                name = name.slice("image://icon/".length);
-            else if (name.includes("://"))
-                return name;
-            const path = Quickshell.iconPath(name, true);
-            if (path)
-                return path;
-        }
-        return "";
-    }
+    readonly property string iconSource: notification ? Icons.resolve([notification.image, notification.appIcon, DesktopEntries.byId(notification.desktopEntry)?.icon ?? ""]) : ""
 
     function timeAgo(): string {
         const at = Notifications.received[notification?.id];
@@ -132,20 +112,11 @@ Rectangle {
                     font.pixelSize: Theme.panelFontSize - 2
                 }
 
-                PanelText {
+                IconButton {
                     id: dismiss
                     anchors.right: parent.right
                     text: "\u{F00D}"
-                    color: dismissMouse.containsMouse ? Theme.accent : Theme.subtext
-
-                    MouseArea {
-                        id: dismissMouse
-                        anchors.fill: parent
-                        anchors.margins: -4
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Notifications.dismiss(root.notification)
-                    }
+                    onClicked: Notifications.dismiss(root.notification)
                 }
             }
 

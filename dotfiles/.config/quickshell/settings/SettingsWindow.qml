@@ -49,62 +49,29 @@ FloatingWindow {
             anchors.margins: 14
             spacing: 14
 
-            Rectangle {
+            // Up/Down step through the sections shown (from the first or last when the section
+            // open isn't among them), Enter opens the first match (Esc: below)
+            SearchField {
+                id: search
                 width: parent.width
                 height: 38
-                radius: Theme.radius
-                color: Theme.surface
-
-                PanelText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: 14
-                    text: "\u{F0349}"
-                    dim: true
+                pixelSize: Theme.panelFontSize
+                placeholder: "Search settings…"
+                startFocused: true
+                onAccepted: {
+                    if (root.shownSections.length > 0)
+                        root.pageRequested(root.shownSections[0].name);
                 }
-
-                TextInput {
-                    id: search
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: 40
-                    width: parent.width - 54
-                    color: Theme.text
-                    selectionColor: Theme.accent
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.panelFontSize
-                    clip: true
-                    focus: true
-
-                    PanelText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: search.text === ""
-                        text: "Search settings…"
-                        dim: true
-                    }
-
-                    // Up/Down step through the sections shown (from the first or last when the
-                    // section open isn't among them), Enter opens the first match (Esc: below)
-                    Keys.onPressed: event => {
-                        const shown = root.shownSections;
-                        const index = shown.findIndex(section => section.name === root.page);
-                        switch (event.key) {
-                        case Qt.Key_Down:
-                            if (shown.length > 0)
-                                root.pageRequested(shown[(index + 1) % shown.length].name);
-                            break;
-                        case Qt.Key_Up:
-                            if (shown.length > 0)
-                                root.pageRequested(shown[index < 0 ? shown.length - 1 : (index - 1 + shown.length) % shown.length].name);
-                            break;
-                        case Qt.Key_Return:
-                        case Qt.Key_Enter:
-                            if (shown.length > 0)
-                                root.pageRequested(shown[0].name);
-                            break;
-                        default:
-                            return;
-                        }
-                        event.accepted = true;
-                    }
+                onKeyPressed: event => {
+                    const shown = root.shownSections;
+                    const index = shown.findIndex(section => section.name === root.page);
+                    if (shown.length === 0 || (event.key !== Qt.Key_Down && event.key !== Qt.Key_Up))
+                        return;
+                    if (event.key === Qt.Key_Down)
+                        root.pageRequested(shown[(index + 1) % shown.length].name);
+                    else
+                        root.pageRequested(shown[index < 0 ? shown.length - 1 : (index - 1 + shown.length) % shown.length].name);
+                    event.accepted = true;
                 }
             }
 
@@ -189,16 +156,10 @@ FloatingWindow {
             }
         }
 
-        // Scrollbar
-        Rectangle {
-            visible: content.contentHeight > content.height
-            anchors.right: parent.right
-            anchors.rightMargin: 4
-            y: content.visibleArea.yPosition * content.height
-            width: 4
-            height: content.visibleArea.heightRatio * content.height
-            radius: 2
-            color: Theme.subtext
+        ScrollIndicator {
+            flickable: content
+            thickness: 4
+            margin: 4
         }
     }
 
@@ -207,8 +168,8 @@ FloatingWindow {
     Shortcut {
         sequence: "Escape"
         onActivated: {
-            if (!search.activeFocus)
-                search.forceActiveFocus();
+            if (!search.inputFocus)
+                search.focusInput();
             else if (search.text !== "")
                 search.text = "";
             else
@@ -219,7 +180,7 @@ FloatingWindow {
     Shortcut {
         sequence: "Ctrl+F"
         onActivated: {
-            search.forceActiveFocus();
+            search.focusInput();
             search.selectAll();
         }
     }
