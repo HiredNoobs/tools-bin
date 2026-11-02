@@ -23,7 +23,7 @@ TALOS_CONTEXTS="$HOME/.talos/contexts"
 
 # Keep in line with talos_version/kubernetes_version in iac-homelab/terraform/clusters,
 # kubectl supports one minor version either side of the cluster.
-TALOSCTL_VERSION="v1.14.1"
+TALOSCTL_VERSION="v1.14.4"
 KUBECTL_VERSION="v1.37.1"
 
 # The version `flux bootstrap` installs in the clusters (iac-k8s), bump it deliberately and
