@@ -27,9 +27,9 @@ TALOS_CONTEXTS="$HOME/.talos/contexts"
 TALOSCTL_VERSION="v1.14.4"
 KUBECTL_VERSION="v1.37.1"
 
-# The version `flux bootstrap` installs in the clusters (iac-k8s), bump it deliberately and
-# re-run the bootstrap to upgrade them.
-FLUX_VERSION="v2.9.6"
+# Keep in line with the Flux the clusters run (iac-k8s' gotk-components.yaml, bumped by
+# Renovate's flux PRs).
+FLUX_VERSION="v2.10.0"
 
 # The Vault client, for vsecret. Keep in line with vault_version in iac-homelab's vault role.
 VAULT_VERSION="2.2.1"
