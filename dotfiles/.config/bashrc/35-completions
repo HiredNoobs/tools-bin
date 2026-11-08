@@ -172,6 +172,12 @@ function _setup_completions {
 complete -F _setup_completions setup
 
 # -----------------------------------------------------
+# context-setup: its one option
+# -----------------------------------------------------
+
+complete -W "--tools" context-setup
+
+# -----------------------------------------------------
 # content-dl: its options and yt-dlp's browsers for --browser
 # -----------------------------------------------------
 

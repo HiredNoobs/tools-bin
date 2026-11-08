@@ -2,7 +2,7 @@
 
 ## Contexts
 
-``context-setup`` configures the Talos clusters this host manages: a kube context for each talosconfig in ``~/.talos/contexts/<context>.yaml`` (e.g. ``production.core.yaml``), generated with ``talosctl`` into ``~/.kube/contexts``, using the control plane IPs in the talosconfig so it doesn't need DNS. Re-run it when the admin kubeconfig certificate expires (a year). It also installs the Vault client and the pinned ``talosctl``, ``kubectl`` and ``flux`` into ``bin/``.
+``context-setup`` configures the Talos clusters this host manages: a kube context for each talosconfig in ``~/.talos/contexts/<context>.yaml`` (e.g. ``production.core.yaml``), generated with ``talosctl`` into ``~/.kube/contexts``, using the control plane IPs in the talosconfig so it doesn't need DNS. Re-run it when the admin kubeconfig certificate expires (a year). It also installs the pinned Vault client, ``talosctl``, ``kubectl`` and ``flux`` into ``bin/``, each only when its version differs; ``context-setup --tools`` does only that (iac-homelab's ``mgmt.yml`` runs it on the management VMs, so a version bumped here reaches them on its next run).
 
 It writes the default context to ``~/.config/bashrc/40-host`` and ``~/.config/fish/conf.d/40-host.fish``. ``kc`` switches context per shell (below).
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 #
-# Configures the kube and Talos contexts for the Talos clusters this host manages (one per
+# Installs the pinned vault, talosctl, kubectl and flux (each only when its version differs), then
+# configures the kube and Talos contexts for the Talos clusters this host manages (one per
 # talosconfig in ~/.talos/contexts) and records the default in ~/.config/bashrc/40-host (and
-# fish/conf.d/40-host.fish). Any existing kube contexts are replaced. Also installs the pinned
-# vault, talosctl, kubectl and flux.
+# fish/conf.d/40-host.fish). Any existing kube contexts are replaced.
 #
 # Usage:
-# context-setup
+# context-setup [--tools]
+#   --tools  only install the pinned tools, the contexts are left as they are
 
 THIS=$(realpath "$0")
 HERE=$(dirname "$THIS")
@@ -30,6 +31,9 @@ KUBECTL_VERSION="v1.37.1"
 # re-run the bootstrap to upgrade them.
 FLUX_VERSION="v2.9.6"
 
+# The Vault client, for vsecret. Keep in line with vault_version in iac-homelab's vault role.
+VAULT_VERSION="1.21.0"
+
 # K8S contexts are the talosconfigs in $TALOS_CONTEXTS (<context>.yaml), which already have the
 # control plane IPs, so they don't need DNS.
 K8S_DEFAULT_CONTEXT="production.core"
@@ -51,9 +55,9 @@ function write_host_config {
   log_info "Wrote $HOST_CONFIG and $FISH_HOST_CONFIG - open a new shell (or source them)."
 }
 
-# -----------------------------------------------------"
-# K8S 
-# -----------------------------------------------------"
+# -----------------------------------------------------
+# K8S
+# -----------------------------------------------------
 
 function clean_k8s_contexts {
   local config
@@ -107,108 +111,8 @@ function create_k8s_context {
   echo "$context_name"
 }
 
-function linux_arch {
-  case "$(uname -m)" in
-    x86_64)        echo "amd64";;
-    aarch64|arm64) echo "arm64";;
-    *) log_error "Unsupported architecture: $(uname -m)"; exit 1;;
-  esac
-}
-
-# Downloads $1 to $HERE/$2 if the checksum matches $3.
-function install_binary {
-  local url name checksum tmp
-  url="$1"
-  name="$2"
-  checksum="$3"
-  tmp=$(mktemp)
-
-  log_info "Installing $name from $url"
-  if ! curl -fsSL "$url" -o "$tmp"; then
-    log_error "Failed to download $name."
-    rm -f "$tmp"
-    exit 1
-  fi
-
-  if ! echo "$checksum  $tmp" | sha256sum --check --status; then
-    log_error "Checksum mismatch for $name."
-    rm -f "$tmp"
-    exit 1
-  fi
-
-  install -m 755 "$tmp" "$HERE/$name"
-  rm -f "$tmp"
-}
-
-function install_talosctl {
-  local arch checksum
-  arch=$(linux_arch)
-
-  if talosctl version --client --short 2>/dev/null | grep -q "Talos $TALOSCTL_VERSION$"; then
-    return 0
-  fi
-
-  checksum=$(curl -fsSL "https://github.com/siderolabs/talos/releases/download/$TALOSCTL_VERSION/sha256sum.txt" \
-             | awk -v file="talosctl-linux-$arch" '$2 == file { print $1 }')
-
-  install_binary "https://github.com/siderolabs/talos/releases/download/$TALOSCTL_VERSION/talosctl-linux-$arch" \
-    talosctl "$checksum"
-}
-
-function install_kubectl {
-  local arch checksum
-  arch=$(linux_arch)
-
-  if kubectl version --client 2>/dev/null | grep -q "Client Version: $KUBECTL_VERSION$"; then
-    return 0
-  fi
-
-  checksum=$(curl -fsSL "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/$arch/kubectl.sha256")
-
-  install_binary "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/$arch/kubectl" \
-    kubectl "$checksum"
-}
-
-# Released as a tarball, so it's verified and extracted here rather than by install_binary.
-function install_flux {
-  local arch version archive url checksum tmp
-  arch=$(linux_arch)
-  version="${FLUX_VERSION#v}"
-  archive="flux_${version}_linux_$arch.tar.gz"
-  url="https://github.com/fluxcd/flux2/releases/download/$FLUX_VERSION"
-
-  if flux version --client 2>/dev/null | grep -q "flux: $FLUX_VERSION$"; then
-    return 0
-  fi
-
-  checksum=$(curl -fsSL "$url/flux_${version}_checksums.txt" \
-             | awk -v file="$archive" '$2 == file { print $1 }')
-
-  tmp=$(mktemp -d)
-  log_info "Installing flux from $url/$archive"
-  if ! curl -fsSL "$url/$archive" -o "$tmp/$archive"; then
-    log_error "Failed to download flux."
-    rm -rf "$tmp"
-    exit 1
-  fi
-
-  if ! echo "$checksum  $tmp/$archive" | sha256sum --check --status; then
-    log_error "Checksum mismatch for flux."
-    rm -rf "$tmp"
-    exit 1
-  fi
-
-  tar -xzf "$tmp/$archive" -C "$tmp" flux
-  install -m 755 "$tmp/flux" "$HERE/flux"
-  rm -rf "$tmp"
-}
-
 function configure_k8s {
   local talosconfig default_context
-
-  install_talosctl
-  install_kubectl
-  install_flux
 
   if ! command -v jq > /dev/null; then
     log_error "jq is required for k8s contexts."
@@ -245,25 +149,126 @@ export TALOSCONFIG="$TALOS_CONTEXTS/$default_context.yaml"
 EOF
 }
 
-# -----------------------------------------------------"
-# Common
-# -----------------------------------------------------"
+# -----------------------------------------------------
+# Tools
+# -----------------------------------------------------
 
-function install_vault_client {
-  curl https://releases.hashicorp.com/vault/1.21.0/vault_1.21.0_linux_386.zip -o /tmp/vault.zip
-  unzip -o /tmp/vault.zip -d /tmp/vault
-  mv /tmp/vault/vault ~/tools-bin/bin/vault
-  chmod +x ~/tools-bin/bin/vault
+function linux_arch {
+  case "$(uname -m)" in
+    x86_64)        echo "amd64";;
+    aarch64|arm64) echo "arm64";;
+    *) log_error "Unsupported architecture: $(uname -m)"; exit 1;;
+  esac
+}
+
+# Downloads $1 and, if its checksum matches $3, installs it as $HERE/$2: the download itself, or
+# the file $2 in it when it's a .tar.gz or .zip.
+function install_binary {
+  local url name checksum tmp
+  url="$1"
+  name="$2"
+  checksum="$3"
+  tmp=$(mktemp -d)
+
+  log_info "Installing $name from $url"
+  if ! curl -fsSL "$url" -o "$tmp/download"; then
+    log_error "Failed to download $name."
+    rm -rf "$tmp"
+    exit 1
+  fi
+
+  if ! echo "$checksum  $tmp/download" | sha256sum --check --status; then
+    log_error "Checksum mismatch for $name."
+    rm -rf "$tmp"
+    exit 1
+  fi
+
+  case "$url" in
+    *.tar.gz) tar -xzf "$tmp/download" -C "$tmp" "$name";;
+    *.zip)    unzip -q "$tmp/download" "$name" -d "$tmp";;
+    *)        mv "$tmp/download" "$tmp/$name";;
+  esac
+  install -m 755 "$tmp/$name" "$HERE/$name"
+  rm -rf "$tmp"
+}
+
+function install_talosctl {
+  local arch checksum
+  arch=$(linux_arch)
+
+  if talosctl version --client --short 2>/dev/null | grep -q "Talos $TALOSCTL_VERSION$"; then
+    return 0
+  fi
+
+  checksum=$(curl -fsSL "https://github.com/siderolabs/talos/releases/download/$TALOSCTL_VERSION/sha256sum.txt" \
+             | awk -v file="talosctl-linux-$arch" '$2 == file { print $1 }')
+
+  install_binary "https://github.com/siderolabs/talos/releases/download/$TALOSCTL_VERSION/talosctl-linux-$arch" \
+    talosctl "$checksum"
+}
+
+function install_kubectl {
+  local arch checksum
+  arch=$(linux_arch)
+
+  if kubectl version --client 2>/dev/null | grep -q "Client Version: $KUBECTL_VERSION$"; then
+    return 0
+  fi
+
+  checksum=$(curl -fsSL "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/$arch/kubectl.sha256")
+
+  install_binary "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/$arch/kubectl" \
+    kubectl "$checksum"
+}
+
+function install_flux {
+  local arch version archive url checksum
+  arch=$(linux_arch)
+  version="${FLUX_VERSION#v}"
+  archive="flux_${version}_linux_$arch.tar.gz"
+  url="https://github.com/fluxcd/flux2/releases/download/$FLUX_VERSION"
+
+  if flux version --client 2>/dev/null | grep -q "flux: $FLUX_VERSION$"; then
+    return 0
+  fi
+
+  checksum=$(curl -fsSL "$url/flux_${version}_checksums.txt" \
+             | awk -v file="$archive" '$2 == file { print $1 }')
+
+  install_binary "$url/$archive" flux "$checksum"
+}
+
+function install_vault {
+  local arch archive url checksum
+  arch=$(linux_arch)
+  archive="vault_${VAULT_VERSION}_linux_$arch.zip"
+  url="https://releases.hashicorp.com/vault/$VAULT_VERSION"
+
+  if vault version 2>/dev/null | grep -q "^Vault v$VAULT_VERSION "; then
+    return 0
+  fi
+
+  checksum=$(curl -fsSL "$url/vault_${VAULT_VERSION}_SHA256SUMS" \
+             | awk -v file="$archive" '$2 == file { print $1 }')
+
+  install_binary "$url/$archive" vault "$checksum"
+}
+
+function install_tools {
+  install_vault
+  install_talosctl
+  install_kubectl
+  install_flux
 }
 
 # -----------------------------------------------------
 # Main
 # -----------------------------------------------------
 
-if [[ $# -gt 0 ]]; then
-  log_error "Usage: $(basename "$0")"
+if [[ $# -gt 1 || ( $# -eq 1 && "$1" != "--tools" ) ]]; then
+  log_error "Usage: $(basename "$0") [--tools]"
   exit 1
 fi
 
-install_vault_client
-configure_k8s
+install_tools
+[[ "${1:-}" == "--tools" ]] || configure_k8s
