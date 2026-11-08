@@ -32,7 +32,7 @@ KUBECTL_VERSION="v1.37.1"
 FLUX_VERSION="v2.9.6"
 
 # The Vault client, for vsecret. Keep in line with vault_version in iac-homelab's vault role.
-VAULT_VERSION="1.21.0"
+VAULT_VERSION="2.2.1"
 
 # K8S contexts are the talosconfigs in $TALOS_CONTEXTS (<context>.yaml), which already have the
 # control plane IPs, so they don't need DNS.
