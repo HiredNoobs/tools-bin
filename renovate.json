@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Run by the renovate repo's workflow: the tools context-setup installs and the vim plugins setup pins. No CI runs on this repo's branches, so the age check alone decides when a PR opens.",
+  "internalChecksAsSuccess": true,
+  "customManagers": [
+    {
+      "description": "Versions with a `# renovate: datasource=... depName=...` comment on the line above (context-setup)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^bin/context-setup$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\n\\w+=\"(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "description": "Commits with a `# renovate: branch=...` comment at the end of the line (the vim plugins)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^bin/setup-dist/[^/]+/setup$/"],
+      "matchStrings": [
+        "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+?)\\.git .*--commit (?<currentDigest>[0-9a-f]{40}).* # renovate: branch=(?<currentValue>\\S+)",
+        "raw\\.githubusercontent\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/(?<currentDigest>[0-9a-f]{40})/.* # renovate: branch=(?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "github-digest"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchFileNames": ["bin/context-setup"],
+      "prBodyNotes": ["The management VMs get it with `mgmt.yml` (`context-setup --tools`)."]
+    },
+    {
+      "matchFileNames": ["bin/setup-dist/**"],
+      "groupName": "vim plugins",
+      "prBodyNotes": ["Applied with `setup vim`."]
+    },
+    {
+      "description": "One minor version at a time, like the cluster's own PRs",
+      "matchPackageNames": ["siderolabs/talos", "kubernetes/kubernetes"],
+      "separateMultipleMinor": true,
+      "prBodyNotes": ["Merge once iac-homelab's PR for the same version is applied."]
+    },
+    {
+      "matchPackageNames": ["fluxcd/flux2"],
+      "prBodyNotes": ["Merge with iac-k8s's flux PR for the same version."]
+    },
+    {
+      "matchPackageNames": ["hashicorp/vault"],
+      "prBodyNotes": ["Merge with iac-homelab's vault PR for the same version."]
+    }
+  ]
+}
