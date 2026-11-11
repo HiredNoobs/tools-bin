@@ -33,6 +33,11 @@
       "prBodyNotes": ["Applied with `setup vim`."]
     },
     {
+      "description": "Commits are aged by their commit date when looked up; branch creation has no date for a digest update and would hold it for good (renovatebot/renovate#45236)",
+      "matchDatasources": ["github-digest"],
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
       "description": "One minor version at a time, like the cluster's own PRs",
       "matchPackageNames": ["siderolabs/talos", "kubernetes/kubernetes"],
       "separateMultipleMinor": true,
