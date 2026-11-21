@@ -95,12 +95,12 @@ function configure_vim {
   sync_git https://github.com/vim-airline/vim-airline.git ~/.vim/bundle/airline --commit 1586662296c9dc946083e17cb6a4ef0b3e7c0d68 # renovate: branch=master
   sync_git https://github.com/preservim/nerdtree.git ~/.vim/bundle/nerdtree --commit 690d061b591525890f1471c6675bcb5bdc8cdff9 # renovate: branch=master
   sync_git https://github.com/tpope/vim-fugitive.git ~/.vim/bundle/fugitive --commit 3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0 # renovate: branch=master
-  sync_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify --commit 3b5ae37eb2b77c3ae58d60dfdc3fc30258078663 # renovate: branch=master
-  sync_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox --commit 697c00291db857ca0af00ec154e5bd514a79191f # renovate: branch=master
+  sync_git https://github.com/mhinz/vim-signify.git ~/.vim/bundle/vim-signify --commit e7557022f94270e887cbb391a746c1818e570d7f # renovate: branch=master
+  sync_git https://github.com/morhetz/gruvbox.git ~/.vim/bundle/gruvbox --commit ef8864bb42bf244f0295d1c5a403b27e3d139695 # renovate: branch=master
 
   log_info "Installing YouCompleteMe."
 
-  if ! get_latest_git https://github.com/ycm-core/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe --commit 6a52780a22dfd4ddafbe23c0d2c2a2107ceeb397; then # renovate: branch=master
+  if ! get_latest_git https://github.com/ycm-core/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe --commit d4c91430b70a21ce471c8572400b647d313995b4; then # renovate: branch=master
     git -C ~/.vim/bundle/YouCompleteMe submodule update --init --recursive
     python3 ~/.vim/bundle/YouCompleteMe/install.py
   fi
