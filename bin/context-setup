@@ -23,7 +23,7 @@ KUBE_CONTEXTS="$HOME/.kube/contexts"
 TALOS_CONTEXTS="$HOME/.talos/contexts"
 
 # renovate: datasource=github-releases depName=siderolabs/talos
-TALOSCTL_VERSION="v1.14.5"
+TALOSCTL_VERSION="v1.14.6"
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
 KUBECTL_VERSION="v1.37.2"
 
